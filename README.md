@@ -62,7 +62,7 @@ pm2 save
 
 The others scripts that possible to run (like a logs, upgrade ets.) you can find in the ```package.json``` file.
 
-To get Telegram Chat Id for private channel, send message to channel, then copy message link, cut channel id from link string and prefix it witn "-100":
+To get Telegram Channel ID for private channel, send message to the channel, then copy message link, cut channel id from the link string and prefix it witn "-100":
 
 For example, if message link is https://t.me/c/1345063785/244
 then Channel ID will be -1001345063785
