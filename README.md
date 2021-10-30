@@ -58,10 +58,14 @@ npm start
 ```bash
 pm2 set pm2-logrotate:max_size 1M
 pm2 startup
+pm2 save
 ```
 
-To get Te;egram Chat Id for private channel invite @get_id_bot in your channel, and then enter inside your chat:
+The others scripts that possible to run (like a logs, upgrade ets.) you can find in the ```package.json``` file.
 
-```
-/my_id @get_id_bot
-```
+To get Telegram Chat Id for private channel, send message to channel, then copy message link, cut channel id from link string and prefix it witn "-100":
+
+For example, if message link is https://t.me/c/1345063785/244
+then Channel ID will be -1001345063785
+
+Lucky trading =)
