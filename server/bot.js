@@ -145,7 +145,6 @@ async function startLoop() {
       loopCount++;
     }
   } catch (error) {
-    console.timeEnd("\nLoop Time");
     throw { type: "Start Loop Error", ...error, errorSrcData: error };
   }
 }
