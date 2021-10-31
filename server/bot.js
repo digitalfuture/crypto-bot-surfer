@@ -47,15 +47,15 @@ async function start() {
   
       console.info(`Error source data:`, errorSrcData);
   
-        sendMessage(
-          `<b style="color: red">${type || ""}:</b>\n${JSON.parse(body).msg}`
+        await sendMessage(
+          `<b>${type || ""}:</b>\n${JSON.parse(body).msg}`
         );
     } else {
       console.info(`\nUnexpected Error:`, error);
       console.info(`Error source data:`, errorSrcData);
   
-        sendMessage(
-          `<b style="color: red">Unexpected Error:</b> Look at the server logs for details`
+        await sendMessage(
+          `<b>Unexpected Error:</b> Look at the server logs for details`
         );
     }
   }
