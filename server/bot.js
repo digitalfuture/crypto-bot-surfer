@@ -13,7 +13,7 @@ import {
 import { getTradeSignals } from "./analytics/indicators/top-gainer.js";
 
 const secondarySymbol = process.env.SECONDARY_SYMBOL;
-const interval = process.env.TRADING_INTERVAL;
+const interval = process.env.HEARTBEAT_INTERVAL;
 const periods = parseInt(process.env.HISTORY_PERIODS);
 const minTradeUsdValue = parseFloat(process.env.MIN_TRADE_USD_VALUE);
 const minChangePercent = parseFloat(process.env.MIN_CHANGE_PERCENT);
@@ -74,7 +74,7 @@ async function startServer() {
     console.info("Heartbeat interval:", intervalString);
 
     let startMessage = `<b>${secondarySymbol} Surfer Bot started</b>\n\n`;
-    startMessage += `<b>Trading Interval:</b> 1d\n`;
+    startMessage += `<b>Chart Interval:</b> 1d\n`;
     startMessage += `<b>Hearbeat interval:</b> ${intervalString}\n`;
 
     await sendMessage(startMessage);
