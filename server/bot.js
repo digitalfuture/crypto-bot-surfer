@@ -16,6 +16,7 @@ const secondarySymbol = process.env.SECONDARY_SYMBOL;
 const interval = process.env.TRADING_INTERVAL;
 const periods = parseInt(process.env.HISTORY_PERIODS);
 const minTradeUsdValue = parseFloat(process.env.MIN_TRADE_USD_VALUE);
+const minChangePercent = parseFloat(process.env.MIN_CHANGE_PERCENT);
 const isfixedValue = JSON.parse(process.env.USE_FIXED_TRADE_VALUE);
 const fixedValue = parseFloat(process.env.FIXED_TRADE_VALUE);
 const fixedPercent = parseFloat(process.env.FIXED_TRADE_PERCENT);
@@ -176,6 +177,7 @@ async function heartBeatLoop() {
       currentTickers,
       accountBalance: usdtRateTotalBalance,
       minOrderValue: isfixedValue ? fixedValue : (usdtRateTotalBalance / 100 * fixedPercent),
+      minChangePercent
     });
 
     const secondarySymbolUsdtPrice =

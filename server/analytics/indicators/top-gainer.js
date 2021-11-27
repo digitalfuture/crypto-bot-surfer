@@ -1,6 +1,6 @@
 import { getPrevDayData, getCandlestickData } from "../../api/binance/info.js";
 
-export async function getTradeSignals({ secondarySymbol, currentTickers, accountBalance, minOrderValue }) {
+export async function getTradeSignals({ secondarySymbol, currentTickers, accountBalance, minOrderValue, minChangePercent }) {
   try {
     const topGainersList = await getPrevDayData();
 
@@ -24,6 +24,7 @@ export async function getTradeSignals({ secondarySymbol, currentTickers, account
       .filter(({ tickerName }) => tickerName.endsWith(secondarySymbol))
       .filter(({ primarySymbol }) => !primarySymbol.endsWith("DOWN"))
       .filter(({ primarySymbol }) => !primarySymbol.endsWith("UP"))
+      .filter(({ priceChangePercent }) => priceChangePercent >= minChangePercent)
       .sort((a, b) => b.priceChangePercent - a.priceChangePercent)
       .slice(0, topDepth);
 
@@ -118,7 +119,6 @@ export async function getTradeSignals({ secondarySymbol, currentTickers, account
       isBuySignal,
       isSellSignal,
     };
-    
     
     console.info("\naccountBalance", accountBalance);
     console.info("\nminOrderValue", minOrderValue);

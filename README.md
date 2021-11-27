@@ -1,6 +1,7 @@
 # **crypto bot-2** automatic trading system for Binance Crypto exchange
 
-### Be sure you have [Node.js](https://nodejs.org/) installed
+### Be sure you have [Node.js](https://nodejs.org/) installed.
+### Tested with version 14
 
 ### Set up environment variables in your system or by creating `.env` file with example config:
 
@@ -16,6 +17,7 @@ USE_FIXED_TRADE_VALUE=true
 FIXED_TRADE_VALUE=20
 FIXED_TRADE_PERCENT=10
 MIN_TRADE_USD_VALUE=10
+MIN_CHANGE_PERCENT=20
 
 BINANCE_APIKEY=
 BINANCE_APISECRET=
