@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "logs": "pm2 logs crypto-bot-surfer --lines 100",
-    "logs:clear": "pm2 flush crypto-bot-surfer --lines 100",
+    "logs:clear": "pm2 flush crypto-bot-surfer",
     "restart": "npm stop && npm start && npm run logs",
     "start": "pm2 start node --name crypto-bot-surfer --attach --log-date-format=\"YYYY-MM-DD HH:mm Z\" -- -r dotenv/config ./server/bot.js",
     "nodemon": "nodemon -- -r  dotenv/config ./server/bot.js",
