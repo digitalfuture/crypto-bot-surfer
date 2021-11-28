@@ -18,15 +18,12 @@ export async function getTradeSignals({ secondarySymbol, currentTickers, account
       })
     );
     
-    const topDepth = Math.floor(accountBalance / minOrderValue);
-
     const filteredList = mappedList
       .filter(({ tickerName }) => tickerName.endsWith(secondarySymbol))
       .filter(({ primarySymbol }) => !primarySymbol.endsWith("DOWN"))
       .filter(({ primarySymbol }) => !primarySymbol.endsWith("UP"))
       .filter(({ priceChangePercent }) => priceChangePercent >= minChangePercent)
       .sort((a, b) => b.priceChangePercent - a.priceChangePercent)
-      .slice(0, topDepth);
 
     const topTickerList = filteredList.map((ticker) => ticker.tickerName);
 
@@ -122,7 +119,6 @@ export async function getTradeSignals({ secondarySymbol, currentTickers, account
     
     console.info("\naccountBalance", accountBalance);
     console.info("\nminOrderValue", minOrderValue);
-    console.info("\ntopDepth", topDepth);
 
     console.info("\ntopTickerList", topTickerList);
     console.info("\nсurrentTickers", currentTickers);
