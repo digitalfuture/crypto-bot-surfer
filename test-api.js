@@ -16,9 +16,9 @@ export const binance = new Binance().options({
 
 test();
 
-function delay(ms) {
-  return new Promise((resolve) => setTimeout(() => resolve(), ms));
-}
+// function delay(ms) {
+//   return new Promise((resolve) => setTimeout(() => resolve(), ms));
+// }
 
 async function getPrevDayData() {
   try {
