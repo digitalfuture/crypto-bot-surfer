@@ -12,7 +12,7 @@
     "node": "node --inspect -r dotenv/config ./server/bot.js",
     "start-logs": "pm2 start node --name crypto-bot-surfer --attach --log-date-format=\"YYYY-MM-DD HH:mm Z\" --raw -- -r dotenv/config ./server/bot.js",
     "stop": "pm2 delete crypto-bot-surfer",
-    "upgrade": "npm stop && npm run upgrade:git && npm install",
+    "upgrade": "npm run upgrade:git && npm install",
     "upgrade:git": "git reset --hard HEAD && git pull"
   },
   "dependencies": {
