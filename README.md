@@ -40,6 +40,7 @@ Available trading intervals: 1s, 3s, 5s, 15s, 30s, 1m, 3m, 5m, 15m, 30m, 1h, 2h,
 ```bash
 sudo apt update
 sudo apt install fontconfig libpixman-1-dev libcairo2-dev libpango1.0-dev libjpeg8-dev libgif-dev build-essential
+sudo apt-get install ntp
 ```
 
 ### Install `pm2` package globally:
