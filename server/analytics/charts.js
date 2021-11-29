@@ -76,7 +76,7 @@ async function renderChart({
         {
           label: `${primarySymbol} / ${secondarySymbol} ${
             priceChangePercent
-              ? " - 24H GAIN:" + Math.round(priceChangePercent) + "%"
+              ? " - 24H GAIN:" + Math.floor(priceChangePercent) + "%"
               : ""
           }`,
           data: priceData,
