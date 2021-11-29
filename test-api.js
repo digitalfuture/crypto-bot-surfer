@@ -10,32 +10,52 @@ export const binance = new Binance().options({
   APISECRET: BINANCE_APISECRET,
   test: false,
   recWindow: 60000,
-  verbode: true,
+  verbose: true,
   useServerTime: true,
 });
 
-test();
+// testGetPrevDayData();
+testGetExchangeInfo();
 
-// function delay(ms) {
-//   return new Promise((resolve) => setTimeout(() => resolve(), ms));
-// }
 
-async function getPrevDayData() {
-  try {
-    const data = await binance.prevDay(false);
-
-    console.info((data[0].closeTime - data[0].openTime) / 1000 / 60 / 60, 'hours');
-
-    return data;
-  } catch (error) {
-    throw { type: "Get Prev Day Data", ...error, errorSrcData: error };
-  }
+function delay(ms) {
+  return new Promise((resolve) => setTimeout(() => resolve(), ms));
 }
 
-async function test() {
+// async function testGetPrevDayData() {
+//   try {
+//     const data = await getPrevDayData();
+//     const result = data.filter(ticker => ticker.symbol.endsWith('BNB'));
+    
+//     // const result = await  getBalances();
+//     // const result = data.map(balance)
+
+//     // const result = await marketSell({ tickerName: "FTMUSDT", amount: 3.996});
+
+//     // console.info(result);
+//     console.info(result.length);
+//   } catch (error) {
+//     const { statusCode, statusMessage, body, type, errorSrcData } = error;
+  
+//     if (statusCode) {
+//       console.error(
+//         `\nType: ${type || ""}\nStatus message: ${statusMessage || ""}\nBody: ${
+//           JSON.parse(body).msg
+//         }`
+//       );
+  
+//       console.info(`Error source data:`, errorSrcData);
+//     } else {
+//       console.info(`\nUnexpected Error:`, error);
+//       console.info(`Error source data:`, errorSrcData);
+//     }
+//   }
+// }
+
+async function testGetExchangeInfo() {
   try {
-    const data = await getPrevDayData();
-    const result = data.filter(ticker => ticker.symbol.endsWith('BNB'));
+    const data = await getExchangeInfo();
+    const result = data;
     
     // const result = await  getBalances();
     // const result = data.map(balance)
@@ -43,7 +63,7 @@ async function test() {
     // const result = await marketSell({ tickerName: "FTMUSDT", amount: 3.996});
 
     // console.info(result);
-    console.info(result.length);
+    console.info(result);
   } catch (error) {
     const { statusCode, statusMessage, body, type, errorSrcData } = error;
   
@@ -144,3 +164,67 @@ async function test() {
 
 //   return tickerPrice;
 // }
+
+// async function getPrevDayData() {
+//   try {
+//     const data = await binance.prevDay(false);
+
+//     console.info((data[0].closeTime - data[0].openTime) / 1000 / 60 / 60, 'hours');
+
+//     return data;
+//   } catch (error) {
+//     throw { type: "Get Prev Day Data", ...error, errorSrcData: error };
+//   }
+// }
+
+async function getExchangeInfo(tickerName) {
+  try {
+    await delay(250);
+
+    const data = await binance.exchangeInfo();
+    console.info("\n");
+    // console.info("Exchange info:", data);
+
+    const limits = {};
+
+    for (let obj of data.symbols) {
+      let filters = { status: obj.status };
+
+      for (let filter of obj.filters) {
+        if (filter.filterType == "MIN_NOTIONAL") {
+          filters.minNotional = filter.minNotional;
+        } else if (filter.filterType == "PRICE_FILTER") {
+          filters.minPrice = filter.minPrice;
+          filters.maxPrice = filter.maxPrice;
+          filters.tickSize = filter.tickSize;
+        } else if (filter.filterType == "LOT_SIZE") {
+          filters.stepSize = filter.stepSize;
+          filters.minQty = filter.minQty;
+          filters.maxQty = filter.maxQty;
+        }
+      }
+
+      //filters.baseAssetPrecision = obj.baseAssetPrecision;
+      //filters.quoteAssetPrecision = obj.quoteAssetPrecision;
+      filters.orderTypes = obj.orderTypes;
+      filters.icebergAllowed = obj.icebergAllowed;
+      limits[obj.symbol] = filters;
+    }
+
+    const tickerLimits = limits[tickerName];
+    const minOrderQuantity = parseFloat(tickerLimits.minQty);
+    const minOrderValue = parseFloat(tickerLimits.minNotional);
+    const stepSize = tickerLimits.stepSize;
+
+    // console.info('\n')
+    // console.info('tickerLimits:', tickerLimits)
+
+    return {
+      minOrderQuantity,
+      minOrderValue,
+      stepSize,
+    };
+  } catch (error) {
+    throw { type: "Get Exchange Info", ...error, errorSrcData: error };
+  }
+}

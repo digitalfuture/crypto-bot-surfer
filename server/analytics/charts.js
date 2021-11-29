@@ -6,7 +6,6 @@ export async function prepareChartData({
   primarySymbol,
   secondarySymbol,
   interval,
-  periods,
   priceChangePercent,
 }) {
   const tickerName = primarySymbol + secondarySymbol;
@@ -14,7 +13,7 @@ export async function prepareChartData({
   const candlestickData = await getCandlestickData({
     tickerName,
     interval,
-    periods,
+    periods: 45,
   });
 
   const xyData = candlestickData.map(([time, close]) => [

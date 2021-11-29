@@ -14,20 +14,21 @@ import { getTradeSignals } from "./analytics/indicators/top-gainer.js";
 
 const secondarySymbol = process.env.SECONDARY_SYMBOL;
 const interval = process.env.HEARTBEAT_INTERVAL;
-const periods = parseInt(process.env.HISTORY_PERIODS);
 const minTradeUsdValue = parseFloat(process.env.MIN_TRADE_USD_VALUE);
 const minChangePercent = parseFloat(process.env.MIN_CHANGE_PERCENT);
 const isfixedValue = JSON.parse(process.env.USE_FIXED_TRADE_VALUE);
 const fixedValue = parseFloat(process.env.FIXED_TRADE_VALUE);
 const fixedPercent = parseFloat(process.env.FIXED_TRADE_PERCENT);
 const appMode = process.env.MODE;
+const isTestMode = JSON.parse(process.env.TEST_MODE);
+
 
 if (appMode === 'PRODUCTION') console.info = () => {}
 
 const heartbeatInterval = getHeartbeatInterval(interval);
 
 let loopCount = 1;
-let currentTickers = [];
+let currentSymbols = [];
 
 start();
 
@@ -95,12 +96,11 @@ async function getStartupBalances() {
 
     console.info("\nAccount Balances:", filteredBalances);
         
-    currentTickers = filteredBalances
+    currentSymbols = filteredBalances
       .map(balance => balance.symbol)
       .filter(symbol => symbol !== secondarySymbol)
-      .map(symbol => symbol + secondarySymbol);
     
-    console.info("\ncurrentTickers:", currentTickers);
+    console.info("\ncurrentSymbols:", currentSymbols);
     
     let message = `<b>Current account balances:</b>\n\n`;
 
@@ -174,7 +174,7 @@ async function heartBeatLoop() {
       isBuySignal,
     } = await getTradeSignals({
       secondarySymbol,
-      currentTickers,
+      currentSymbols,
       accountBalance: usdtRateTotalBalance,
       minOrderValue: isfixedValue ? fixedValue : (usdtRateTotalBalance / 100 * fixedPercent),
       minChangePercent
@@ -191,6 +191,11 @@ async function heartBeatLoop() {
       console.info("Sell condition:", isSellSignal);
       
       message += "<b>Sell signal</b>\n\n";
+      
+      if (isTestMode) {
+        console.info('Sell trade passed due test mode')
+        return
+      }
 
       const { quantity, status, srcData, result } = await marketSell({
         primarySymbol: sellPrimarySymbol,
@@ -217,11 +222,10 @@ async function heartBeatLoop() {
         primarySymbol: sellPrimarySymbol,
         secondarySymbol,
         interval: "1d",
-        periods,
         priceChangePercent: sellTickerPriceChangePercent,
       });
 
-      currentTickers.splice(currentTickers.indexOf(sellTickerName), 1);
+      currentSymbols.splice(currentSymbols.indexOf(sellPrimarySymbol), 1);
 
       const newPrimarySymbolBalance = await getSymbolBalance(sellPrimarySymbol);
       const newSecondarySymbolBalance = await getSymbolBalance(secondarySymbol);
@@ -265,6 +269,11 @@ async function heartBeatLoop() {
 
       message += `<b>Buy signal</b>\n\n`;
 
+      if (isTestMode) {
+        console.info('Buy trade passed due test mode')
+        return
+      }
+
       const primarySymbolUsdtPrice = await getLastPrice(buyPrimarySymbol + "USDT");
       const secondarySymbolBalance = await getSymbolBalance(secondarySymbol);
 
@@ -298,11 +307,10 @@ async function heartBeatLoop() {
         primarySymbol: buyPrimarySymbol,
         secondarySymbol,
         interval: "1d",
-        periods,
         priceChangePercent: buyTickerPriceChangePercent,
       });
 
-      currentTickers.push(buyTickerName);
+      currentSymbols.push(buyPrimarySymbol);
 
       const newPrimarySymbolBalance = await getSymbolBalance(buyPrimarySymbol);
       const newSecondarySymbolBalance = await getSymbolBalance(secondarySymbol);
@@ -372,7 +380,8 @@ async function getBalances() {
       }
     }
 
-    return balances.filter((balance) => balance.available > 0);
+    return balances.filter((balance) => balance.available > 0)
+      .sort((a, b) => b.usdtRate - a.usdtRate);
   } catch (error) {
     throw { type: "Get Balances Error", ...error, errorSrcData: error };
   }
