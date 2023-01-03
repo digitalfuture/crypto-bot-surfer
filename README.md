@@ -1,11 +1,21 @@
-# **crypto bot-2** automatic trading system for Binance Crypto exchange
+# **Next Gen Bot** automatic trading system for Binance Crypto exchange
 
-### Be sure you have [Node.js](https://nodejs.org/) installed.
-### Tested with version 14
+## Prerequisites
 
-### Set up environment variables in your system or by creating `.env` file with example config:
+Be sure you have [Node.js](https://nodejs.org/) installed.
 
-```
+Tested with version 14
+
+### Binance API
+
+Set Binance API keys on [Binance](https://binance.com/) web site
+
+### Environment
+
+Set up environment variables in your system or by creating `.env` file with
+example config:
+
+```env
 TEST_MODE=true
 
 HEARTBEAT_INTERVAL=5m
@@ -28,13 +38,24 @@ TELEGRAM_CHANNEL_ID=
 MODE=DEVELOPMENT
 ```
 
-Available trading intervals: 1s, 3s, 5s, 15s, 30s, 1m, 3m, 5m, 15m, 30m, 1h, 2h, 4h, 6h, 8h, 12h, 1d, 3d, 1w, 1M
+Available trading intervals: 1s, 3s, 5s, 15s, 30s, 1m, 3m, 5m, 15m, 30m, 1h, 2h,
+4h, 6h, 8h, 12h, 1d, 3d, 1w, 1M
 
-### Set Binance API keys
+### Telegram
 
-### Set Telegram access token of your Telegram bot and channel ID where bot will post report messages
+Set up Telegram access token of your Telegram bot and channel ID where bot will
+post report messages
 
-### In Ubuntu system install required libs:
+To get Telegram Channel ID for private channel, send message to the channel,
+then copy message link, cut channel id from the link string and prefix it witn
+"-100":
+
+For example, if message link is https://t.me/c/1345063785/244 then Channel ID
+will be -1001345063785
+
+### Linux setup
+
+In Ubuntu system install required libs
 
 ```bash
 sudo apt update
@@ -42,19 +63,23 @@ sudo apt install fontconfig libpixman-1-dev libcairo2-dev libpango1.0-dev libjpe
 sudo apt-get install ntp
 ```
 
-### Install `pm2` package globally:
+### Process manager
+
+Install `pm2` package globally
 
 ```bash
 sudo npm i pm2 pm2-logrotate -g
 ```
 
-### Start the app:
+### Start dev server
 
 ```bash
-npm start
+npm run start
 ```
 
-### Add process to system startup:
+### Startup
+
+Add process to system startup
 
 ```bash
 pm2 set pm2-logrotate:max_size 1M
@@ -62,11 +87,7 @@ pm2 startup
 pm2 save
 ```
 
-The others scripts that possible to run (like a logs, upgrade ets.) you can find in the ```package.json``` file.
-
-To get Telegram Channel ID for private channel, send message to the channel, then copy message link, cut channel id from the link string and prefix it witn "-100":
-
-For example, if message link is https://t.me/c/1345063785/244
-then Channel ID will be -1001345063785
+The others scripts that possible to run (like a logs, upgrade ets.) you can find
+in the `package.json` file.
 
 Lucky trading =)
