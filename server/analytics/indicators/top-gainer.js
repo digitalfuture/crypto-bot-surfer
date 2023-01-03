@@ -1,6 +1,12 @@
 import { getPrevDayData } from "../../api/binance/info.js";
 
-export async function getTradeSignals({ secondarySymbol, currentSymbols, accountBalance, minOrderValue, minChangePercent }) {
+export async function getTradeSignals({
+  secondarySymbol,
+  currentSymbols,
+  // accountBalance,
+  // minOrderValue,
+  minChangePercent,
+}) {
   try {
     const prevDayData = await getPrevDayData();
 
@@ -17,13 +23,15 @@ export async function getTradeSignals({ secondarySymbol, currentSymbols, account
         closeTime,
       })
     );
-    
+
     const filteredList = mappedList
       .filter(({ tickerName }) => tickerName.endsWith(secondarySymbol))
       .filter(({ primarySymbol }) => !primarySymbol.endsWith("DOWN"))
       .filter(({ primarySymbol }) => !primarySymbol.endsWith("UP"))
-      .filter(({ priceChangePercent }) => priceChangePercent >= minChangePercent)
-      .sort((a, b) => b.priceChangePercent - a.priceChangePercent)
+      .filter(
+        ({ priceChangePercent }) => priceChangePercent >= minChangePercent
+      )
+      .sort((a, b) => b.priceChangePercent - a.priceChangePercent);
 
     const topSymbolList = filteredList.map((ticker) => ticker.primarySymbol);
 
@@ -47,16 +55,16 @@ export async function getTradeSignals({ secondarySymbol, currentSymbols, account
     // console.info("\n\nbestGainer:", bestGainer);
 
     const isBuySignal = !!bestGainer;
-    console.info("\nisBuySignal:", isBuySignal);
+    // console.info("\nisBuySignal:", isBuySignal);
 
-    const buyPrimarySymbol = tickersToBuy[0]?.primarySymbol
-    console.info("buyPrimarySymbol:", buyPrimarySymbol);
-    
-    const buyTickerName = tickersToBuy[0]?.tickerName
-    console.info("buyTickerName:", buyTickerName);
+    const buyPrimarySymbol = tickersToBuy[0]?.primarySymbol;
+    // console.info("buyPrimarySymbol:", buyPrimarySymbol);
+
+    const buyTickerName = tickersToBuy[0]?.tickerName;
+    // console.info("buyTickerName:", buyTickerName);
 
     const buyPrice = tickersToBuy[0] && parseFloat(tickersToBuy[0].lastPrice);
-    console.info("buyPrice:", buyPrice);
+    // console.info("buyPrice:", buyPrice);
 
     // Sell signals
     const tickersToSell = [];
@@ -65,28 +73,31 @@ export async function getTradeSignals({ secondarySymbol, currentSymbols, account
       if (topSymbolList.includes(symbol)) continue;
 
       // const currentSymbolPrevDayData = await getPrevDayData(tickerName);
-      const currentSymbol = mappedList.find(({ primarySymbol }) => primarySymbol === symbol);
+      const currentSymbol = mappedList.find(
+        ({ primarySymbol }) => primarySymbol === symbol
+      );
 
       tickersToSell.push(currentSymbol);
     }
 
     const isSellSignal = tickersToSell.length > 0;
-    console.info("\nisSellSignal:", isSellSignal);
+    // console.info("\nisSellSignal:", isSellSignal);
 
-    const sellPrimarySymbol = tickersToSell[0]?.primarySymbol
-    console.info("sellPrimarySymbol", sellPrimarySymbol);
+    const sellPrimarySymbol = tickersToSell[0]?.primarySymbol;
+    // console.info("sellPrimarySymbol", sellPrimarySymbol);
 
-    const sellTickerName = tickersToSell[0]?.tickerName
-    console.info("sellTickerName:", sellTickerName);
+    const sellTickerName = tickersToSell[0]?.tickerName;
+    // console.info("sellTickerName:", sellTickerName);
 
-    const sellPrice = tickersToSell[0] && parseFloat(tickersToSell[0].lastPrice);
-    console.info("sellPrice:", sellPrice);
+    const sellPrice =
+      tickersToSell[0] && parseFloat(tickersToSell[0].lastPrice);
+    // console.info("sellPrice:", sellPrice);
 
     const buyTickerPriceChangePercent = tickersToBuy[0]?.priceChangePercent;
-    console.info("buyTickerPriceChangePercent:", buyTickerPriceChangePercent);
+    // console.info("\nbuyTickerPriceChangePercent:", buyTickerPriceChangePercent);
 
     const sellTickerPriceChangePercent = tickersToSell[0]?.priceChangePercent;
-    console.info("sellTickerPriceChangePercent:", sellTickerPriceChangePercent);
+    // console.info("sellTickerPriceChangePercent:", sellTickerPriceChangePercent);
 
     const result = {
       sellPrimarySymbol,
@@ -100,16 +111,22 @@ export async function getTradeSignals({ secondarySymbol, currentSymbols, account
       isBuySignal,
       isSellSignal,
     };
-    
-    console.info("\naccountBalance", accountBalance);
-    console.info("\nminOrderValue", minOrderValue);
 
-    console.info("\ntopSymbolList", topSymbolList);
-    console.info("\ncurrentSymbols", currentSymbols);
-    console.info("\ntickersToBuy:", tickersToBuy.map(ticker => ticker.tickerName));
-    console.info("\ntickersToSell:", tickersToSell.map(ticker => ticker.tickerName));
+    // console.info("\naccountBalance", accountBalance);
+    // console.info("\nminOrderValue", minOrderValue);
 
-    console.info("\nresult:", result);
+    // console.info("\ntopSymbolList", topSymbolList);
+    // console.info("\ncurrentSymbols", currentSymbols);
+    // console.info(
+    //   "\ntickersToBuy:",
+    //   tickersToBuy.map((ticker) => ticker.tickerName)
+    // );
+    // console.info(
+    //   "\ntickersToSell:",
+    //   tickersToSell.map((ticker) => ticker.tickerName)
+    // );
+
+    console.info("\nCheck signals result:", result);
 
     return result;
   } catch (error) {

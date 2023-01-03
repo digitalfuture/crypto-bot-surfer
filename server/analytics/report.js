@@ -40,7 +40,7 @@ function setupExit() {
 
 setupExit();
 
-export function report({ date, trade, ticker, price }) {
+export function report({ date, trade, symbol, price }) {
   Date.prototype.format = function () {
     return (
       this.getDate() +
@@ -60,5 +60,5 @@ export function report({ date, trade, ticker, price }) {
 
   const dateFormat = date.format();
 
-  csvStream.write({ date: dateFormat, trade, ticker, price });
+  csvStream.write({ date: dateFormat, trade, symbol, price });
 }
