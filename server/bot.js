@@ -6,11 +6,9 @@ import {
   getSymbolBalance,
   getAccountBalances,
 } from "./api/binance/info.js";
-import {
-  delay,
-  getHeartbeatInterval,
-} from "./helpers/functions.js";
+import { delay, getHeartbeatInterval } from "./helpers/functions.js";
 import { getTradeSignals } from "./analytics/indicators/top-gainer.js";
+import { report } from "./analytics/report.js";
 
 const secondarySymbol = process.env.SECONDARY_SYMBOL;
 const interval = process.env.HEARTBEAT_INTERVAL;
@@ -22,8 +20,7 @@ const fixedPercent = parseFloat(process.env.FIXED_TRADE_PERCENT);
 const appMode = process.env.MODE;
 const isTestMode = JSON.parse(process.env.TEST_MODE);
 
-
-if (appMode === 'PRODUCTION') console.info = () => {}
+if (appMode === "PRODUCTION") console.info = () => {};
 
 const heartbeatInterval = getHeartbeatInterval(interval);
 
@@ -36,29 +33,27 @@ async function start() {
   try {
     await startServer();
     await getStartupBalances();
-    await  startLoop();
+    await startLoop();
   } catch (error) {
     const { statusCode, statusMessage, body, type, errorSrcData } = error;
-  
+
     if (statusCode) {
       console.error(
         `\nType: ${type || ""}\nStatus message: ${statusMessage || ""}\nBody: ${
           JSON.parse(body).msg
         }`
       );
-  
+
       console.info(`Error source data:`, errorSrcData);
-  
-        await sendMessage(
-          `<b>${type || ""}:</b>\n${JSON.parse(body).msg}`
-        );
+
+      await sendMessage(`<b>${type || ""}:</b>\n${JSON.parse(body).msg}`);
     } else {
       console.info(`\nUnexpected Error:`, error);
       console.info(`Error source data:`, errorSrcData);
-  
-        await sendMessage(
-          `<b>Unexpected Error:</b> Look at the server logs for details`
-        );
+
+      await sendMessage(
+        `<b>Unexpected Error:</b> Look at the server logs for details`
+      );
     }
   }
 }
@@ -69,8 +64,9 @@ async function startServer() {
     console.info(`${secondarySymbol} Surfer Bot started`);
     console.info("Interval:", interval);
 
-    const intervalString =
-      interval.endsWith('s') ? heartbeatInterval / 1000 + "s" : heartbeatInterval / 1000 / 60 + "m";
+    const intervalString = interval.endsWith("s")
+      ? heartbeatInterval / 1000 + "s"
+      : heartbeatInterval / 1000 / 60 + "m";
 
     console.info("Heartbeat interval:", intervalString);
 
@@ -79,7 +75,6 @@ async function startServer() {
     startMessage += `<b>Hearbeat interval:</b> ${intervalString}\n`;
 
     await sendMessage(startMessage);
-      
   } catch (error) {
     throw { type: "Start Server Error", ...error, errorSrcData: error };
   }
@@ -95,24 +90,26 @@ async function getStartupBalances() {
     });
 
     console.info("\nAccount Balances:", filteredBalances);
-        
+
     currentSymbols = filteredBalances
-      .map(balance => balance.symbol)
-      .filter(symbol => symbol !== secondarySymbol)
-    
+      .map((balance) => balance.symbol)
+      .filter((symbol) => symbol !== secondarySymbol);
+
     console.info("\ncurrentSymbols:", currentSymbols);
-    
+
     let message = `<b>Current account balances:</b>\n\n`;
 
     let sum = 0;
 
     for (const balance of balances) {
       sum += balance.usdtRate;
-      message += `<b>${ balance.available} ${balance.symbol}</b> = ${balance.usdtRate.toFixed(2)} USDT \n`
+      message += `<b>${balance.available} ${
+        balance.symbol
+      }</b> = ${balance.usdtRate.toFixed(2)} USDT \n`;
     }
 
-    message += `\n<b>USDT rate total balance:</b> ${sum.toFixed(2)} USDT \n`
-    
+    message += `\n<b>USDT rate total balance:</b> ${sum.toFixed(2)} USDT \n`;
+
     await sendMessage(message);
   } catch (error) {
     throw { type: "Get Startup Balances Error", ...error, errorSrcData: error };
@@ -125,9 +122,9 @@ async function startLoop() {
       console.info("\n");
       console.info("-----------------------------------------------------");
       console.info("Start loop:", loopCount);
-      
-      if (appMode === 'DEVELOPMENT') console.time("Loop Time");
-      
+
+      if (appMode === "DEVELOPMENT") console.time("Loop Time");
+
       console.info("-----------------------------------------------------");
 
       await heartBeatLoop();
@@ -136,8 +133,8 @@ async function startLoop() {
       console.info("-----------------------------------------------------");
       console.info("Loop end:", loopCount);
 
-      if (appMode === 'DEVELOPMENT')  console.timeEnd("Loop Time");
-      
+      if (appMode === "DEVELOPMENT") console.timeEnd("Loop Time");
+
       console.info("-----------------------------------------------------");
       console.info("\n");
 
@@ -157,7 +154,7 @@ async function heartBeatLoop() {
     const accountBalances = await getBalances();
 
     const usdtRateTotalBalance = accountBalances.reduce((sum, balance) => {
-      sum += balance.usdtRate
+      sum += balance.usdtRate;
       return sum;
     }, 0);
 
@@ -176,8 +173,10 @@ async function heartBeatLoop() {
       secondarySymbol,
       currentSymbols,
       accountBalance: usdtRateTotalBalance,
-      minOrderValue: isfixedValue ? fixedValue : (usdtRateTotalBalance / 100 * fixedPercent),
-      minChangePercent
+      minOrderValue: isfixedValue
+        ? fixedValue
+        : (usdtRateTotalBalance / 100) * fixedPercent,
+      minChangePercent,
     });
 
     const secondarySymbolUsdtPrice =
@@ -185,16 +184,24 @@ async function heartBeatLoop() {
         ? 1
         : await getLastPrice(secondarySymbol + "USDT");
 
-    if (isSellSignal) {      
+    if (isSellSignal) {
       console.info("\n");
       console.info("\n\nCheck", sellTickerName);
       console.info("Sell condition:", isSellSignal);
-      
+
       message += "<b>Sell signal</b>\n\n";
-      
+
       if (isTestMode) {
-        console.info('Sell trade passed due test mode')
-        return
+        console.info("Sell trade passed due test mode");
+
+        report({
+          date: new Date(),
+          trade: "SELL",
+          ticker: sellTickerName,
+          price: sellPrice,
+        });
+
+        return;
       }
 
       const { quantity, status, srcData, result } = await marketSell({
@@ -229,12 +236,14 @@ async function heartBeatLoop() {
 
       const newPrimarySymbolBalance = await getSymbolBalance(sellPrimarySymbol);
       const newSecondarySymbolBalance = await getSymbolBalance(secondarySymbol);
-      const primarySymbolUsdtPrice = await getLastPrice(sellPrimarySymbol + "USDT");
+      const primarySymbolUsdtPrice = await getLastPrice(
+        sellPrimarySymbol + "USDT"
+      );
 
       const accountBalances = await getBalances();
-      
-      console.info('accountBalance:', accountBalances);
-      
+
+      console.info("accountBalance:", accountBalances);
+
       const usdtRateTotalBalance = accountBalances.reduce((sum, balance) => {
         sum += balance.usdtRate;
         return sum;
@@ -246,7 +255,9 @@ async function heartBeatLoop() {
       console.info(`${sellPrimarySymbol} price: ${primarySymbolUsdtPrice}`);
       console.info(`${secondarySymbol} price: ${secondarySymbolUsdtPrice}`);
 
-      console.info(`USDT rate total balance: ${(usdtRateTotalBalance).toFixed(2)}`);
+      console.info(
+        `USDT rate total balance: ${usdtRateTotalBalance.toFixed(2)}`
+      );
 
       message += `<b>${sellPrimarySymbol} price</b>: ${parseFloat(
         sellPrice
@@ -256,12 +267,14 @@ async function heartBeatLoop() {
         newPrimarySymbolBalance
       )}\n`;
       message += `<b>${secondarySymbol} balance</b>: ${newSecondarySymbolBalance}\n\n`;
-      message += `<b>USDT rate total balance</b>: ${(usdtRateTotalBalance).toFixed(2)}`;
+      message += `<b>USDT rate total balance</b>: ${usdtRateTotalBalance.toFixed(
+        2
+      )}`;
 
       console.info("Trade completed");
 
-        await sendImage(chart);
-        await sendMessage(message);
+      await sendImage(chart);
+      await sendMessage(message);
     } else if (isBuySignal) {
       console.info("\n");
       console.info("\n\nCheck", buyTickerName);
@@ -270,18 +283,28 @@ async function heartBeatLoop() {
       message += `<b>Buy signal</b>\n\n`;
 
       if (isTestMode) {
-        console.info('Buy trade passed due test mode')
-        return
+        console.info("Buy trade passed due test mode");
+
+        report({
+          date: new Date(),
+          trade: "BUY",
+          ticker: sellTickerName,
+          price: buyPrice,
+        });
+
+        return;
       }
 
-      const primarySymbolUsdtPrice = await getLastPrice(buyPrimarySymbol + "USDT");
+      const primarySymbolUsdtPrice = await getLastPrice(
+        buyPrimarySymbol + "USDT"
+      );
       const secondarySymbolBalance = await getSymbolBalance(secondarySymbol);
 
       const { quantity, status, srcData, result } = await marketBuy({
         primarySymbol: buyPrimarySymbol,
         secondarySymbol,
         tickerName: buyTickerName,
-        secondarySymbolBalance
+        secondarySymbolBalance,
       });
 
       console.info("\n");
@@ -317,10 +340,10 @@ async function heartBeatLoop() {
 
       const accountBalances = await getBalances();
 
-      console.info('accountBalances:', accountBalances);
-      
+      console.info("accountBalances:", accountBalances);
+
       const usdtRateTotalBalance = accountBalances.reduce((sum, balance) => {
-        sum += balance.usdtRate
+        sum += balance.usdtRate;
         return sum;
       }, 0);
 
@@ -342,7 +365,9 @@ async function heartBeatLoop() {
       message += `<b>${secondarySymbol} balance</b>: ${parseFloat(
         newSecondarySymbolBalance
       )}\n\n`;
-      message += `<b>USDT rate total balance</b>: ${(usdtRateTotalBalance).toFixed(2)}`;
+      message += `<b>USDT rate total balance</b>: ${usdtRateTotalBalance.toFixed(
+        2
+      )}`;
 
       console.info("Trade completed");
 
@@ -366,21 +391,22 @@ async function getBalances() {
 
       const { symbol, available } = balance;
 
-      if (symbol === 'USDT') {
+      if (symbol === "USDT") {
         const usdtRate = available;
 
         balances.push({ symbol, available, usdtRate });
       } else {
-        const lastPrice = await getLastPrice(symbol + 'USDT');
-        const usdtRate = available * lastPrice
+        const lastPrice = await getLastPrice(symbol + "USDT");
+        const usdtRate = available * lastPrice;
 
-        if (isNaN(usdtRate)) continue
+        if (isNaN(usdtRate)) continue;
 
         balances.push({ symbol, available, usdtRate });
       }
     }
 
-    return balances.filter((balance) => balance.available > 0)
+    return balances
+      .filter((balance) => balance.available > 0)
       .sort((a, b) => b.usdtRate - a.usdtRate);
   } catch (error) {
     throw { type: "Get Balances Error", ...error, errorSrcData: error };
