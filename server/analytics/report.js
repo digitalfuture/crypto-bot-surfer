@@ -40,6 +40,9 @@ function setupExit() {
 
 setupExit();
 
+let sumPercent = 0;
+let lastPrice;
+
 export function report({ date, trade, symbol, price }) {
   Date.prototype.format = function () {
     return (
@@ -50,15 +53,44 @@ export function report({ date, trade, symbol, price }) {
       "-" +
       this.getFullYear() +
       " " +
-      this.getHours() +
+      this.getHours().toString().padStart(2, 0) +
       ":" +
-      this.getMinutes() +
+      this.getMinutes().toString().padStart(2, 0) +
       ":" +
-      this.getSeconds()
+      this.getSeconds().toString().padStart(2, 0)
     );
   };
 
   const dateFormat = date.format();
 
-  csvStream.write({ date: dateFormat, trade, symbol, price });
+  const onePercent = lastPrice ? lastPrice / 100 : price;
+
+  if (trade === "SELL") {
+    const percentChange = +(
+      (price - (lastPrice ? lastPrice : price)) /
+      onePercent
+    ).toFixed(2);
+
+    sumPercent = +(sumPercent + percentChange).toFixed(2);
+
+    csvStream.write({
+      date: dateFormat,
+      trade,
+      symbol,
+      price,
+      percentChange,
+      sumPercent,
+    });
+  } else {
+    csvStream.write({
+      date: dateFormat,
+      trade,
+      symbol,
+      price,
+      percentChange: 0,
+      sumPercent,
+    });
+  }
+
+  lastPrice = price;
 }
