@@ -8,9 +8,7 @@ export async function getTradeSignals({
 }) {
   try {
     const tradingTickers = await getTradingTickers();
-
     // console.info("tradingTickers:", tradingTickers);
-    // console.info("tradingSymbols:", tradingSymbols);
 
     const topListData = await getPrevDayData();
     // console.info("topListData:", topListData);

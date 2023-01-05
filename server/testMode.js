@@ -170,6 +170,7 @@ async function heartBeatLoop() {
         trade: "SELL",
         symbol: sellPrimarySymbol,
         price: sellPrice,
+        priceChangePercent: buyTickerPriceChangePercent,
       });
 
       await sendImage(chart);
@@ -222,6 +223,7 @@ async function heartBeatLoop() {
         trade: "BUY",
         symbol: buyPrimarySymbol,
         price: buyPrice,
+        priceChangePercent: buyTickerPriceChangePercent,
       });
 
       await sendImage(chart);

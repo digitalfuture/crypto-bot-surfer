@@ -40,10 +40,10 @@ function setupExit() {
 
 setupExit();
 
-let sumPercent = 0;
+let profitTotal = 0;
 let lastPrice;
 
-export function report({ date, trade, symbol, price }) {
+export function report({ date, trade, symbol, price, priceChangePercent }) {
   Date.prototype.format = function () {
     return (
       this.getDate() +
@@ -66,20 +66,21 @@ export function report({ date, trade, symbol, price }) {
   const onePercent = lastPrice ? lastPrice / 100 : price;
 
   if (trade === "SELL") {
-    const percentChange = +(
+    const profitPercent = +(
       (price - (lastPrice ? lastPrice : price)) /
       onePercent
     ).toFixed(2);
 
-    sumPercent = +(sumPercent + percentChange).toFixed(2);
+    profitTotal = +(profitTotal + profitPercent).toFixed(2);
 
     csvStream.write({
       date: dateFormat,
       trade,
       symbol,
       price,
-      percentChange,
-      sumPercent,
+      "price change %": priceChangePercent,
+      "profit %": profitPercent,
+      "profit total %": profitTotal,
     });
   } else {
     csvStream.write({
@@ -87,8 +88,9 @@ export function report({ date, trade, symbol, price }) {
       trade,
       symbol,
       price,
-      percentChange: 0,
-      sumPercent,
+      "price change %": priceChangePercent,
+      "profit %": 0,
+      "profit total %": profitTotal,
     });
   }
 

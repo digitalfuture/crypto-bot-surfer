@@ -119,3 +119,7 @@ dist
 
 # Backtest
 report/
+
+# Archives
+.zip
+.rar
