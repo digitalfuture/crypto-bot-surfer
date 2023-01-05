@@ -1,4 +1,4 @@
-import { getPrevDayData } from "../../api/binance/info.js";
+import { getPrevDayData, getTradingTickers } from "../../api/binance/info.js";
 
 export async function getTradeSignals({
   secondarySymbol,
@@ -7,8 +7,12 @@ export async function getTradeSignals({
   lastTrade,
 }) {
   try {
-    const prevDayData = await getPrevDayData();
+    const tradingTickers = await getTradingTickers();
 
+    // console.info("tradingTickers:", tradingTickers);
+    // console.info("tradingSymbols:", tradingSymbols);
+
+    const prevDayData = await getPrevDayData();
     // console.info("prevDayData:", prevDayData);
 
     const mappedList = prevDayData.map(
@@ -28,6 +32,9 @@ export async function getTradeSignals({
       .filter(({ primarySymbol }) => !primarySymbol.endsWith("DOWN"))
       .filter(({ primarySymbol }) => !primarySymbol.endsWith("UP"))
       .filter(({ primarySymbol }) => primarySymbol !== lastTrade.symbol)
+      .filter(({ primarySymbol }) =>
+        tradingTickers.includes(primarySymbol + secondarySymbol)
+      )
       .filter(
         ({ priceChangePercent }) => priceChangePercent >= minChangePercent
       )

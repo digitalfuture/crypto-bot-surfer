@@ -13,7 +13,8 @@
     "node": "node --trace-warnings -r dotenv/config ./server/bot.js",
     "stop": "pm2 delete crypto-bot-surfer",
     "upgrade": "npm run upgrade:git && npm install",
-    "upgrade:git": "git reset --hard HEAD && git pull"
+    "upgrade:git": "git reset --hard HEAD && git pull",
+    "test:api": "node --inspect -r dotenv/config test-api.js"
   },
   "dependencies": {
     "chart.js": "^2.9.4",

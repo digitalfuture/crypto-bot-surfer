@@ -53,6 +53,26 @@ export async function getExchangeInfo(tickerName) {
   }
 }
 
+export async function getTradingTickers() {
+  try {
+    await delay(250);
+
+    const data = await binance.exchangeInfo();
+    console.info("\n");
+    // console.info("Exchange info:", data);
+
+    const tickerList = data.symbols
+      .filter((ticker) => ticker.status === "TRADING")
+      .map((ticker) => ticker.symbol);
+
+    // console.log("tickerList.", tickerList);
+
+    return tickerList;
+  } catch (error) {
+    throw { type: "Get Exchange Info", ...error, errorSrcData: error };
+  }
+}
+
 export async function getLastPrice(tickerName) {
   try {
     await delay(250);
@@ -67,33 +87,33 @@ export async function getLastPrice(tickerName) {
 }
 
 export async function getPrevDayData(tickerName) {
-// prevDayData
-//
-// [{
-//   "symbol": "ETHBTC",
-//   "priceChange": "0.00018800",
-//   "priceChangePercent": "0.295",
-//   "weightedAvgPrice": "0.06373885",
-//   "prevClosePrice": "0.06371900",
-//   "lastPrice": "0.06390700",
-//   "lastQty": "0.03950000",
-//   "bidPrice": "0.06390200",
-//   "bidQty": "1.92630000",
-//   "askPrice": "0.06390300",
-//   "askQty": "7.50000000",
-//   "openPrice": "0.06371900",
-//   "highPrice": "0.06452400",
-//   "lowPrice": "0.06262600",
-//   "volume": "99264.72340000",
-//   "quoteVolume": "6327.01966104",
-//   "openTime": 1634376118872,
-//   "closeTime": 1634462518872,
-//   "firstId": 302652048,
-//   "lastId": 302837936,
-//   "count": 185889
-// },
-// ...
-// ],
+  // prevDayData
+  //
+  // [{
+  //   "symbol": "ETHBTC",
+  //   "priceChange": "0.00018800",
+  //   "priceChangePercent": "0.295",
+  //   "weightedAvgPrice": "0.06373885",
+  //   "prevClosePrice": "0.06371900",
+  //   "lastPrice": "0.06390700",
+  //   "lastQty": "0.03950000",
+  //   "bidPrice": "0.06390200",
+  //   "bidQty": "1.92630000",
+  //   "askPrice": "0.06390300",
+  //   "askQty": "7.50000000",
+  //   "openPrice": "0.06371900",
+  //   "highPrice": "0.06452400",
+  //   "lowPrice": "0.06262600",
+  //   "volume": "99264.72340000",
+  //   "quoteVolume": "6327.01966104",
+  //   "openTime": 1634376118872,
+  //   "closeTime": 1634462518872,
+  //   "firstId": 302652048,
+  //   "lastId": 302837936,
+  //   "count": 185889
+  // },
+  // ...
+  // ],
 
   try {
     await delay(250);
@@ -203,7 +223,7 @@ export async function getAccountBalances() {
       });
     }
 
-    return result
+    return result;
   } catch (error) {
     throw { type: "Get Account Balances Error", ...error, errorSrcData: error };
   }
