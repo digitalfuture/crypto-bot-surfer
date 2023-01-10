@@ -1,10 +1,11 @@
-import { sendMessage, sendImage } from "./api/telegram/telegram.js";
-import { prepareChartData } from "./analytics/charts.js";
+import { sendMessage } from "./api/telegram/telegram.js";
+// import { sendImage } from "./api/telegram/telegram.js";
+// import { prepareChartData } from "./analytics/charts.js";
 import { getLastPrice } from "./api/binance/info.js";
 import { delay, getHeartbeatInterval } from "./helpers/functions.js";
-import { getTradeSignals } from "./analytics/indicators/bottom-gainer-test.js";
-// import { getTradeSignals } from "./analytics/indicators/top-gainer-test.js";
+import { getTradeSignals } from "./analytics/indicators/bottom-gainer-trailing-stop-list.js";
 import { report } from "./analytics/report.js";
+import util from "node:util";
 
 const secondarySymbol = process.env.SECONDARY_SYMBOL;
 const interval = process.env.HEARTBEAT_INTERVAL;
@@ -20,8 +21,11 @@ let loopCount = 1;
 
 const balancesInit = [{ symbol: secondarySymbol, available: 100, usdtRate: 1 }];
 let balances = balancesInit;
-let currentSymbols = [];
-let lastTrade = { symbol: "USDT", price: 1 };
+let currentSymbol = null;
+let lastTrade = { symbol: secondarySymbol, price: 1 };
+let lastCheck = { symbol: secondarySymbol, price: 1 };
+const usedSymbols = [];
+const usedSymbolsLength = 5;
 
 export default async function start() {
   console.log("\nTEST mode is active");
@@ -39,12 +43,33 @@ export default async function start() {
         }`
       );
 
-      console.info(`Error source data:`, errorSrcData);
+      console.info(
+        `Error source data:`,
+        util.inspect(errorSrcData, {
+          showHidden: false,
+          depth: null,
+          colors: true,
+        })
+      );
 
       await sendMessage(`<b>${type || ""}:</b>\n${JSON.parse(body).msg}`);
     } else {
-      console.info(`\nUnexpected Error:`, error);
-      console.info(`Error source data:`, errorSrcData);
+      console.info(
+        `\nUnexpected Error:`,
+        util.inspect(error, {
+          showHidden: false,
+          depth: null,
+          colors: true,
+        })
+      );
+      console.info(
+        `Error source data:`,
+        util.inspect(errorSrcData, {
+          showHidden: false,
+          depth: null,
+          colors: true,
+        })
+      );
 
       await sendMessage(
         `<b>Unexpected Error:</b> Look at the server logs for details`
@@ -122,40 +147,49 @@ async function heartBeatLoop() {
       buyPrimarySymbol,
       sellPrice,
       buyPrice,
-      sellTickerPriceChangePercent,
+      // sellTickerPriceChangePercent,
       buyTickerPriceChangePercent,
       isSellSignal,
       isBuySignal,
     } = await getTradeSignals({
       secondarySymbol,
-      currentSymbols: currentSymbols,
+      currentSymbol,
       accountBalance: usdtRateTotalBalance,
       minOrderValue: isfixedValue
         ? fixedValue
         : (usdtRateTotalBalance / 100) * fixedPercent,
       minChangePercent,
       lastTrade,
+      lastCheck,
+      usedSymbols,
     });
 
-    console.info("\n\nAccount balances:", balances);
+    console.info("\n\nCurrent symbol:", currentSymbol);
 
-    if (isSellSignal && currentSymbols.length > 0) {
+    if (isSellSignal && currentSymbol) {
       console.info("\n");
       console.info("Sell condition:", true);
 
+      if (usedSymbols.length === usedSymbolsLength) {
+        usedSymbols.shift();
+      } else if (currentSymbol) {
+        usedSymbols.push(currentSymbol);
+      }
+
+      console.log("\nusedSymbols:", usedSymbols);
+
       const newPrimarySymbolBalance = 0;
 
-      currentSymbols = [];
       balances = balancesInit;
+      currentSymbol = null;
+      lastCheck = { symbol: secondarySymbol, price: 1 };
 
-      const chart = await prepareChartData({
-        primarySymbol: sellPrimarySymbol,
-        secondarySymbol,
-        interval: "1d",
-        priceChangePercent: sellTickerPriceChangePercent,
-      });
-
-      console.info("\n\nNew account balances:", balances);
+      // const chart = await prepareChartData({
+      //   primarySymbol: sellPrimarySymbol,
+      //   secondarySymbol,
+      //   interval: "1d",
+      //   priceChangePercent: sellTickerPriceChangePercent,
+      // });
 
       message += `<b>${sellPrimarySymbol} price</b>: ${parseFloat(
         sellPrice
@@ -173,9 +207,9 @@ async function heartBeatLoop() {
         priceChangePercent: buyTickerPriceChangePercent,
       });
 
-      await sendImage(chart);
+      // await sendImage(chart);
       await sendMessage(message);
-    } else if (isBuySignal && currentSymbols.length === 0) {
+    } else if (isBuySignal && !currentSymbol) {
       console.info("\n");
       console.info("Buy condition:", true);
 
@@ -183,12 +217,12 @@ async function heartBeatLoop() {
         buyPrimarySymbol + "USDT"
       );
 
-      const chart = await prepareChartData({
-        primarySymbol: buyPrimarySymbol,
-        secondarySymbol,
-        interval: "1d",
-        priceChangePercent: buyTickerPriceChangePercent,
-      });
+      // const chart = await prepareChartData({
+      //   primarySymbol: buyPrimarySymbol,
+      //   secondarySymbol,
+      //   interval: "1d",
+      //   priceChangePercent: buyTickerPriceChangePercent,
+      // });
 
       const newPrimarySymbolBalance = 1;
 
@@ -205,10 +239,11 @@ async function heartBeatLoop() {
         },
       ];
 
-      currentSymbols = [buyPrimarySymbol];
+      currentSymbol = buyPrimarySymbol;
       lastTrade = { symbol: buyPrimarySymbol, price: buyPrice };
+      lastCheck = lastTrade;
 
-      console.info("\n\nNew account balances:", balances);
+      console.info("\n\nNew current symbol:", currentSymbol);
 
       message += `<b>${buyPrimarySymbol} price</b>: ${parseFloat(
         buyPrice
@@ -226,11 +261,13 @@ async function heartBeatLoop() {
         priceChangePercent: buyTickerPriceChangePercent,
       });
 
-      await sendImage(chart);
+      // await sendImage(chart);
       await sendMessage(message);
     } else {
-      message += "<b>No trade signals</b>";
+      lastCheck = { symbol: sellPrimarySymbol, price: sellPrice };
     }
+
+    console.info("\nlastCheck:", lastCheck);
   } catch (error) {
     throw { type: "Heartbeat Loop Error", ...error, errorSrcData: error };
   }

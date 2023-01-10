@@ -1,4 +1,10 @@
+import {
+  getExchangeInfo,
+  // getPrevDayData,
+  // getTradingTickers,
+} from "./server/api/binance/info.js";
 import Binance from "node-binance-api";
+import util from "node:util";
 
 export const binance = new Binance().options({
   APIKEY: process.env.BINANCE_APIKEY,
@@ -9,24 +15,45 @@ export const binance = new Binance().options({
   useServerTime: true,
 });
 
-try {
-  getExchangeInfo("BNBUSDT");
-  // testGetPrevDayData();
-  // marketBuy("MITHUSDT", 20);
-} catch (error) {
-  const { statusCode, statusMessage, body, type, errorSrcData } = error;
+test();
 
-  if (statusCode) {
-    console.error(
-      `\nType: ${type || ""}\nStatus message: ${statusMessage || ""}\nBody: ${
-        JSON.parse(body).msg
-      }`
-    );
+async function test() {
+  try {
+    await getInfo("BNBUSDT");
+    // testGetPrevDayData();
+    // marketBuy("MITHUSDT", 20);
+  } catch (error) {
+    const { statusCode, statusMessage, body, type, errorSrcData } = error;
 
-    console.info(`Error source data:`, errorSrcData);
-  } else {
-    console.info(`\nUnexpected Error:`, error);
-    console.info(`Error source data:`, errorSrcData);
+    if (statusCode) {
+      console.error(
+        `\nType: ${type || ""}\nStatus message: ${statusMessage || ""}\nBody: ${
+          JSON.parse(body).msg
+        }`
+      );
+
+      console.info(
+        `\nError source data:`,
+        util.inspect(errorSrcData, {
+          showHidden: false,
+          depth: null,
+          colors: true,
+        })
+      );
+    } else {
+      console.info(
+        `\nUnexpected Error:`,
+        util.inspect(error, { showHidden: false, depth: null, colors: true })
+      );
+      console.info(
+        `\nError source data:`,
+        util.inspect(errorSrcData, {
+          showHidden: false,
+          depth: null,
+          colors: true,
+        })
+      );
+    }
   }
 }
 
@@ -34,53 +61,27 @@ try {
 //   return new Promise((resolve) => setTimeout(() => resolve(), ms));
 // }
 
-async function getExchangeInfo(tickerName) {
+async function getInfo(tickerName) {
   try {
-    const data = await binance.exchangeInfo();
+    const data = await getExchangeInfo(tickerName);
     console.info("\n");
-    // console.info("Exchange info:", data);
-
-    const limits = {};
-
-    for (let obj of data.symbols) {
-      let filters = { status: obj.status };
-
-      for (let filter of obj.filters) {
-        if (filter.filterType == "MIN_NOTIONAL") {
-          filters.minNotional = filter.minNotional;
-        } else if (filter.filterType == "PRICE_FILTER") {
-          filters.minPrice = filter.minPrice;
-          filters.maxPrice = filter.maxPrice;
-          filters.tickSize = filter.tickSize;
-        } else if (filter.filterType == "LOT_SIZE") {
-          filters.stepSize = filter.stepSize;
-          filters.minQty = filter.minQty;
-          filters.maxQty = filter.maxQty;
-        }
-      }
-
-      //filters.baseAssetPrecision = obj.baseAssetPrecision;
-      //filters.quoteAssetPrecision = obj.quoteAssetPrecision;
-      filters.orderTypes = obj.orderTypes;
-      filters.icebergAllowed = obj.icebergAllowed;
-      limits[obj.symbol] = filters;
-    }
-
-    const tickerLimits = limits[tickerName];
-    const minOrderQuantity = parseFloat(tickerLimits.minQty);
-    const minOrderValue = parseFloat(tickerLimits.minNotional);
-    const stepSize = tickerLimits.stepSize;
+    console.info(
+      "Exchange info:",
+      util.inspect(data, {
+        showHidden: false,
+        depth: null,
+        colors: true,
+      })
+    );
 
     console.info("\n");
-    console.info("tickerLimits:", tickerLimits);
-
-    return {
-      minOrderQuantity,
-      minOrderValue,
-      stepSize,
-    };
+    console.info("tickerName:", tickerName);
   } catch (error) {
-    throw { type: "Get Exchange Info", ...error, errorSrcData: error };
+    throw {
+      type: "Get Exchange Info",
+      ...error,
+      errorSrcData: error,
+    };
   }
 }
 

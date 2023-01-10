@@ -75,20 +75,20 @@ export function report({ date, trade, symbol, price, priceChangePercent }) {
 
     csvStream.write({
       date: dateFormat,
-      trade,
       symbol,
-      price,
-      "price change %": priceChangePercent,
+      "24h price change %": priceChangePercent,
+      trade,
+      "trade price": price,
       "profit %": profitPercent,
       "profit total %": profitTotal,
     });
   } else {
     csvStream.write({
       date: dateFormat,
-      trade,
       symbol,
-      price,
-      "price change %": priceChangePercent,
+      "24h price change %": priceChangePercent,
+      trade,
+      "trade price": price,
       "profit %": 0,
       "profit total %": profitTotal,
     });

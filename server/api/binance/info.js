@@ -6,9 +6,11 @@ export async function getExchangeInfo(tickerName) {
     await delay(250);
 
     const data = await binance.exchangeInfo();
-    console.info("\n");
-    // console.info("Exchange info:", data);
+    // console.info("\nExchangeInfo:", data);
 
+    const tickerInfo = data.symbols.find(
+      (ticker) => ticker.symbol === tickerName
+    );
     const limits = {};
 
     for (let obj of data.symbols) {
@@ -47,6 +49,7 @@ export async function getExchangeInfo(tickerName) {
       minOrderQuantity,
       minOrderValue,
       stepSize,
+      tickerInfo,
     };
   } catch (error) {
     throw { type: "Get Exchange Info", ...error, errorSrcData: error };
@@ -63,6 +66,7 @@ export async function getTradingTickers() {
 
     const tickerList = data.symbols
       .filter((ticker) => ticker.status === "TRADING")
+      .filter((ticker) => ticker.isSpotTradingAllowed)
       .map((ticker) => ticker.symbol);
 
     // console.log("tickerList.", tickerList);
