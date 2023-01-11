@@ -29,6 +29,7 @@ FIXED_TRADE_VALUE=20
 FIXED_TRADE_PERCENT=10
 MIN_TRADE_USD_VALUE=10
 MIN_CHANGE_PERCENT=20
+USED_SYMBOLS_LENGTH=5
 
 BINANCE_APIKEY=
 BINANCE_APISECRET=
@@ -40,10 +41,9 @@ TELEGRAM_CHANNEL_ID=
 MODE=DEVELOPMENT
 ```
 
-Available trading intervals: 1s, 3s, 5s, 15s, 30s, 1m, 3m, 5m, 15m, 30m, 1h, 2h,
-4h, 6h, 8h, 12h, 1d, 3d, 1w, 1M
+Trading interval can be any amound of seconds or minutes, for example, 30s, 100s, 1m, 5m, 20m and so on
 
-Available modes: `DEVELOPMENT` or `PRODUCTION`
+Available modes: `DEVELOPMENT` (for console logs output and debur purposes) or `PRODUCTION` (using PM2 and logs in separated files)
 
 ### Telegram
 
