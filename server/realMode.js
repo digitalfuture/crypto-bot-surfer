@@ -16,12 +16,17 @@ const minChangePercent = parseFloat(process.env.MIN_CHANGE_PERCENT);
 const isfixedValue = JSON.parse(process.env.USE_FIXED_TRADE_VALUE);
 const fixedValue = parseFloat(process.env.FIXED_TRADE_VALUE);
 const fixedPercent = parseFloat(process.env.FIXED_TRADE_PERCENT);
+const usedSymbolsLength = parseInt(process.env.USED_SYMBOLS_LENGTH);
 const appMode = process.env.MODE;
 
 const heartbeatInterval = getHeartbeatInterval(interval);
 
 let loopCount = 1;
 let currentSymbols = [];
+let currentSymbol = null;
+let lastTrade = { symbol: secondarySymbol, price: 1 };
+let lastCheck = { symbol: secondarySymbol, price: 1 };
+const usedSymbols = [];
 
 export default async function start() {
   console.log("\nREAL mode is active");
@@ -49,7 +54,7 @@ export default async function start() {
       console.info(`Error source data:`, errorSrcData);
 
       await sendMessage(
-        `<b>Unexpected Error:</b> Look at the server logs for details`
+        `<b>Unexpected Error:</b> Look server logs for details`
       );
     }
   }
@@ -91,11 +96,12 @@ async function getStartupBalances() {
 
     console.info("\nAccount Balances:", filteredBalances);
 
-    currentSymbols = filteredBalances
+    const currentSymbols = filteredBalances
       .map((balance) => balance.symbol)
       .filter((symbol) => symbol !== secondarySymbol);
 
     console.info("\ncurrentSymbols:", currentSymbols);
+    console.info("\nSelected currentSymbol", currentSymbol);
 
     let message = `<b>Current account balances:</b>\n\n`;
 
@@ -171,12 +177,15 @@ async function heartBeatLoop() {
       isBuySignal,
     } = await getTradeSignals({
       secondarySymbol,
-      currentSymbols,
+      currentSymbol,
       accountBalance: usdtRateTotalBalance,
       minOrderValue: isfixedValue
         ? fixedValue
         : (usdtRateTotalBalance / 100) * fixedPercent,
       minChangePercent,
+      lastTrade,
+      lastCheck,
+      usedSymbols,
     });
 
     const secondarySymbolUsdtPrice =
@@ -212,6 +221,12 @@ async function heartBeatLoop() {
         return;
       }
 
+      if (usedSymbols.length === usedSymbolsLength) {
+        usedSymbols.shift();
+      } else if (currentSymbol) {
+        usedSymbols.push(currentSymbol);
+      }
+
       const chart = await prepareChartData({
         primarySymbol: sellPrimarySymbol,
         secondarySymbol,
@@ -226,6 +241,9 @@ async function heartBeatLoop() {
       const primarySymbolUsdtPrice = await getLastPrice(
         sellPrimarySymbol + "USDT"
       );
+
+      currentSymbol = null;
+      lastCheck = { symbol: secondarySymbol, price: 1 };
 
       const accountBalances = await getBalances();
 
@@ -321,6 +339,12 @@ async function heartBeatLoop() {
         return sum;
       }, 0);
 
+      currentSymbol = buyPrimarySymbol;
+      lastTrade = { symbol: buyPrimarySymbol, price: buyPrice };
+      lastCheck = lastTrade;
+
+      console.info("\n\nNew current symbol:", currentSymbol);
+
       console.info("New balances");
       console.info(`${newPrimarySymbolBalance} ${buyPrimarySymbol}`);
       console.info(`${newSecondarySymbolBalance} ${secondarySymbol}`);
@@ -348,7 +372,10 @@ async function heartBeatLoop() {
       await sendImage(chart);
       await sendMessage(message);
     } else {
-      message += "<b>No trade signals</b>";
+      // message += "<b>No trade signals</b>";
+      // await sendMessage(message);
+
+      lastCheck = { symbol: sellPrimarySymbol, price: sellPrice };
     }
   } catch (error) {
     throw { type: "Heartbeat Loop Error", ...error, errorSrcData: error };

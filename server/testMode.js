@@ -13,6 +13,7 @@ const minChangePercent = parseFloat(process.env.MIN_CHANGE_PERCENT);
 const isfixedValue = JSON.parse(process.env.USE_FIXED_TRADE_VALUE);
 const fixedValue = parseFloat(process.env.FIXED_TRADE_VALUE);
 const fixedPercent = parseFloat(process.env.FIXED_TRADE_PERCENT);
+const usedSymbolsLength = parseInt(process.env.USED_SYMBOLS_LENGTH);
 const appMode = process.env.MODE;
 
 const heartbeatInterval = getHeartbeatInterval(interval);
@@ -25,7 +26,6 @@ let currentSymbol = null;
 let lastTrade = { symbol: secondarySymbol, price: 1 };
 let lastCheck = { symbol: secondarySymbol, price: 1 };
 const usedSymbols = [];
-const usedSymbolsLength = 5;
 
 export default async function start() {
   console.log("\nTEST mode is active");
@@ -81,7 +81,7 @@ export default async function start() {
 async function startServer() {
   try {
     console.info("\n");
-    console.info(`${secondarySymbol} Surfer Bot started`);
+    console.info(`${secondarySymbol} Bot started`);
     console.info("Interval:", interval);
 
     const intervalString = interval.endsWith("s")
@@ -90,7 +90,7 @@ async function startServer() {
 
     console.info("Heartbeat interval:", intervalString);
 
-    let startMessage = `<b>${secondarySymbol} Surfer Bot started</b>\n\n`;
+    let startMessage = `<b>${secondarySymbol} Bot started</b>\n\n`;
     startMessage += `<b>Chart Interval:</b> 1d\n`;
     startMessage += `<b>Hearbeat interval:</b> ${intervalString}\n`;
 
@@ -180,7 +180,6 @@ async function heartBeatLoop() {
 
       const newPrimarySymbolBalance = 0;
 
-      balances = balancesInit;
       currentSymbol = null;
       lastCheck = { symbol: secondarySymbol, price: 1 };
 
