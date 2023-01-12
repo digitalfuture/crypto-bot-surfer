@@ -7,7 +7,7 @@ import {
   getAccountBalances,
 } from "./api/binance/info.js";
 import { delay, getHeartbeatInterval } from "./helpers/functions.js";
-import { getTradeSignals } from "./analytics/indicators/top-gainer.js";
+import { getTradeSignals } from "./analytics/indicators/top-gainer-trailing-stop-list.js";
 
 const secondarySymbol = process.env.SECONDARY_SYMBOL;
 const interval = process.env.HEARTBEAT_INTERVAL;
@@ -221,12 +221,6 @@ async function heartBeatLoop() {
         return;
       }
 
-      if (usedSymbols.length === usedSymbolsLength) {
-        usedSymbols.shift();
-      } else if (currentSymbol) {
-        usedSymbols.push(currentSymbol);
-      }
-
       const chart = await prepareChartData({
         primarySymbol: sellPrimarySymbol,
         secondarySymbol,
@@ -234,15 +228,23 @@ async function heartBeatLoop() {
         priceChangePercent: sellTickerPriceChangePercent,
       });
 
-      currentSymbols.splice(currentSymbols.indexOf(sellPrimarySymbol), 1);
-
       const newPrimarySymbolBalance = await getSymbolBalance(sellPrimarySymbol);
       const newSecondarySymbolBalance = await getSymbolBalance(secondarySymbol);
       const primarySymbolUsdtPrice = await getLastPrice(
         sellPrimarySymbol + "USDT"
       );
 
-      currentSymbol = null;
+      if (usedSymbols.length === usedSymbolsLength) {
+        usedSymbols.shift();
+      }
+
+      if (currentSymbol) {
+        usedSymbols.push(currentSymbol);
+        currentSymbol = null;
+      }
+
+      console.log("\nusedSymbols:", usedSymbols);
+
       lastCheck = { symbol: secondarySymbol, price: 1 };
 
       const accountBalances = await getBalances();

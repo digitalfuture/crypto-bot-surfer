@@ -3,7 +3,7 @@ import { sendMessage } from "./api/telegram/telegram.js";
 // import { prepareChartData } from "./analytics/charts.js";
 import { getLastPrice } from "./api/binance/info.js";
 import { delay, getHeartbeatInterval } from "./helpers/functions.js";
-import { getTradeSignals } from "./analytics/indicators/bottom-gainer-trailing-stop-list.js";
+import { getTradeSignals } from "./analytics/indicators/top-gainer-trailing-stop-list.js";
 import { report } from "./analytics/report.js";
 import util from "node:util";
 
@@ -29,6 +29,7 @@ const usedSymbols = [];
 
 export default async function start() {
   console.log("\nTEST mode is active");
+  // console.log("\nusedSymbolsLength:", usedSymbolsLength);
 
   try {
     await startServer();
@@ -170,17 +171,24 @@ async function heartBeatLoop() {
       console.info("\n");
       console.info("Sell condition:", true);
 
+      // console.info(
+      //   "usedSymbols.length === usedSymbolsLength:",
+      //   usedSymbols.length === usedSymbolsLength
+      // );
+
       if (usedSymbols.length === usedSymbolsLength) {
         usedSymbols.shift();
-      } else if (currentSymbol) {
-        usedSymbols.push(currentSymbol);
       }
 
-      console.log("\nusedSymbols:", usedSymbols);
+      if (currentSymbol) {
+        usedSymbols.push(currentSymbol);
+        currentSymbol = null;
+      }
+
+      console.log("\nusedSymbols: after sell", usedSymbols);
 
       const newPrimarySymbolBalance = 0;
 
-      currentSymbol = null;
       lastCheck = { symbol: secondarySymbol, price: 1 };
 
       // const chart = await prepareChartData({

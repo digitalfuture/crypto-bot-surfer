@@ -5,10 +5,10 @@ export async function getTradeSignals({
   currentSymbol,
   lastTrade,
   lastCheck,
-  // minChangePercent
+  usedSymbols,
 }) {
   try {
-    console.log("\nlastCheck:", lastCheck);
+    console.log("usedSymbols:", usedSymbols);
     console.log("lastTrade:", lastTrade);
 
     const tradingTickers = await getTradingTickers();
@@ -45,12 +45,12 @@ export async function getTradeSignals({
         tradingTickers.includes(primarySymbol + secondarySymbol)
       )
       .filter(({ primarySymbol }) => primarySymbol !== lastTrade.symbol)
-      .filter(({ primarySymbol }) => primarySymbol !== currentSymbol)
+      .filter(({ primarySymbol }) => !usedSymbols.includes(primarySymbol))
       .sort((a, b) => b.priceChangePercent - a.priceChangePercent);
 
     //
     // Buy signal
-    const tickerToBuy = tickerListToBuy[tickerListToBuy.length - 1];
+    const tickerToBuy = tickerListToBuy[0];
     const buyPrimarySymbol = tickerToBuy.primarySymbol;
     const buyTickerName = tickerToBuy.tickerName;
     const buyPrice = tickerToBuy && parseFloat(tickerToBuy.lastPrice);
@@ -70,6 +70,7 @@ export async function getTradeSignals({
     const sellCondition1 = lastCheck.symbol === currentSymbol;
     const sellCondition2 = sellPrice < lastCheck.price;
     const isSellSignal = sellCondition1 && sellCondition2;
+    // const isSellSignal = true;
 
     //
     // Result
