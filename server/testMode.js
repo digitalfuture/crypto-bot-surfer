@@ -3,7 +3,7 @@ import { sendMessage } from "./api/telegram/telegram.js";
 // import { prepareChartData } from "./analytics/charts.js";
 import { getLastPrice } from "./api/binance/info.js";
 import { delay, getHeartbeatInterval } from "./helpers/functions.js";
-import { getTradeSignals } from "./analytics/indicators/top-gainer-trailing-stop-list.js";
+import { getSignals } from "./analytics/indicators/index.js";
 import { report } from "./analytics/report.js";
 import util from "node:util";
 
@@ -83,7 +83,6 @@ async function startServer() {
   try {
     console.info("\n");
     console.info(`${secondarySymbol} Bot started`);
-    console.info("Interval:", interval);
 
     const intervalString = interval.endsWith("s")
       ? heartbeatInterval / 1000 + "s"
@@ -152,7 +151,7 @@ async function heartBeatLoop() {
       buyTickerPriceChangePercent,
       isSellSignal,
       isBuySignal,
-    } = await getTradeSignals({
+    } = await getSignals({
       secondarySymbol,
       currentSymbol,
       accountBalance: usdtRateTotalBalance,

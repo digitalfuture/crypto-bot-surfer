@@ -20,10 +20,13 @@ example config:
 ```env
 TEST_MODE=true
 
+INDICATOR=bottom-gainer-trailing-stop
+
 HEARTBEAT_INTERVAL=5m
 
 SECONDARY_SYMBOL=USDT
 
+COMISSION_PERCENT=0.01
 USE_FIXED_TRADE_VALUE=true
 FIXED_TRADE_VALUE=20
 FIXED_TRADE_PERCENT=10
@@ -42,6 +45,8 @@ MODE=DEVELOPMENT
 ```
 
 Trading interval can be any amound of seconds or minutes, for example, 30s, 100s, 1m, 5m, 20m and so on
+
+Indicators are in `server/analitycs/indicators` folder. Use file name without extension
 
 Available modes: `DEVELOPMENT` (for console logs output and debur purposes) or `PRODUCTION` (using PM2 and logs in separated files)
 

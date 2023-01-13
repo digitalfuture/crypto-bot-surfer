@@ -6,9 +6,14 @@ import * as csv from "fast-csv";
 
 child_process.execSync("rm -rf report/*");
 
+const indicatorName = process.env.INDICATOR;
+const interval = process.env.HEARTBEAT_INTERVAL;
+const comissionPercent = parseFloat(process.env.COMISSION_PERCENT);
+
+const fileName = `${indicatorName}-${interval}.csv`;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const filePath = path.join(__dirname, "../../report", "trades.csv");
+const filePath = path.join(__dirname, "../../report", fileName);
 
 const file = fs.createWriteStream(filePath);
 
@@ -42,6 +47,7 @@ setupExit();
 
 let profitTotal = 0;
 let lastPrice;
+let count = 0;
 
 export function report({ date, trade, symbol, price, priceChangePercent }) {
   Date.prototype.format = function () {
@@ -61,36 +67,47 @@ export function report({ date, trade, symbol, price, priceChangePercent }) {
     );
   };
 
+  count++;
+
   const dateFormat = date.format();
 
-  const onePercent = lastPrice ? lastPrice / 100 : price;
+  const onePercent = lastPrice / 100;
+  const comission = price * comissionPercent;
 
   if (trade === "SELL") {
-    const profitPercent = +(
-      (price - (lastPrice ? lastPrice : price)) /
-      onePercent
-    ).toFixed(2);
+    const profitPercent =
+      lastPrice !== undefined
+        ? (price - lastPrice) / onePercent - comissionPercent
+        : -comissionPercent;
 
-    profitTotal = +(profitTotal + profitPercent).toFixed(2);
+    console.log("profitTotal:", profitTotal);
+
+    profitTotal += profitPercent;
 
     csvStream.write({
+      count,
       date: dateFormat,
       symbol,
-      "24h price change %": priceChangePercent,
+      "24h price change %": priceChangePercent.toFixed(4),
       trade,
-      "trade price": price,
-      "profit %": profitPercent,
-      "profit total %": profitTotal,
+      "trade price": price.toFixed(4),
+      comission: comission.toFixed(4),
+      "profit %": profitPercent.toFixed(4),
+      "profit total %": profitTotal.toFixed(4),
     });
   } else {
+    profitTotal -= comissionPercent;
+
     csvStream.write({
+      count,
       date: dateFormat,
       symbol,
-      "24h price change %": priceChangePercent,
+      "24h price change %": priceChangePercent.toFixed(4),
       trade,
-      "trade price": price,
-      "profit %": 0,
-      "profit total %": profitTotal,
+      "trade price": price.toFixed(4),
+      comission: comission.toFixed(4),
+      "profit %": (-comissionPercent).toFixed(4),
+      "profit total %": profitTotal.toFixed(4),
     });
   }
 

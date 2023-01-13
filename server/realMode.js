@@ -7,7 +7,7 @@ import {
   getAccountBalances,
 } from "./api/binance/info.js";
 import { delay, getHeartbeatInterval } from "./helpers/functions.js";
-import { getTradeSignals } from "./analytics/indicators/top-gainer-trailing-stop-list.js";
+import { getSignals } from "./analytics/indicators/index.js";
 
 const secondarySymbol = process.env.SECONDARY_SYMBOL;
 const interval = process.env.HEARTBEAT_INTERVAL;
@@ -175,7 +175,7 @@ async function heartBeatLoop() {
       buyTickerPriceChangePercent,
       isSellSignal,
       isBuySignal,
-    } = await getTradeSignals({
+    } = await getSignals({
       secondarySymbol,
       currentSymbol,
       accountBalance: usdtRateTotalBalance,
