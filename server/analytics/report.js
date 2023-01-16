@@ -49,7 +49,14 @@ let profitTotal = 0;
 let lastPrice;
 let count = 0;
 
-export function report({ date, trade, symbol, price, priceChangePercent }) {
+export function report({
+  date,
+  trade,
+  symbol,
+  price,
+  priceChangePercent,
+  btcUsdtPrice,
+}) {
   Date.prototype.format = function () {
     return (
       this.getDate() +
@@ -85,29 +92,32 @@ export function report({ date, trade, symbol, price, priceChangePercent }) {
     profitTotal += profitPercent;
 
     csvStream.write({
-      count,
-      date: dateFormat,
-      symbol,
-      "24h price change %": priceChangePercent.toFixed(4),
-      trade,
-      "trade price": price.toFixed(4),
-      comission: comission.toFixed(4),
-      "profit %": profitPercent.toFixed(4),
-      "profit total %": profitTotal.toFixed(4),
+      Count: count,
+      Date: dateFormat,
+      "BTC / USDT price": btcUsdtPrice,
+      "Token name": symbol,
+      "24h price change %": +priceChangePercent.toFixed(4),
+      Trade: trade,
+      "Trade price": +price.toFixed(4),
+      Comission: +comission.toFixed(4),
+      "Profit %": +profitPercent.toFixed(4),
+      "Profit total %": +profitTotal.toFixed(4),
     });
   } else {
     profitTotal -= comissionPercent;
+    const profitPercent = -comissionPercent;
 
     csvStream.write({
-      count,
-      date: dateFormat,
-      symbol,
-      "24h price change %": priceChangePercent.toFixed(4),
-      trade,
-      "trade price": price.toFixed(4),
-      comission: comission.toFixed(4),
-      "profit %": (-comissionPercent).toFixed(4),
-      "profit total %": profitTotal.toFixed(4),
+      Count: count,
+      Date: dateFormat,
+      "BTC / USDT price": btcUsdtPrice,
+      "Token name": symbol,
+      "24h price change %": +priceChangePercent.toFixed(4),
+      Trade: trade,
+      "Trade price": +price.toFixed(4),
+      Comission: +comission.toFixed(4),
+      "Profit %": +profitPercent.toFixed(4),
+      "Profit total %": +profitTotal.toFixed(4),
     });
   }
 

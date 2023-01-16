@@ -166,6 +166,8 @@ async function heartBeatLoop() {
 
     console.info("\n\nCurrent symbol:", currentSymbol);
 
+    const btcUsdtPrice = await getLastPrice("BTCUSDT");
+
     if (isSellSignal && currentSymbol) {
       console.info("\n");
       console.info("Sell condition:", true);
@@ -211,6 +213,7 @@ async function heartBeatLoop() {
         symbol: sellPrimarySymbol,
         price: sellPrice,
         priceChangePercent: buyTickerPriceChangePercent,
+        btcUsdtPrice,
       });
 
       // await sendImage(chart);
@@ -265,6 +268,7 @@ async function heartBeatLoop() {
         symbol: buyPrimarySymbol,
         price: buyPrice,
         priceChangePercent: buyTickerPriceChangePercent,
+        btcUsdtPrice,
       });
 
       // await sendImage(chart);
