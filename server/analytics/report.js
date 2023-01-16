@@ -4,8 +4,6 @@ import path from "path";
 import { fileURLToPath } from "url";
 import * as csv from "fast-csv";
 
-child_process.execSync("rm -rf report/*");
-
 const indicatorName = process.env.INDICATOR;
 const interval = process.env.HEARTBEAT_INTERVAL;
 const comissionPercent = parseFloat(process.env.COMISSION_PERCENT);
@@ -14,6 +12,8 @@ const fileName = `${indicatorName}-${interval}.csv`;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const filePath = path.join(__dirname, "../../report", fileName);
+
+child_process.execSync(`rm -rf ${filePath}`);
 
 const file = fs.createWriteStream(filePath);
 
