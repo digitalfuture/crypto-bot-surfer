@@ -11,6 +11,7 @@ import { getSignals } from "./analytics/indicators/index.js";
 
 const secondarySymbol = process.env.SECONDARY_SYMBOL;
 const interval = process.env.HEARTBEAT_INTERVAL;
+const indicator = process.env.INDICATOR;
 const minTradeUsdValue = parseFloat(process.env.MIN_TRADE_USD_VALUE);
 const minChangePercent = parseFloat(process.env.MIN_CHANGE_PERCENT);
 const isfixedValue = JSON.parse(process.env.USE_FIXED_TRADE_VALUE);
@@ -62,24 +63,23 @@ export default async function start() {
 
 async function startServer() {
   try {
-    await getStartupBalances();
-    await startLoop();
-
     console.info("\n");
-    console.info(`${secondarySymbol} Surfer Bot started`);
-    console.info("Interval:", interval);
+    console.info(`${secondarySymbol} Bot started`);
 
     const intervalString = interval.endsWith("s")
       ? heartbeatInterval / 1000 + "s"
       : heartbeatInterval / 1000 / 60 + "m";
 
     console.info("Heartbeat interval:", intervalString);
+    console.info("Using indicator:", indicator);
 
     let startMessage = `<b>${secondarySymbol} Surfer Bot started</b>\n\n`;
     startMessage += `<b>Chart Interval:</b> 1d\n`;
     startMessage += `<b>Hearbeat interval:</b> ${intervalString}\n`;
-
     await sendMessage(startMessage);
+
+    await getStartupBalances();
+    await startLoop();
   } catch (error) {
     throw { type: "Start Server Error", ...error, errorSrcData: error };
   }

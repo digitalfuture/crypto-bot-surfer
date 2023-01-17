@@ -9,6 +9,7 @@ import util from "node:util";
 
 const secondarySymbol = process.env.SECONDARY_SYMBOL;
 const interval = process.env.HEARTBEAT_INTERVAL;
+const indicator = process.env.INDICATOR;
 const minChangePercent = parseFloat(process.env.MIN_CHANGE_PERCENT);
 const isfixedValue = JSON.parse(process.env.USE_FIXED_TRADE_VALUE);
 const fixedValue = parseFloat(process.env.FIXED_TRADE_VALUE);
@@ -89,6 +90,7 @@ async function startServer() {
       : heartbeatInterval / 1000 / 60 + "m";
 
     console.info("Heartbeat interval:", intervalString);
+    console.info("Using indicator:", indicator);
 
     let startMessage = `<b>${secondarySymbol} Bot started</b>\n\n`;
     startMessage += `<b>Chart Interval:</b> 1d\n`;
