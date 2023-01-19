@@ -4,11 +4,10 @@ import path from "path";
 import { fileURLToPath } from "url";
 import * as csv from "fast-csv";
 
-const indicatorName = process.env.INDICATOR;
-const interval = process.env.HEARTBEAT_INTERVAL;
+const reportFileName = process.env.REPORT_FILE_NAME;
 const comissionPercent = parseFloat(process.env.COMISSION_PERCENT);
 
-const fileName = `${indicatorName}-${interval}.csv`;
+const fileName = `${reportFileName}.csv`;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const filePath = path.join(__dirname, "../../report", fileName);
@@ -103,7 +102,9 @@ export function report({
       "Profit %": +profitPercent.toFixed(4),
       "Profit total %": +profitTotal.toFixed(4),
     });
-  } else {
+
+    lastPrice = price;
+  } else if (trade === "BUY") {
     profitTotal -= comissionPercent;
     const profitPercent = -comissionPercent;
 
@@ -119,7 +120,20 @@ export function report({
       "Profit %": +profitPercent.toFixed(4),
       "Profit total %": +profitTotal.toFixed(4),
     });
-  }
 
-  lastPrice = price;
+    lastPrice = price;
+  } else {
+    csvStream.write({
+      Count: count,
+      Date: dateFormat,
+      "BTC / USDT price": btcUsdtPrice,
+      "Token name": symbol,
+      "24h price change %": +(priceChangePercent || 0).toFixed(4),
+      Trade: trade,
+      "Trade price": +(price || 0).toFixed(4),
+      Comission: 0,
+      "Profit %": 0,
+      "Profit total %": +profitTotal.toFixed(4),
+    });
+  }
 }

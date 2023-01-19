@@ -164,6 +164,8 @@ async function heartBeatLoop() {
       return sum;
     }, 0);
 
+    const btcUsdtPrice = await getLastPrice("BTCUSDT");
+
     const {
       sellPrimarySymbol,
       buyPrimarySymbol,
@@ -186,6 +188,7 @@ async function heartBeatLoop() {
       lastTrade,
       lastCheck,
       usedSymbols,
+      btcUsdtPrice,
     });
 
     const secondarySymbolUsdtPrice =

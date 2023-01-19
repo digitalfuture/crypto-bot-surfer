@@ -20,6 +20,8 @@ example config:
 ```env
 TEST_MODE=true
 
+REPORT_FILE_NAME=trades
+
 INDICATOR=bottom-gainer-trailing-stop
 
 HEARTBEAT_INTERVAL=5m

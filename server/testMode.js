@@ -25,7 +25,7 @@ const balancesInit = [{ symbol: secondarySymbol, available: 100, usdtRate: 1 }];
 let balances = balancesInit;
 let currentSymbol = null;
 let lastTrade = { symbol: secondarySymbol, price: 1 };
-let lastCheck = { symbol: secondarySymbol, price: 1 };
+let lastCheck = { symbol: secondarySymbol, price: 1, btcUsdtPrice: null };
 const usedSymbols = [];
 
 export default async function start() {
@@ -144,12 +144,14 @@ async function heartBeatLoop() {
       return sum;
     }, 0);
 
+    const btcUsdtPrice = await getLastPrice("BTCUSDT");
+
     const {
       sellPrimarySymbol,
       buyPrimarySymbol,
       sellPrice,
       buyPrice,
-      // sellTickerPriceChangePercent,
+      sellTickerPriceChangePercent,
       buyTickerPriceChangePercent,
       isSellSignal,
       isBuySignal,
@@ -164,11 +166,10 @@ async function heartBeatLoop() {
       lastTrade,
       lastCheck,
       usedSymbols,
+      btcUsdtPrice,
     });
 
     console.info("\n\nCurrent symbol:", currentSymbol);
-
-    const btcUsdtPrice = await getLastPrice("BTCUSDT");
 
     if (isSellSignal && currentSymbol) {
       console.info("\n");
@@ -192,7 +193,7 @@ async function heartBeatLoop() {
 
       const newPrimarySymbolBalance = 0;
 
-      lastCheck = { symbol: secondarySymbol, price: 1 };
+      lastCheck = { symbol: secondarySymbol, price: 1, btcUsdtPrice };
 
       // const chart = await prepareChartData({
       //   primarySymbol: sellPrimarySymbol,
@@ -214,7 +215,7 @@ async function heartBeatLoop() {
         trade: "SELL",
         symbol: sellPrimarySymbol,
         price: sellPrice,
-        priceChangePercent: buyTickerPriceChangePercent,
+        priceChangePercent: sellTickerPriceChangePercent,
         btcUsdtPrice,
       });
 
@@ -251,7 +252,7 @@ async function heartBeatLoop() {
       ];
 
       currentSymbol = buyPrimarySymbol;
-      lastTrade = { symbol: buyPrimarySymbol, price: buyPrice };
+      lastTrade = { symbol: buyPrimarySymbol, price: buyPrice, btcUsdtPrice };
       lastCheck = lastTrade;
 
       console.info("\n\nNew current symbol:", currentSymbol);
@@ -276,7 +277,16 @@ async function heartBeatLoop() {
       // await sendImage(chart);
       await sendMessage(message);
     } else {
-      lastCheck = { symbol: sellPrimarySymbol, price: sellPrice };
+      lastCheck = { symbol: sellPrimarySymbol, price: sellPrice, btcUsdtPrice };
+
+      report({
+        date: new Date(),
+        trade: "PASS",
+        symbol: lastCheck.sellPrimarySymbol,
+        price: lastCheck.price,
+        priceChangePercent: sellTickerPriceChangePercent,
+        btcUsdtPrice,
+      });
     }
 
     console.info("\nlastCheck:", lastCheck);
