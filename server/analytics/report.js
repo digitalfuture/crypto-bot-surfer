@@ -14,10 +14,7 @@ const filePath = path.join(__dirname, "../../report", fileName);
 
 child_process.execSync(`rm -rf ${filePath}`);
 
-const file = fs.createWriteStream(filePath);
-
 const csvStream = csv.format({ headers: true });
-csvStream.pipe(file).on("end", () => process.exit());
 
 function exitHandler(options, exitCode) {
   csvStream.end();
@@ -56,6 +53,9 @@ export function report({
   priceChangePercent,
   btcUsdtPrice,
 }) {
+  const file = fs.createWriteStream(filePath, { flags: "a" });
+  csvStream.pipe(file).on("end", () => process.exit());
+
   Date.prototype.format = function () {
     return (
       this.getDate() +

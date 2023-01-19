@@ -1,4 +1,5 @@
 import { getPrevDayData, getTradingTickers } from "../../api/binance/info.js";
+import { getLastPrice } from "../../api/binance/info.js";
 
 let lastBtcUsdtPrice = null;
 
@@ -8,9 +9,10 @@ export async function getTradeSignals({
   lastTrade,
   lastCheck,
   usedSymbols,
-  btcUsdtPrice,
 }) {
   try {
+    const btcUsdtPrice = await getLastPrice("BTCUSDT");
+
     if (!lastBtcUsdtPrice) lastBtcUsdtPrice = btcUsdtPrice;
 
     console.log("usedSymbols:", usedSymbols);
