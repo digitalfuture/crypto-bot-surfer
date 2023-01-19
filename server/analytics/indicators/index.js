@@ -1,28 +1,20 @@
-import * as bottomGainerBasic from "./bottom-gainer-basic.js";
-import * as topGainerTrailingStop from "./top-gainer-trailing-stop.js";
-import * as bottomGainerTrailingStop from "./bottom-gainer-trailing-stop.js";
-import * as bottomGainerTrailingStopBtcGainFilter from "./bottom-gainer-trailing-stop--btc-gain-filter.js";
-import * as topGainerTrailingStopBtcGainFilter from "./top-gainer-trailing-stop--btc-gain-filter.js";
+import * as dumpBasic from "./dump-basic.js";
+import * as dumpTrailing from "./dump-trailing.js";
+import * as dumpTrailingBtcFilter from "./dump-trailing--btc-filter.js";
 
 const indicatorName = process.env.INDICATOR;
 
 let getTradeSignals;
 
 switch (indicatorName) {
-  case "bottom-gainer-basic":
-    getTradeSignals = bottomGainerBasic.getTradeSignals;
+  case "dump-basic":
+    getTradeSignals = dumpBasic.getTradeSignals;
     break;
-  case "bottom-gainer-trailing-stop":
-    getTradeSignals = bottomGainerTrailingStop.getTradeSignals;
+  case "dump-trailing":
+    getTradeSignals = dumpTrailing.getTradeSignals;
     break;
-  case "top-gainer-trailing-stop":
-    getTradeSignals = topGainerTrailingStop.getTradeSignals;
-    break;
-  case "bottom-gainer-trailing-stop--btc-gain-filter":
-    getTradeSignals = bottomGainerTrailingStopBtcGainFilter.getTradeSignals;
-    break;
-  case "top-gainer-trailing-stop--btc-gain-filter":
-    getTradeSignals = topGainerTrailingStopBtcGainFilter.getTradeSignals;
+  case "dump-trailing--btc-filter":
+    getTradeSignals = dumpTrailingBtcFilter.getTradeSignals;
     break;
 }
 
