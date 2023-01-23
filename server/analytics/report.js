@@ -19,6 +19,24 @@ const csvStream = csv.format({ headers: true });
 const file = fs.createWriteStream(filePath, { flags: "a" });
 csvStream.pipe(file).on("end", () => process.exit());
 
+function formatDate(date) {
+  const result =
+    date.getFullYear() +
+    "-" +
+    date.getMonth() +
+    1 +
+    "-" +
+    date.getDate() +
+    " " +
+    date.getHours().toString().padStart(2, 0) +
+    ":" +
+    date.getMinutes().toString().padStart(2, 0) +
+    ":" +
+    date.getSeconds().toString().padStart(2, 0);
+
+  return result;
+}
+
 let profitTotal = 0;
 let lastPrice;
 let count = 0;
@@ -31,26 +49,9 @@ export function report({
   priceChangePercent,
   btcUsdtPrice,
 }) {
-  Date.prototype.format = function () {
-    return (
-      this.getDate() +
-      "-" +
-      this.getMonth() +
-      1 +
-      "-" +
-      this.getFullYear() +
-      " " +
-      this.getHours().toString().padStart(2, 0) +
-      ":" +
-      this.getMinutes().toString().padStart(2, 0) +
-      ":" +
-      this.getSeconds().toString().padStart(2, 0)
-    );
-  };
-
   count++;
 
-  const dateFormat = date.format();
+  const dateFormat = formatDate(date);
 
   const onePercent = lastPrice / 100;
   const comission = price * comissionPercent;

@@ -1,6 +1,7 @@
 import * as dumpBasic from "./dump-basic.js";
 import * as dumpTrailing from "./dump-trailing.js";
 import * as dumpTrailingBtcFilter from "./dump-trailing--btc-filter.js";
+import * as pumpTrailingBtcFilter from "./pump-trailing--btc-filter.js";
 
 const indicatorName = process.env.INDICATOR;
 
@@ -15,6 +16,9 @@ switch (indicatorName) {
     break;
   case "dump-trailing--btc-filter":
     getTradeSignals = dumpTrailingBtcFilter.getTradeSignals;
+    break;
+  case "pump-trailing--btc-filter":
+    getTradeSignals = pumpTrailingBtcFilter.getTradeSignals;
     break;
 }
 
