@@ -16,30 +16,8 @@ child_process.execSync(`rm -rf ${filePath}`);
 
 const csvStream = csv.format({ headers: true });
 
-function exitHandler(options, exitCode) {
-  csvStream.end();
-
-  if (options.cleanup) console.log("clean");
-  if (exitCode || exitCode === 0) console.log(exitCode);
-  if (options.exit) process.exit();
-}
-
-function setupExit() {
-  //do something when app is closing
-  process.on("exit", exitHandler.bind(null, { cleanup: true }));
-
-  //catches ctrl+c event
-  process.on("SIGINT", exitHandler.bind(null, { exit: true }));
-
-  // catches "kill pid" (for example: nodemon restart)
-  process.on("SIGUSR1", exitHandler.bind(null, { exit: true }));
-  process.on("SIGUSR2", exitHandler.bind(null, { exit: true }));
-
-  //catches uncaught exceptions
-  process.on("uncaughtException", exitHandler.bind(null, { exit: true }));
-}
-
-setupExit();
+const file = fs.createWriteStream(filePath, { flags: "a" });
+csvStream.pipe(file).on("end", () => process.exit());
 
 let profitTotal = 0;
 let lastPrice;
@@ -53,9 +31,6 @@ export function report({
   priceChangePercent,
   btcUsdtPrice,
 }) {
-  const file = fs.createWriteStream(filePath, { flags: "a" });
-  csvStream.pipe(file).on("end", () => process.exit());
-
   Date.prototype.format = function () {
     return (
       this.getDate() +
@@ -127,10 +102,10 @@ export function report({
       Count: count,
       Date: dateFormat,
       "BTC / USDT price": btcUsdtPrice,
-      "Token name": symbol,
+      "Token name": "",
       "24h price change %": +(priceChangePercent || 0).toFixed(4),
-      Trade: trade,
-      "Trade price": +(price || 0).toFixed(4),
+      Trade: "",
+      "Trade price": "",
       Comission: 0,
       "Profit %": 0,
       "Profit total %": +profitTotal.toFixed(4),

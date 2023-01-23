@@ -186,7 +186,7 @@ async function heartBeatLoop() {
         currentSymbol = null;
       }
 
-      console.log("\nusedSymbols: after sell", usedSymbols);
+      console.log("\nusedSymbols after sell:", usedSymbols);
 
       const newPrimarySymbolBalance = 0;
 
