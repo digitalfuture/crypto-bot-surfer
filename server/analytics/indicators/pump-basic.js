@@ -1,21 +1,13 @@
 import { getPrevDayData, getTradingTickers } from "../../api/binance/info.js";
-import { getLastPrice } from "../../api/binance/info.js";
-
-let lastBtcUsdtPrice = null;
 
 export async function getTradeSignals({
   secondarySymbol,
   currentSymbol,
   lastTrade,
   lastCheck,
-  usedSymbols,
 }) {
   try {
-    const btcUsdtPrice = await getLastPrice("BTCUSDT");
-
-    if (!lastBtcUsdtPrice) lastBtcUsdtPrice = btcUsdtPrice;
-
-    console.log("usedSymbols:", usedSymbols);
+    // console.log("\nlastCheck:", lastCheck);
     console.log("lastTrade:", lastTrade);
 
     const tradingTickers = await getTradingTickers();
@@ -52,32 +44,17 @@ export async function getTradeSignals({
         tradingTickers.includes(primarySymbol + secondarySymbol)
       )
       .filter(({ primarySymbol }) => primarySymbol !== lastTrade.symbol)
-      .filter(({ primarySymbol }) => !usedSymbols.includes(primarySymbol))
+      .filter(({ primarySymbol }) => primarySymbol !== currentSymbol)
       .sort((a, b) => b.priceChangePercent - a.priceChangePercent);
 
     //
     // Buy signal
-    const isBtcFalling = lastBtcUsdtPrice > btcUsdtPrice;
-    const tickerToBuy = tickerListToBuy[0];
+    const tickerToBuy = tickerListToBuy[tickerListToBuy.length - 1];
     const buyPrimarySymbol = tickerToBuy.primarySymbol;
     const buyTickerName = tickerToBuy.tickerName;
     const buyPrice = tickerToBuy && parseFloat(tickerToBuy.lastPrice);
     const buyTickerPriceChangePercent = tickerToBuy.priceChangePercent;
-    const buyCondition1 = !currentSymbol;
-    const buyCondition2 = !isBtcFalling;
-    const isBuySignal = buyCondition1 && buyCondition2;
-
-    console.log("lastBtcUsdtPrice:", lastBtcUsdtPrice);
-    console.log("btcUsdtPrice:", btcUsdtPrice);
-    console.log("isBtcFalling:", isBtcFalling);
-
-    lastBtcUsdtPrice = btcUsdtPrice;
-
-    // console.log(
-    //   "\nbtcUsdtTicker.priceChangePercent:",
-    //   btcUsdtTicker.priceChangePercent
-    // );
-    // console.log("isBtcFalling:", btcUsdtTicker.priceChangePercent > 0);
+    const isBuySignal = !currentSymbol;
 
     //
     // Sell signal
@@ -92,6 +69,7 @@ export async function getTradeSignals({
     const sellCondition1 = lastCheck.symbol === currentSymbol;
     const sellCondition2 = sellPrice < lastCheck.price;
     const isSellSignal = sellCondition1 && sellCondition2;
+    // const isSellSignal = true;
 
     //
     // Result
@@ -106,7 +84,6 @@ export async function getTradeSignals({
       sellTickerPriceChangePercent,
       isBuySignal,
       isSellSignal,
-      btcUsdtPrice,
     };
 
     console.info("\nCheck signals result:", {
