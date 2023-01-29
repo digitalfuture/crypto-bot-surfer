@@ -1,4 +1,5 @@
 import { getPrevDayData, getTradingTickers } from "../../api/binance/info.js";
+import { getLastPrice } from "../../api/binance/info.js";
 
 export async function getTradeSignals({
   secondarySymbol,
@@ -7,6 +8,8 @@ export async function getTradeSignals({
   lastCheck,
 }) {
   try {
+    const btcUsdtPrice = await getLastPrice("BTCUSDT");
+
     // console.log("\nlastCheck:", lastCheck);
     console.log("lastTrade:", lastTrade);
 
@@ -84,6 +87,7 @@ export async function getTradeSignals({
       sellTickerPriceChangePercent,
       isBuySignal,
       isSellSignal,
+      btcUsdtPrice,
     };
 
     console.info("\nCheck signals result:", {
