@@ -1,8 +1,8 @@
+import path from "node:path";
 import child_process from "child_process";
-import fs from "fs";
-import path from "path";
-import { fileURLToPath } from "url";
-import * as csv from "fast-csv";
+import fs from "node:fs";
+import { fileURLToPath } from "node:url";
+import { format } from "@fast-csv/format";
 
 const reportFileName = process.env.REPORT_FILE_NAME;
 const comissionPercent = parseFloat(process.env.COMISSION_PERCENT);
@@ -12,12 +12,36 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const filePath = path.join(__dirname, "../../report", fileName);
 
-child_process.execSync(`rm -rf ${filePath}`);
+const options = { flags: "a" };
 
-const csvStream = csv.format({ headers: true });
+const headers = [
+  "Count",
+  "Date",
+  "BTC / USDT price",
+  "Token name",
+  "24h price change %",
+  "Trade",
+  "Trade price",
+  "Comission",
+  "Profit %",
+  "Profit total %",
+];
 
-const file = fs.createWriteStream(filePath, { flags: "a" });
-csvStream.pipe(file).on("end", () => process.exit());
+let profitTotal = 0;
+let lastPrice;
+let count = 0;
+
+createTable();
+
+function createTable() {
+  child_process.execSync(`rm -rf ${filePath}`);
+
+  const stream = fs.createWriteStream(filePath, options);
+  const csvStream = format({ includeEndRowDelimiter: true });
+  csvStream.pipe(stream);
+  csvStream.write(headers);
+  csvStream.end();
+}
 
 function formatDate(date) {
   const result =
@@ -37,10 +61,6 @@ function formatDate(date) {
   return result;
 }
 
-let profitTotal = 0;
-let lastPrice;
-let count = 0;
-
 export function report({
   date,
   trade,
@@ -49,6 +69,14 @@ export function report({
   priceChangePercent,
   btcUsdtPrice,
 }) {
+  const stream = fs.createWriteStream(filePath, options);
+  const csvStream = format({
+    headers: false,
+    includeEndRowDelimiter: true,
+  });
+
+  csvStream.pipe(stream);
+
   count++;
 
   const dateFormat = formatDate(date);
@@ -112,4 +140,6 @@ export function report({
       "Profit total %": +profitTotal.toFixed(4),
     });
   }
+
+  csvStream.end();
 }
