@@ -6,7 +6,7 @@ import { format } from "@fast-csv/format";
 
 ////
 const reportFileName = process.env.REPORT_FILE_NAME;
-const reportFileReset = JSON.parse(process.env.REPORT_FILE_RESET);
+const reportFileNew = JSON.parse(process.env.REPORT_FILE_NEW);
 const comissionPercent = parseFloat(process.env.COMISSION_PERCENT);
 
 ////
@@ -21,8 +21,7 @@ let lastPrice;
 let count = 0;
 
 ////
-if (reportFileReset) {
-  console.log("Report file erased:", reportFileReset);
+if (reportFileNew) {
   createTable();
 }
 
@@ -43,11 +42,15 @@ function createTable() {
 
   execSync(`rm -rf ${filePath}`);
 
+  console.log("Report file erased");
+
   const stream = fs.createWriteStream(filePath, fileOptions);
   const csvStream = format({ includeEndRowDelimiter: true });
   csvStream.pipe(stream);
   csvStream.write(headers);
   csvStream.end();
+
+  console.log("Report file created:", fileName);
 }
 
 function formatDate(date) {
