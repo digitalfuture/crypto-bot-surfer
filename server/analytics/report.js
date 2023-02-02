@@ -1,42 +1,49 @@
 import path from "node:path";
-import child_process from "child_process";
+import { execSync } from "child_process";
 import fs from "node:fs";
 import { fileURLToPath } from "node:url";
 import { format } from "@fast-csv/format";
 
+////
 const reportFileName = process.env.REPORT_FILE_NAME;
+const reportFileReset = JSON.parse(process.env.REPORT_FILE_RESET);
 const comissionPercent = parseFloat(process.env.COMISSION_PERCENT);
 
+////
 const fileName = `${reportFileName}.csv`;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const filePath = path.join(__dirname, "../../report", fileName);
-
-const options = { flags: "a" };
-
-const headers = [
-  "Count",
-  "Date",
-  "BTC / USDT price",
-  "Token name",
-  "24h price change %",
-  "Trade",
-  "Trade price",
-  "Comission",
-  "Profit %",
-  "Profit total %",
-];
+const fileOptions = { flags: "a" };
 
 let profitTotal = 0;
 let lastPrice;
 let count = 0;
 
-createTable();
+////
+if (reportFileReset) {
+  console.log("Report file erased:", reportFileReset);
+  createTable();
+}
 
+////
 function createTable() {
-  child_process.execSync(`rm -rf ${filePath}`);
+  const headers = [
+    "Count",
+    "Date",
+    "BTC / USDT price",
+    "Token name",
+    "24h price change %",
+    "Trade",
+    "Trade price",
+    "Comission",
+    "Profit %",
+    "Profit total %",
+  ];
 
-  const stream = fs.createWriteStream(filePath, options);
+  execSync(`rm -rf ${filePath}`);
+
+  const stream = fs.createWriteStream(filePath, fileOptions);
   const csvStream = format({ includeEndRowDelimiter: true });
   csvStream.pipe(stream);
   csvStream.write(headers);
@@ -69,7 +76,7 @@ export function report({
   priceChangePercent,
   btcUsdtPrice,
 }) {
-  const stream = fs.createWriteStream(filePath, options);
+  const stream = fs.createWriteStream(filePath, fileOptions);
   const csvStream = format({
     headers: false,
     includeEndRowDelimiter: true,
