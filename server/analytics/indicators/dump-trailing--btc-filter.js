@@ -109,22 +109,22 @@ export async function getTradeSignals({
       btcUsdtPrice,
     };
 
-    console.info("\nCheck signals result:", {
-      buySignal: {
-        buyPrimarySymbol,
-        buyTickerName,
-        buyPrice,
-        buyTickerPriceChangePercent,
-        isBuySignal,
-      },
-      sellSignal: {
-        sellPrimarySymbol,
-        sellTickerName,
-        sellPrice,
-        sellTickerPriceChangePercent,
-        isSellSignal,
-      },
-    });
+    // console.info("\nCheck signals result:", {
+    //   buySignal: {
+    //     buyPrimarySymbol,
+    //     buyTickerName,
+    //     buyPrice,
+    //     buyTickerPriceChangePercent,
+    //     isBuySignal,
+    //   },
+    //   sellSignal: {
+    //     sellPrimarySymbol,
+    //     sellTickerName,
+    //     sellPrice,
+    //     sellTickerPriceChangePercent,
+    //     isSellSignal,
+    //   },
+    // });
 
     return result;
   } catch (error) {

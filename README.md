@@ -20,6 +20,8 @@ example config:
 ```env
 TEST_MODE=true
 
+USE_QUEUE=false
+
 REPORT_FILE_NAME=trades
 
 INDICATOR=bottom-gainer-trailing-stop

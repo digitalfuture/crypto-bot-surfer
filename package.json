@@ -17,6 +17,7 @@
     "test:api": "node -r dotenv/config test-api.js"
   },
   "dependencies": {
+    "amqplib": "^0.10.3",
     "chart.js": "^2.9.4",
     "chartjs-node-canvas": "^3.1.0",
     "core-js": "^3.6.5",

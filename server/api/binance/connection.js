@@ -1,10 +1,51 @@
 import Binance from "node-binance-api";
+import queue from "./queue.js";
 
-export default new Binance().options({
+const useQueue = JSON.parse(process.env.USE_QUEUE);
+const isTestMode = JSON.parse(process.env.TEST_MODE);
+
+const options = {
   APIKEY: process.env.BINANCE_APIKEY,
   APISECRET: process.env.BINANCE_APISECRET,
-  test: JSON.parse(process.env.TEST_MODE),
+  test: isTestMode,
   recvWindow: 60000,
   verbose: true,
   useServerTime: true,
-});
+};
+
+let binance;
+
+if (useQueue) {
+  const binanceProxy = new Proxy(new Binance().options(options), {
+    construct(target, args) {
+      const binanceInstance = new target(...args);
+
+      return new Proxy(binanceInstance, {
+        get(target, prop, receiver) {
+          const origMethod = target[prop];
+
+          if (typeof origMethod === "function") {
+            return async function (...args) {
+              const request = () => origMethod.apply(target, args);
+              const result = await queue(request);
+
+              return result;
+            };
+          } else {
+            return origMethod;
+          }
+        },
+      });
+    },
+  });
+
+  binance = binanceProxy;
+
+  console.log("Using Binance proxy with queue");
+} else {
+  binance = new Binance().options(options);
+
+  console.log("Using direct Binance API");
+}
+
+export default binance;
