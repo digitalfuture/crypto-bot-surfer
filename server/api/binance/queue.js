@@ -6,19 +6,18 @@ const REQUEST_LIMIT = process.env.REQUEST_LIMIT || 10;
 
 let channel;
 
-amqp
-  .connect(`amqp://${RABBITMQ_HOST}`)
-  .then(function (conn) {
-    return conn.createChannel();
-  })
-  .then(function (ch) {
-    channel = ch;
-    return channel.assertQueue(RABBITMQ_QUEUE_NAME, { durable: true });
-  })
-  .catch(function (err) {
+async function setupQueue() {
+  try {
+    const conn = await amqp.connect(`amqp://${RABBITMQ_HOST}`);
+    channel = await conn.createChannel();
+    await channel.assertQueue(RABBITMQ_QUEUE_NAME, { durable: true });
+  } catch (err) {
     console.log("Queue is not available at the moment");
     console.error(err);
-  });
+  }
+}
+
+setupQueue();
 
 async function queue(request) {
   try {
