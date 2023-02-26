@@ -2,7 +2,6 @@ import amqp from "amqplib";
 
 const RABBITMQ_HOST = process.env.RABBITMQ_HOST || "localhost";
 const RABBITMQ_QUEUE_NAME = process.env.RABBITMQ_QUEUE_NAME || "requests";
-const PROCESS_DELAY = process.env.PROCESS_DELAY || 100;
 
 let channel;
 
@@ -30,21 +29,20 @@ async function queue(request) {
       persistent: true,
     });
 
-    // console.log("Message sent to queue:", message);
-
     return new Promise(function (resolve) {
-      setTimeout(async function () {
-        const message = await channel.get(RABBITMQ_QUEUE_NAME, {
-          noAck: false,
-        });
-        if (message) {
-          // console.log("Message received from queue:", message.content.toString());
-          resolve(JSON.parse(message.content.toString()));
-          channel.ack(message);
-        } else {
-          resolve();
-        }
-      }, PROCESS_DELAY);
+      channel.consume(
+        RABBITMQ_QUEUE_NAME,
+        function (message) {
+          if (message) {
+            // console.log("Message received from queue:", message.content.toString());
+            resolve(JSON.parse(message.content.toString()));
+            channel.ack(message);
+          } else {
+            resolve();
+          }
+        },
+        { noAck: false }
+      );
     });
   } catch (err) {
     console.error("Queue is not available at the moment");
