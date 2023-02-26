@@ -31,11 +31,11 @@ async function queue(request) {
       persistent: true,
     });
 
-    console.log("Message sent to queue:", message);
+    // console.log("Message sent to queue:", message);
 
     return new Promise(function (resolve) {
       channel.consume(RABBITMQ_QUEUE_NAME, function (message) {
-        console.log("Message received from queue:", message.content.toString());
+        // console.log("Message received from queue:", message.content.toString());
         resolve(JSON.parse(message.content.toString()));
         channel.ack(message);
       });

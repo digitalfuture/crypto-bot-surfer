@@ -21,6 +21,7 @@ example config:
 TEST_MODE=true
 
 USE_QUEUE=false
+RABBITMQ_HOST=rabbitmq-container
 
 REPORT_FILE_NAME=trades
 
