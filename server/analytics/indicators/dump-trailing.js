@@ -11,8 +11,8 @@ export async function getTradeSignals({
   try {
     const btcUsdtPrice = await getLastPrice("BTCUSDT");
 
-    console.log("usedSymbols:", usedSymbols);
-    console.log("lastTrade:", lastTrade);
+    console.info("usedSymbols:", usedSymbols);
+    console.info("lastTrade:", lastTrade);
 
     const tradingTickers = await getTradingTickers();
     // console.info("tradingTickers:", tradingTickers);

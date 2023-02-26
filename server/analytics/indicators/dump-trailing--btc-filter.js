@@ -15,8 +15,8 @@ export async function getTradeSignals({
 
     if (!lastBtcUsdtPrice) lastBtcUsdtPrice = btcUsdtPrice;
 
-    console.log("usedSymbols:", usedSymbols);
-    console.log("lastTrade:", lastTrade);
+    console.info("usedSymbols:", usedSymbols);
+    console.info("lastTrade:", lastTrade);
 
     const tradingTickers = await getTradingTickers();
     // console.info("tradingTickers:", tradingTickers);
@@ -67,17 +67,17 @@ export async function getTradeSignals({
     const buyCondition2 = !isBtcFalling;
     const isBuySignal = buyCondition1 && buyCondition2;
 
-    console.log("lastBtcUsdtPrice:", lastBtcUsdtPrice);
-    console.log("btcUsdtPrice:", btcUsdtPrice);
-    console.log("isBtcFalling:", isBtcFalling);
+    console.info("lastBtcUsdtPrice:", lastBtcUsdtPrice);
+    console.info("btcUsdtPrice:", btcUsdtPrice);
+    console.info("isBtcFalling:", isBtcFalling);
 
     lastBtcUsdtPrice = btcUsdtPrice;
 
-    // console.log(
+    // console.info(
     //   "\nbtcUsdtTicker.priceChangePercent:",
     //   btcUsdtTicker.priceChangePercent
     // );
-    // console.log("isBtcFalling:", btcUsdtTicker.priceChangePercent > 0);
+    // console.info("isBtcFalling:", btcUsdtTicker.priceChangePercent > 0);
 
     //
     // Sell signal
