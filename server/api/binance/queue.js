@@ -41,8 +41,7 @@ async function queue(request) {
       });
     });
   } catch (err) {
-    console.log("Queue is not available at the moment");
-    console.error(err);
+    console.error("Queue is not available at the moment");
     return request();
   }
 }
