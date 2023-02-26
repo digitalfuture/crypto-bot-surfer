@@ -31,6 +31,7 @@ const usedSymbols = [];
 
 export default async function start() {
   console.log("\nREAL mode is active");
+  console.info(`${secondarySymbol} Bot started`);
 
   // Disable console output for PRODUCTION mode
   if (appMode === "PRODUCTION") console.info = () => {};

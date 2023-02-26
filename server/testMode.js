@@ -82,8 +82,11 @@ export default async function start() {
 
 async function startServer() {
   try {
-    console.info("\n");
+    console.info("\nTEST mode is active");
     console.info(`${secondarySymbol} Bot started`);
+
+    // Disable console output for PRODUCTION mode
+    if (appMode === "PRODUCTION") console.info = () => {};
 
     const intervalString = interval.endsWith("s")
       ? heartbeatInterval / 1000 + "s"
