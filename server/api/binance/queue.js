@@ -6,6 +6,8 @@ const REQUEST_LIMIT = process.env.REQUEST_LIMIT || 10;
 
 let channel;
 
+setupQueue();
+
 async function setupQueue() {
   try {
     const conn = await amqp.connect(`amqp://${RABBITMQ_HOST}`);
@@ -16,8 +18,6 @@ async function setupQueue() {
     console.error(err);
   }
 }
-
-setupQueue();
 
 async function queue(request) {
   try {
