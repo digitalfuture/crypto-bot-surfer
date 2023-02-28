@@ -1,7 +1,8 @@
 import amqp from "amqplib";
 
-const RABBITMQ_HOST = process.env.RABBITMQ_HOST || "localhost";
-const RABBITMQ_QUEUE_NAME = process.env.RABBITMQ_QUEUE_NAME || "requests";
+const host = process.env.RABBITMQ_HOST || "localhost";
+const port = process.env.RABBITMQ_PORT || 5672;
+const queueName = process.env.RABBITMQ_QUEUE_NAME || "requests";
 
 let channel;
 
@@ -9,9 +10,9 @@ setupQueue();
 
 async function setupQueue() {
   try {
-    const conn = await amqp.connect(`amqp://${RABBITMQ_HOST}`);
+    const conn = await amqp.connect(`amqp://guest:guest@${host}:${port}`);
     channel = await conn.createChannel();
-    await channel.assertQueue(RABBITMQ_QUEUE_NAME, { durable: true });
+    await channel.assertQueue(queueName, { durable: true });
   } catch (err) {
     console.log("Queue is not available at the moment");
     console.error(err);
