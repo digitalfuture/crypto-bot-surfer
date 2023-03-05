@@ -21,7 +21,7 @@ example config:
 TEST_MODE=true
 
 USE_QUEUE=false
-RABBITMQ_HOST=rabbitmq-container
+QUEUE_URL=http://localhost:8000
 
 REPORT_FILE_NAME=trades
 

@@ -1,8 +1,9 @@
 import Binance from "node-binance-api";
-import queue from "./queue.js";
+import axios from "axios";
 
 const useQueue = JSON.parse(process.env.USE_QUEUE);
 const isTestMode = JSON.parse(process.env.TEST_MODE);
+const queueUrl = JSON.parse(process.env.QUEUE_URL);
 
 const options = {
   APIKEY: process.env.BINANCE_APIKEY,
@@ -27,9 +28,10 @@ if (useQueue) {
           if (typeof origMethod === "function") {
             return async function (...args) {
               const request = () => origMethod.apply(target, args);
-              const result = await queue(request);
+              const task = JSON.stringify({ request, args });
+              await axios.post(queueUrl, { task });
 
-              return result;
+              return Promise.resolve();
             };
           } else {
             return origMethod;
@@ -41,7 +43,7 @@ if (useQueue) {
 
   binance = binanceProxy;
 
-  console.log("Using Binance proxy with queue");
+  console.log("Using Binance proxy with external queue service");
 } else {
   binance = new Binance().options(options);
 
