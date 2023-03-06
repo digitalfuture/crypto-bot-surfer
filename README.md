@@ -23,6 +23,7 @@ TEST_MODE=true
 USE_QUEUE=false
 QUEUE_URL=http://localhost:8000
 
+REPORT_FILE_DIR=/home/report
 REPORT_FILE_NAME=trades
 
 INDICATOR=bottom-gainer-trailing-stop
