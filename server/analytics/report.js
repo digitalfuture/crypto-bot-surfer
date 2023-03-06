@@ -51,7 +51,7 @@ function createTable() {
   csvStream.write(headers);
   csvStream.end();
 
-  console.log("Report file created:", fileName);
+  console.log("Report file created:", filePath);
 }
 
 function formatDate(date) {
