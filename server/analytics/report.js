@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import { format } from "@fast-csv/format";
 
 ////
-const reportFileDir = process.env.REPORT_FILE_DIR || "../../report";
+const reportFileDir = process.env.REPORT_FILE_DIR;
 const reportFileName = process.env.REPORT_FILE_NAME;
 const reportFileNew = JSON.parse(process.env.REPORT_FILE_NEW);
 const comissionPercent = parseFloat(process.env.COMISSION_PERCENT);
@@ -13,8 +13,8 @@ const comissionPercent = parseFloat(process.env.COMISSION_PERCENT);
 ////
 const fileName = `${reportFileName}.csv`;
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const filePath = path.join(__dirname, reportFileDir, fileName);
+const __dirname = reportFileDir ? "../../report" : path.dirname(__filename);
+const filePath = path.join(__dirname, fileName);
 const fileOptions = { flags: "a" };
 
 let profitTotal = 0;
