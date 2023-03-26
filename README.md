@@ -21,7 +21,7 @@ example config:
 TEST_MODE=true
 
 USE_QUEUE=false
-QUEUE_URL=http://localhost:8000
+QUEUE_URL=http://queue-service:8000/queue
 
 REPORT_FILE_DIR=/home/report
 REPORT_FILE_NAME=trades

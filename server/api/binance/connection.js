@@ -16,40 +16,21 @@ const options = {
   useServerTime: true,
 };
 
-let binance;
+let binance = new Binance().options(options);
 
 if (useQueue) {
-  const binanceProxy = new Proxy(new Binance().options(options), {
-    construct(target, args) {
-      const binanceInstance = new target(...args);
-
-      return new Proxy(binanceInstance, {
-        get(target, prop, receiver) {
-          const origMethod = target[prop];
-
-          if (typeof origMethod === "function") {
-            return async function (...args) {
-              const request = () => origMethod.apply(target, args);
-              const task = JSON.stringify({ request, args });
-              await axios.post(queueUrl, { task });
-
-              return Promise.resolve();
-            };
-          } else {
-            return origMethod;
-          }
-        },
+  axios.interceptors.request.use(async (config) => {
+    try {
+      const response = await axios.post(queueUrl, {
+        task: config,
       });
-    },
+
+      return response.data;
+    } catch (error) {
+      console.error(error);
+      return Promise.reject(error);
+    }
   });
-
-  binance = binanceProxy;
-
-  console.log("Using Binance proxy with external queue service");
-} else {
-  binance = new Binance().options(options);
-
-  console.log("Using direct Binance API");
 }
 
 export default binance;
