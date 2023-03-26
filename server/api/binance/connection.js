@@ -14,23 +14,27 @@ const options = {
   useServerTime: true,
 };
 
-let binance = new Binance().options(options);
+function createBinanceInstance() {
+  if (useQueue) {
+    console.log("Queue URL:", queueUrl);
 
-if (useQueue) {
-  console.log("Queue URL:", queueUrl);
+    const instance = new Binance().options(options);
+    const queueAxios = axios.create({
+      baseURL: queueUrl,
+    });
 
-  axios.interceptors.request.use(async (config) => {
-    try {
-      const response = await axios.post(queueUrl, {
-        task: config,
+    queueAxios.interceptors.request.use((config) => {
+      return instance.queue(() => {
+        return instance[config.method.toLowerCase()](config.url, config.data);
       });
+    });
 
-      return response.data;
-    } catch (error) {
-      console.error(error);
-      return Promise.reject(error);
-    }
-  });
+    return queueAxios;
+  } else {
+    return new Binance().options(options);
+  }
 }
+
+const binance = createBinanceInstance();
 
 export default binance;
