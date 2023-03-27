@@ -82,7 +82,6 @@ export default async function start() {
 
 async function startServer() {
   try {
-    console.info("\nTEST mode is active");
     console.info(`${secondarySymbol} Bot started`);
 
     // Disable console output for PRODUCTION mode

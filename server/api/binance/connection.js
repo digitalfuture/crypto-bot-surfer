@@ -1,9 +1,10 @@
 import Binance from "node-binance-api";
-import axios from "axios";
 
 const useQueue = JSON.parse(process.env.USE_QUEUE);
 const isTestMode = JSON.parse(process.env.TEST_MODE);
 const queueUrl = process.env.QUEUE_URL;
+
+console.log("Queue URL:", queueUrl);
 
 const options = {
   APIKEY: process.env.BINANCE_APIKEY,
@@ -14,27 +15,23 @@ const options = {
   useServerTime: true,
 };
 
-function createBinanceInstance() {
-  if (useQueue) {
-    console.log("Queue URL:", queueUrl);
+let binance = new Binance().options(options);
 
-    const instance = new Binance().options(options);
-    const queueAxios = axios.create({
-      baseURL: queueUrl,
+if (useQueue) {
+  binance._makeRequest = async function (
+    path,
+    data = {},
+    method = "GET",
+    headers = {}
+  ) {
+    const response = await fetch(`${queueUrl}/queue/binance`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ path, data, method, headers }),
     });
-
-    queueAxios.interceptors.request.use((config) => {
-      return instance.queue(() => {
-        return instance[config.method.toLowerCase()](config.url, config.data);
-      });
-    });
-
-    return queueAxios;
-  } else {
-    return new Binance().options(options);
-  }
+    const result = await response.json();
+    return result;
+  };
 }
-
-const binance = createBinanceInstance();
 
 export default binance;
