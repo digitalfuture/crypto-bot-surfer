@@ -1,6 +1,5 @@
 // connection.js
 
-import fetch from "node-fetch";
 import Binance from "node-binance-api";
 
 const isTestMode = JSON.parse(process.env.TEST_MODE);

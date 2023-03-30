@@ -3,6 +3,7 @@ import { delay } from "../../helpers/functions.js";
 
 import { getExchangeInfo, getLastPrice, getSymbolBalance } from "./info.js";
 
+const delayMs = JSON.parse(process.env.DELAY);
 const isfixedValue = process.env.USE_FIXED_TRADE_VALUE;
 const fixedValue = parseFloat(process.env.FIXED_TRADE_VALUE);
 const fixedPercent = parseFloat(process.env.FIXED_TRADE_PERCENT);
@@ -45,7 +46,7 @@ export async function marketBuy({
       return { result: false };
     }
 
-    await delay(500);
+    await delay(delayMs);
     const response = await binance.marketBuy(tickerName, buyQuantity);
 
     // console.info(response);
@@ -77,7 +78,7 @@ export async function marketSell({
       return { result: false };
     }
 
-    await delay(500);
+    await delay(delayMs);
     const response = await binance.marketSell(tickerName, sellQuantity);
 
     // console.info(response);
@@ -99,7 +100,7 @@ export async function getOrderQuantity({
   tickerName,
 }) {
   try {
-    await delay(500);
+    await delay(delayMs);
 
     const primarySymbolBalance = await getSymbolBalance(primarySymbol);
     const secondarySymbolBalance = await getSymbolBalance(secondarySymbol);

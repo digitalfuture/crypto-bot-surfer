@@ -1,32 +1,25 @@
 import binance from "./server/api/binance/connection.js";
 
-(async function () {
-  try {
-    const prices = await binance.prices();
-    console.log(prices);
-  } catch (err) {
-    console.error(err);
-  }
-})();
+const delayMs = JSON.parse(process.env.DELAY);
 
-// import {
-//   getExchangeInfo,
-//   // getPrevDayData,
-//   // getTradingTickers,
-// } from "./server/api/binance/info.js";
-// import Binance from "node-binance-api";
-// import util from "node:util";
+import {
+  getExchangeInfo,
+  getPrevDayData,
+  getTradingTickers,
+} from "./server/api/binance/info.js";
+import Binance from "node-binance-api";
+import util from "node:util";
 
-// export const binance = new Binance().options({
-//   APIKEY: process.env.BINANCE_APIKEY,
-//   APISECRET: process.env.BINANCE_APISECRET,
-//   test: true,
-//   recWindow: 60000,
-//   verbose: true,
-//   useServerTime: true,
-// });
+export const binance = new Binance().options({
+  APIKEY: process.env.BINANCE_APIKEY,
+  APISECRET: process.env.BINANCE_APISECRET,
+  test: true,
+  recWindow: 60000,
+  verbose: true,
+  useServerTime: true,
+});
 
-// test();
+test();
 
 // async function test() {
 //   try {
@@ -153,7 +146,7 @@ import binance from "./server/api/binance/connection.js";
 
 // // async function marketSell({ tickerName, amount }) {
 // //   try {
-// //     delay(500);
+// //     delay(delayMs);
 
 // //     const { minOrderQuantity, minOrderValue, stepSize } = await getExchangeInfo(
 // //       tickerName
@@ -217,7 +210,7 @@ import binance from "./server/api/binance/connection.js";
 // // }
 
 // // async function getLastPrice(tickerName) {
-// //   await delay(500);
+// //   await delay(delayMs);
 
 // //   const priceList = await binance.prices();
 // //   const tickerPrice = parseFloat(priceList[tickerName]);
