@@ -3,7 +3,7 @@ import { delay } from "../../helpers/functions.js";
 
 export async function getExchangeInfo(tickerName) {
   try {
-    await delay(250);
+    await delay(500);
 
     const data = await binance.exchangeInfo();
     // console.info("\nExchangeInfo:", data);
@@ -58,7 +58,7 @@ export async function getExchangeInfo(tickerName) {
 
 export async function getTradingTickers() {
   try {
-    await delay(250);
+    await delay(500);
 
     const data = await binance.exchangeInfo();
     console.info("\n");
@@ -79,14 +79,14 @@ export async function getTradingTickers() {
 
 export async function getLastPrice(tickerName) {
   try {
-    await delay(250);
+    await delay(500);
 
     const priceList = await binance.prices();
     const tickerPrice = parseFloat(priceList[tickerName]);
 
     return tickerPrice;
   } catch (error) {
-    throw { type: "Get Past Price", ...error, errorSrcData: error };
+    throw { type: "Get Last Price", ...error, errorSrcData: error };
   }
 }
 
@@ -120,7 +120,7 @@ export async function getPrevDayData(tickerName) {
   // ],
 
   try {
-    await delay(250);
+    await delay(500);
 
     if (tickerName) {
       const data = await binance.prevDay(tickerName);
@@ -136,7 +136,7 @@ export async function getPrevDayData(tickerName) {
 
 export async function getSymbolBalance(symbolName) {
   try {
-    await delay(250);
+    await delay(500);
 
     const balances = await binance.balance();
 
@@ -151,7 +151,7 @@ export async function getSymbolBalance(symbolName) {
 
 export async function getTradingHistory(tickerName) {
   try {
-    await delay(250);
+    await delay(500);
 
     return await binance.trades(tickerName);
   } catch (error) {
@@ -166,7 +166,7 @@ export async function getCandlestickData({
   endTime = Date.now(),
 }) {
   try {
-    await delay(250);
+    await delay(500);
 
     const candlesticks = await binance.candlesticks(
       tickerName,
@@ -212,7 +212,7 @@ export async function getCandlestickData({
 
 export async function getAccountBalances() {
   try {
-    await delay(250);
+    await delay(500);
 
     const balances = await binance.balance();
 

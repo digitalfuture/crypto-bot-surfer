@@ -11,19 +11,26 @@ export async function marketBuy({
   primarySymbol,
   secondarySymbol,
   tickerName,
-  secondarySymbolBalance
+  secondarySymbolBalance,
 }) {
   try {
     console.info("Secondary symbol balance:", secondarySymbolBalance);
 
     if (isfixedValue && secondarySymbolBalance < fixedValue) {
-      console.info("\n\nInsufficient balance")
+      console.info("\n\nInsufficient balance");
       console.info(secondarySymbol, "balance must be >", fixedValue);
-      
+
       return { result: false };
-    } else if (secondarySymbolBalance < (secondarySymbolBalance / 100 * fixedPercent)) {
-      console.info("\n\nInsufficient balance")
-      console.info(secondarySymbol, "balance must be >", secondarySymbolBalance / 100 * fixedPercent);
+    } else if (
+      secondarySymbolBalance <
+      (secondarySymbolBalance / 100) * fixedPercent
+    ) {
+      console.info("\n\nInsufficient balance");
+      console.info(
+        secondarySymbol,
+        "balance must be >",
+        (secondarySymbolBalance / 100) * fixedPercent
+      );
     }
 
     const { buyQuantity } = await getOrderQuantity({
@@ -38,7 +45,7 @@ export async function marketBuy({
       return { result: false };
     }
 
-    await delay(250);
+    await delay(500);
     const response = await binance.marketBuy(tickerName, buyQuantity);
 
     // console.info(response);
@@ -70,7 +77,7 @@ export async function marketSell({
       return { result: false };
     }
 
-    await delay(250);
+    await delay(500);
     const response = await binance.marketSell(tickerName, sellQuantity);
 
     // console.info(response);
@@ -92,7 +99,7 @@ export async function getOrderQuantity({
   tickerName,
 }) {
   try {
-    await delay(250);
+    await delay(500);
 
     const primarySymbolBalance = await getSymbolBalance(primarySymbol);
     const secondarySymbolBalance = await getSymbolBalance(secondarySymbol);
@@ -122,13 +129,13 @@ export async function getOrderQuantity({
       );
     }
 
-    console.info('buyQuantity:', buyQuantity)
+    console.info("buyQuantity:", buyQuantity);
 
     const insufficientBalanceToBuy =
       buyQuantity < minOrderQuantity || buyQuantity * price < minOrderValue;
-    
+
     console.info("insufficientBalanceToBuy:", insufficientBalanceToBuy);
-    
+
     if (insufficientBalanceToBuy) {
       buyQuantity = 0;
     }

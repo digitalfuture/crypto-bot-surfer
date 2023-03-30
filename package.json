@@ -24,7 +24,10 @@
     "core-js": "^3.6.5",
     "dotenv": "^8.2.0",
     "fast-csv": "^4.3.6",
+    "nock": "^13.3.0",
     "node-binance-api": "^0.13.0",
+    "node-fetch": "^3.3.1",
+    "node-http-mock": "^0.5.2",
     "telegraf": "^4.1.1"
   },
   "devDependencies": {
