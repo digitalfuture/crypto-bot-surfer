@@ -107,7 +107,7 @@ export function report({
 
     csvStream.write({
       Count: count,
-      Date: date.toUTCString(),
+      Date: date.toISOString(),
       "BTC / USDT price": btcUsdtPrice,
       "Token name": symbol,
       "24h price change %": +priceChangePercent.toFixed(4),
@@ -125,7 +125,7 @@ export function report({
 
     csvStream.write({
       Count: count,
-      Date: date.toUTCString(),
+      Date: date.toISOString(),
       "BTC / USDT price": btcUsdtPrice,
       "Token name": symbol,
       "24h price change %": +priceChangePercent.toFixed(4),
@@ -140,7 +140,7 @@ export function report({
   } else {
     csvStream.write({
       Count: count,
-      Date: date.toUTCString(),
+      Date: date.toISOString(),
       "BTC / USDT price": btcUsdtPrice,
       "Token name": "",
       "24h price change %": +(priceChangePercent || 0).toFixed(4),
