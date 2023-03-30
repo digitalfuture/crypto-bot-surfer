@@ -92,8 +92,6 @@ export function report({
 
   count++;
 
-  const dateFormat = formatDate(date);
-
   const onePercent = lastPrice / 100;
   const comission = price * comissionPercent;
 
@@ -109,7 +107,7 @@ export function report({
 
     csvStream.write({
       Count: count,
-      Date: dateFormat,
+      Date: date.toUTCString(),
       "BTC / USDT price": btcUsdtPrice,
       "Token name": symbol,
       "24h price change %": +priceChangePercent.toFixed(4),
@@ -127,7 +125,7 @@ export function report({
 
     csvStream.write({
       Count: count,
-      Date: dateFormat,
+      Date: date.toUTCString(),
       "BTC / USDT price": btcUsdtPrice,
       "Token name": symbol,
       "24h price change %": +priceChangePercent.toFixed(4),
@@ -142,7 +140,7 @@ export function report({
   } else {
     csvStream.write({
       Count: count,
-      Date: dateFormat,
+      Date: date.toUTCString(),
       "BTC / USDT price": btcUsdtPrice,
       "Token name": "",
       "24h price change %": +(priceChangePercent || 0).toFixed(4),
