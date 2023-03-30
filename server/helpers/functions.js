@@ -2,35 +2,30 @@ export function delay(ms) {
   return new Promise((resolve) => setTimeout(() => resolve(), ms));
 }
 
-export function getHeartbeatInterval(interval) {
-  const oneSecond = 1000;
-  const oneMinute = 60000;
-  const oneHour = oneMinute * 60;
-  const oneDay = oneHour * 24;
-
-  const intervalList = {
-    "1s": oneSecond,
-    "3s": oneSecond * 3,
-    "5s": oneSecond * 5,
-    "15s": oneSecond * 15,
-    "30s": oneSecond * 30,
-    "1m": oneMinute,
-    "3m": oneMinute * 3,
-    "5m": oneMinute * 5,
-    "15m": oneMinute * 15,
-    "30m": oneMinute * 30,
-    "1h": oneHour,
-    "2h": oneHour * 2,
-    "4h": oneHour * 4,
-    "6h": oneHour * 6,
-    "8h": oneHour * 8,
-    "12h": oneHour * 12,
-    "1d": oneDay,
-    "3d": oneDay * 3,
-    "1w": oneDay * 7,
+function parseInterval(interval) {
+  const match = interval.match(/^(\d+)(s|m|h)$/);
+  if (!match) {
+    throw new Error(`Invalid interval format: ${interval}`);
+  }
+  const value = parseInt(match[1], 10);
+  const unit = match[2];
+  if (value < 1 || value > 60) {
+    throw new Error(`Invalid interval value: ${value}`);
+  }
+  if (unit !== "s" && unit !== "m" && unit !== "h") {
+    throw new Error(`Invalid interval unit: ${unit}`);
+  }
+  const values = {
+    s: value * 1000,
+    m: value * 60 * 1000,
+    h: value * 60 * 60 * 1000,
   };
+  return values[unit];
+}
 
-  return intervalList[interval];
+export function getHeartbeatInterval(interval) {
+  const intervalMs = parseInterval(interval);
+  return intervalMs;
 }
 
 export function formatDate(timestamp) {
@@ -44,5 +39,3 @@ export function formatDate(timestamp) {
 
   return `${day}.${month}.${year}`;
 }
-
-export function report() {}
