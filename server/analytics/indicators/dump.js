@@ -1,6 +1,10 @@
 import { getPrevDayData, getTradingTickers } from "../../api/binance/info.js";
 import { getLastPrice } from "../../api/binance/info.js";
 
+const isBtcFilter = JSON.parse(process.env.BTC_FILTER);
+
+let lastBtcUsdtPrice = null;
+
 export async function getTradeSignals({
   secondarySymbol,
   currentSymbol,
@@ -10,16 +14,18 @@ export async function getTradeSignals({
   try {
     const btcUsdtPrice = await getLastPrice("BTCUSDT");
 
+    if (!lastBtcUsdtPrice) lastBtcUsdtPrice = btcUsdtPrice;
+
     // console.info("\nlastCheck:", lastCheck);
-    console.info("lastTrade:", lastTrade);
+    // console.info("lastTrade:", lastTrade);
 
     const tradingTickers = await getTradingTickers();
     // console.info("tradingTickers:", tradingTickers);
 
-    const topListData = await getPrevDayData();
-    // console.info("topListData:", topListData);
+    const priceListData = await getPrevDayData();
+    // console.info("priceListData:", priceListData);
 
-    const mappedList = topListData.map(
+    const mappedList = priceListData.map(
       ({
         symbol,
         priceChangePercent,
@@ -52,12 +58,17 @@ export async function getTradeSignals({
 
     //
     // Buy signal
+    const isBtcGrowing = lastBtcUsdtPrice > btcUsdtPrice;
     const tickerToBuy = tickerListToBuy[tickerListToBuy.length - 1];
     const buyPrimarySymbol = tickerToBuy.primarySymbol;
     const buyTickerName = tickerToBuy.tickerName;
     const buyPrice = tickerToBuy && parseFloat(tickerToBuy.lastPrice);
     const buyTickerPriceChangePercent = tickerToBuy.priceChangePercent;
-    const isBuySignal = !currentSymbol;
+    const buyCondition1 = !currentSymbol;
+    const buyCondition2 = isBtcFilter && isBtcGrowing;
+    const isBuySignal = buyCondition1 && buyCondition2;
+
+    lastBtcUsdtPrice = btcUsdtPrice;
 
     //
     // Sell signal
