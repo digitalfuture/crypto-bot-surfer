@@ -58,14 +58,14 @@ export async function getTradeSignals({
 
     //
     // Buy signal
-    const isBtcGrowing = lastBtcUsdtPrice > btcUsdtPrice;
+    const isBtcUp = lastBtcUsdtPrice > btcUsdtPrice;
     const tickerToBuy = tickerListToBuy[tickerListToBuy.length - 1];
     const buyPrimarySymbol = tickerToBuy.primarySymbol;
     const buyTickerName = tickerToBuy.tickerName;
     const buyPrice = tickerToBuy && parseFloat(tickerToBuy.lastPrice);
     const buyTickerPriceChangePercent = tickerToBuy.priceChangePercent;
     const buyCondition1 = !currentSymbol;
-    const buyCondition2 = isBtcFilter ? isBtcGrowing : true;
+    const buyCondition2 = isBtcFilter ? isBtcUp : true;
     const isBuySignal = buyCondition1 && buyCondition2;
 
     lastBtcUsdtPrice = btcUsdtPrice;
