@@ -8,7 +8,7 @@ import { format } from "@fast-csv/format";
 const reportFileDir = process.env.REPORT_FILE_DIR;
 const reportFileName = process.env.REPORT_FILE_NAME;
 const reportFileNew = JSON.parse(process.env.REPORT_FILE_NEW);
-const comissionPercent = parseFloat(process.env.COMISSION_PERCENT);
+const comissionPercent = parseFloat(process.env.TEST_COMISSION_PERCENT);
 
 ////
 const fileName = `${reportFileName}.csv`;
@@ -56,24 +56,6 @@ function createTable() {
   console.log("Report file created:", filePath);
 }
 
-function formatDate(date) {
-  const result =
-    date.getFullYear() +
-    "-" +
-    date.getMonth() +
-    1 +
-    "-" +
-    date.getDate() +
-    " " +
-    date.getHours().toString().padStart(2, 0) +
-    ":" +
-    date.getMinutes().toString().padStart(2, 0) +
-    ":" +
-    date.getSeconds().toString().padStart(2, 0);
-
-  return result;
-}
-
 export function report({
   date,
   trade,
@@ -100,8 +82,6 @@ export function report({
       lastPrice !== undefined
         ? (price - lastPrice) / onePercent - comissionPercent
         : -comissionPercent;
-
-    console.log("profitTotal:", profitTotal);
 
     profitTotal += profitPercent;
 

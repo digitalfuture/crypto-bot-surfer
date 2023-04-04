@@ -18,7 +18,6 @@ const isfixedValue = JSON.parse(process.env.USE_FIXED_TRADE_VALUE);
 const fixedValue = parseFloat(process.env.FIXED_TRADE_VALUE);
 const fixedPercent = parseFloat(process.env.FIXED_TRADE_PERCENT);
 const appMode = process.env.MODE;
-
 const heartbeatInterval = getHeartbeatInterval(interval);
 
 let loopCount = 1;
