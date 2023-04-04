@@ -65,7 +65,7 @@ export async function getTradeSignals({
     const buyPrice = tickerToBuy && parseFloat(tickerToBuy.lastPrice);
     const buyTickerPriceChangePercent = tickerToBuy.priceChangePercent;
     const buyCondition1 = !currentSymbol;
-    const buyCondition2 = isBtcFilter && isBtcGrowing;
+    const buyCondition2 = isBtcFilter ? isBtcGrowing : true;
     const isBuySignal = buyCondition1 && buyCondition2;
 
     lastBtcUsdtPrice = btcUsdtPrice;
@@ -83,7 +83,6 @@ export async function getTradeSignals({
     const sellCondition1 = lastCheck.symbol === currentSymbol;
     const sellCondition2 = sellPrice < lastCheck.price;
     const isSellSignal = sellCondition1 && sellCondition2;
-    // const isSellSignal = true;
 
     //
     // Result
@@ -101,22 +100,22 @@ export async function getTradeSignals({
       btcUsdtPrice,
     };
 
-    // console.info("\nCheck signals result:", {
-    //   buySignal: {
-    //     buyPrimarySymbol,
-    //     buyTickerName,
-    //     buyPrice,
-    //     buyTickerPriceChangePercent,
-    //     isBuySignal,
-    //   },
-    //   sellSignal: {
-    //     sellPrimarySymbol,
-    //     sellTickerName,
-    //     sellPrice,
-    //     sellTickerPriceChangePercent,
-    //     isSellSignal,
-    //   },
-    // });
+    console.info("\nCheck signals result:", {
+      buySignal: {
+        buyPrimarySymbol,
+        buyTickerName,
+        buyPrice,
+        buyTickerPriceChangePercent,
+        isBuySignal,
+      },
+      sellSignal: {
+        sellPrimarySymbol,
+        sellTickerName,
+        sellPrice,
+        sellTickerPriceChangePercent,
+        isSellSignal,
+      },
+    });
 
     return result;
   } catch (error) {

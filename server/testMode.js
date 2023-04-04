@@ -14,7 +14,6 @@ const minChangePercent = parseFloat(process.env.MIN_CHANGE_PERCENT);
 const isfixedValue = JSON.parse(process.env.USE_FIXED_TRADE_VALUE);
 const fixedValue = parseFloat(process.env.FIXED_TRADE_VALUE);
 const fixedPercent = parseFloat(process.env.FIXED_TRADE_PERCENT);
-const usedSymbolsLength = parseInt(process.env.USED_SYMBOLS_LENGTH);
 const appMode = process.env.MODE;
 
 const heartbeatInterval = getHeartbeatInterval(interval);
@@ -26,11 +25,9 @@ let balances = balancesInit;
 let currentSymbol = null;
 let lastTrade = { symbol: secondarySymbol, price: 1 };
 let lastCheck = { symbol: secondarySymbol, price: 1 };
-const usedSymbols = [];
 
 export default async function start() {
   console.log("\nTEST mode is active");
-  // console.log("\nusedSymbolsLength:", usedSymbolsLength);
 
   try {
     await startServer();
@@ -166,7 +163,6 @@ async function heartBeatLoop() {
       minChangePercent,
       lastTrade,
       lastCheck,
-      usedSymbols,
     });
 
     console.info("\n\nCurrent symbol:", currentSymbol);
@@ -175,21 +171,9 @@ async function heartBeatLoop() {
       console.info("\n");
       console.info("Sell condition:", true);
 
-      // console.info(
-      //   "usedSymbols.length === usedSymbolsLength:",
-      //   usedSymbols.length === usedSymbolsLength
-      // );
-
-      if (usedSymbols.length === usedSymbolsLength) {
-        usedSymbols.shift();
-      }
-
       if (currentSymbol) {
-        usedSymbols.push(currentSymbol);
         currentSymbol = null;
       }
-
-      console.log("\nusedSymbols after sell:", usedSymbols);
 
       const newPrimarySymbolBalance = 0;
 
