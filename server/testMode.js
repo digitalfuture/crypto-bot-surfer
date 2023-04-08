@@ -153,6 +153,7 @@ async function heartBeatLoop() {
       isSellSignal,
       isBuySignal,
       btcUsdtPrice,
+      passTrade,
     } = await getSignals({
       secondarySymbol,
       currentSymbol,
@@ -165,9 +166,9 @@ async function heartBeatLoop() {
       lastCheck,
     });
 
-    console.info("\n\nCurrent symbol:", currentSymbol);
-
-    if (isSellSignal && currentSymbol) {
+    if (passTrade) {
+      return;
+    } else if (isSellSignal && currentSymbol) {
       console.info("\n");
       console.info("Sell condition:", true);
 
@@ -273,6 +274,7 @@ async function heartBeatLoop() {
       });
     }
 
+    console.info("\n\nCurrent symbol:", currentSymbol);
     console.info("\nlastCheck:", lastCheck);
   } catch (error) {
     throw { type: "Heartbeat Loop Error", ...error, errorSrcData: error };
