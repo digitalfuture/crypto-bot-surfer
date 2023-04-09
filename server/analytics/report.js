@@ -38,7 +38,7 @@ function createTable() {
     "Comission",
     "Profit %",
     "Profit total %",
-    "Market average price change",
+    "Market change",
   ];
 
   execSync(`rm -rf ${filePath}`);
@@ -96,7 +96,7 @@ export function report({
       Comission: +comission.toFixed(4),
       "Profit %": +profitPercent.toFixed(4),
       "Profit total %": +profitTotal.toFixed(4),
-      "Market average price change": +marketAveragePriceDiff.toFixed(4),
+      "Market change": +marketAveragePriceDiff.toFixed(4),
     });
 
     lastPrice = price;
@@ -115,7 +115,7 @@ export function report({
       Comission: +comission.toFixed(4),
       "Profit %": +profitPercent.toFixed(4),
       "Profit total %": +profitTotal.toFixed(4),
-      "Market average price change": +marketAveragePriceDiff.toFixed(4),
+      "Market change": +marketAveragePriceDiff.toFixed(4),
     });
 
     lastPrice = price;
@@ -131,7 +131,7 @@ export function report({
       Comission: 0,
       "Profit %": 0,
       "Profit total %": +profitTotal.toFixed(4),
-      "Market average price change": +marketAveragePriceDiff.toFixed(4),
+      "Market change": +marketAveragePriceDiff.toFixed(4),
     });
   }
 

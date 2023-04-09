@@ -24,13 +24,6 @@ x-template: &basic-container
 # Creating containers
 services:
 
-  market-change:
-    <<: *basic-container
-    environment:
-      - HEARTBEAT_INTERVAL=1m
-      - REPORT_FILE_NAME=~market-average
-      - INDICATOR=market-change
-
 # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
   dump--03m:

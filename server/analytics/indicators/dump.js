@@ -46,6 +46,14 @@ export async function getTradeSignals({
       })
     );
 
+    const filteredListForMarketChange = mappedList
+      .filter(({ tickerName }) => tickerName.endsWith(secondarySymbol))
+      .filter(({ primarySymbol }) => !primarySymbol.endsWith("DOWN"))
+      .filter(({ primarySymbol }) => !primarySymbol.endsWith("UP"))
+      .filter(({ primarySymbol }) =>
+        tradingTickers.includes(primarySymbol + secondarySymbol)
+      );
+
     const tickerListToBuy = mappedList
       .filter(({ tickerName }) => tickerName.endsWith(secondarySymbol))
       .filter(({ primarySymbol }) => !primarySymbol.endsWith("DOWN"))
@@ -57,7 +65,7 @@ export async function getTradeSignals({
       .filter(({ primarySymbol }) => primarySymbol !== currentSymbol)
       .sort((a, b) => b.priceChangePercent - a.priceChangePercent);
 
-    const marketAveragePrice = tickerListToBuy.reduce(
+    const marketAveragePrice = filteredListForMarketChange.reduce(
       (sum, { lastPrice }, index, array) => {
         sum = sum + parseFloat(lastPrice);
 
