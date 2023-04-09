@@ -74,27 +74,11 @@ export function report({
 
   count++;
 
-  const onePercent = lastPrice / 100;
   const comission = price * comissionPercent;
 
-  if (trade === "INDICATOR") {
-    const profitPercent = (price - lastPrice) / onePercent;
+  if (trade === "SELL") {
+    const onePercent = lastPrice === undefined ? 0 : lastPrice / 100;
 
-    profitTotal += profitPercent;
-
-    csvStream.write({
-      Count: count,
-      Date: date.toISOString(),
-      "BTC / USDT price": btcUsdtPrice,
-      "Token name": "",
-      "24h price change %": +priceChangePercent.toFixed(4),
-      Trade: trade,
-      "Trade price": +price.toFixed(4),
-      Comission: 0,
-      "Profit %": 0,
-      "Profit total %": +price.toFixed(4),
-    });
-  } else if (trade === "SELL") {
     const profitPercent =
       lastPrice !== undefined
         ? (price - lastPrice) / onePercent - comissionPercent
@@ -147,6 +131,23 @@ export function report({
       "Profit %": 0,
       "Profit total %": +profitTotal.toFixed(4),
     });
+  } else {
+    const diff = lastPrice === undefined ? price : lastPrice;
+
+    csvStream.write({
+      Count: count,
+      Date: date.toISOString(),
+      "BTC / USDT price": btcUsdtPrice,
+      "Token name": "",
+      "24h price change %": +priceChangePercent.toFixed(4),
+      Trade: trade,
+      "Trade price": +price.toFixed(4),
+      Comission: 0,
+      "Profit %": 0,
+      "Profit total %": +(price - diff).toFixed(4),
+    });
+
+    lastPrice = price;
   }
 
   csvStream.end();

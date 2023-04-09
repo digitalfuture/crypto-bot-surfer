@@ -73,8 +73,8 @@ export async function getTradeSignals({ secondarySymbol }) {
 
     report({
       date: new Date(),
-      trade: "INDICATOR",
-      symbol: "MARKET-CHANHGE",
+      trade: "",
+      symbol: "MARKET-CHANGE",
       price: marketAveragePrice,
       priceChangePercent: 0,
       btcUsdtPrice,

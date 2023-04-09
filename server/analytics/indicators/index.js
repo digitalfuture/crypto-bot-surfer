@@ -1,5 +1,5 @@
 import * as indicatorDump from "./dump.js";
-import * as marketChange from "./market-change.js";
+import * as indicatorMarketChange from "./market-change.js";
 
 const indicatorName = process.env.INDICATOR;
 
@@ -10,7 +10,7 @@ switch (indicatorName) {
     getTradeSignals = indicatorDump.getTradeSignals;
     break;
   case "market-change":
-    getTradeSignals = marketChange.getTradeSignals;
+    getTradeSignals = indicatorMarketChange.getTradeSignals;
     break;
 }
 
