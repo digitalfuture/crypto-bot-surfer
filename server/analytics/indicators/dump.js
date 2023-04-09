@@ -4,6 +4,7 @@ import { getLastPrice } from "../../api/binance/info.js";
 const isBtcFilter = JSON.parse(process.env.BTC_FILTER);
 
 let lastBtcUsdtPrice = null;
+let lastMarketAveragePrice = null;
 
 export async function getTradeSignals({
   secondarySymbol,
@@ -56,6 +57,24 @@ export async function getTradeSignals({
       .filter(({ primarySymbol }) => primarySymbol !== currentSymbol)
       .sort((a, b) => b.priceChangePercent - a.priceChangePercent);
 
+    const marketAveragePrice = tickerListToBuy.reduce(
+      (sum, { lastPrice }, index, array) => {
+        sum = sum + parseFloat(lastPrice);
+
+        if (index === array.length - 1) {
+          return sum / array.length;
+        } else {
+          return sum;
+        }
+      },
+      0
+    );
+
+    if (!lastMarketAveragePrice) lastMarketAveragePrice = marketAveragePrice;
+
+    const marketAveragePriceDiff = marketAveragePrice - lastMarketAveragePrice;
+    lastMarketAveragePrice = marketAveragePrice;
+
     //
     // Buy signal
     const isBtcUp = lastBtcUsdtPrice > btcUsdtPrice;
@@ -98,6 +117,7 @@ export async function getTradeSignals({
       isBuySignal,
       isSellSignal,
       btcUsdtPrice,
+      marketAveragePriceDiff,
     };
 
     // console.info("\nCheck signals result:", {

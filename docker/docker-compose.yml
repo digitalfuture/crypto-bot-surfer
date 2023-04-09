@@ -1,0 +1,29 @@
+# docker-compose.yml
+
+version: "3.9"
+
+services:
+ queue:
+    image: node:14
+    hostname: queue-service
+    working_dir: /home
+    environment:
+      - DELAY=100
+      - PORT=8080
+      - DEBUG_MODE=true
+    command:
+      - bash 
+      - -c 
+      - |
+        git clone https://github.com/digitalfuture/crypto-bot-surfer-queue.git && \
+        cd crypto-bot-surfer-queue && \
+        npm install && \
+        npm start
+
+    ports:
+      - 8080:8080
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/healthcheck"]
+      interval: 10s
+      timeout: 5s
+      retries: 3

@@ -7,7 +7,6 @@ import { format } from "@fast-csv/format";
 ////
 const reportFileDir = process.env.REPORT_FILE_DIR;
 const reportFileName = process.env.REPORT_FILE_NAME;
-const reportFileNew = JSON.parse(process.env.REPORT_FILE_NEW);
 const comissionPercent = parseFloat(process.env.TEST_COMISSION_PERCENT);
 
 ////
@@ -24,9 +23,7 @@ let lastPrice;
 let count = 0;
 
 ////
-if (reportFileNew) {
-  createTable();
-}
+createTable();
 
 ////
 function createTable() {
@@ -41,6 +38,7 @@ function createTable() {
     "Comission",
     "Profit %",
     "Profit total %",
+    "Market average price change",
   ];
 
   execSync(`rm -rf ${filePath}`);
@@ -63,6 +61,7 @@ export function report({
   price,
   priceChangePercent,
   btcUsdtPrice,
+  marketAveragePriceDiff,
 }) {
   const stream = fs.createWriteStream(filePath, fileOptions);
   const csvStream = format({
@@ -97,6 +96,7 @@ export function report({
       Comission: +comission.toFixed(4),
       "Profit %": +profitPercent.toFixed(4),
       "Profit total %": +profitTotal.toFixed(4),
+      "Market average price change": +marketAveragePriceDiff.toFixed(4),
     });
 
     lastPrice = price;
@@ -115,6 +115,7 @@ export function report({
       Comission: +comission.toFixed(4),
       "Profit %": +profitPercent.toFixed(4),
       "Profit total %": +profitTotal.toFixed(4),
+      "Market average price change": +marketAveragePriceDiff.toFixed(4),
     });
 
     lastPrice = price;
@@ -130,28 +131,8 @@ export function report({
       Comission: 0,
       "Profit %": 0,
       "Profit total %": +profitTotal.toFixed(4),
+      "Market average price change": +marketAveragePriceDiff.toFixed(4),
     });
-  } else {
-    const profitTotal = lastPrice === undefined ? 0 : price - lastPrice;
-
-    console.log("lastPrice:", lastPrice);
-    console.log("price:", price);
-    console.log("profitTotal:", profitTotal);
-
-    csvStream.write({
-      Count: count,
-      Date: date.toISOString(),
-      "BTC / USDT price": btcUsdtPrice,
-      "Token name": "",
-      "24h price change %": +priceChangePercent.toFixed(4),
-      Trade: trade,
-      "Trade price": +price.toFixed(4),
-      Comission: 0,
-      "Profit %": 0,
-      "Profit total %": +profitTotal.toFixed(4),
-    });
-
-    lastPrice = price;
   }
 
   csvStream.end();

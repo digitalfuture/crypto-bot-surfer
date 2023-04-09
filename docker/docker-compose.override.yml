@@ -1,0 +1,101 @@
+# docker-compose.override.yml
+
+version: "3.9"
+
+# Basic service template
+x-template: &basic-container
+  depends_on:
+    queue:
+      condition: service_healthy
+  image: node:14
+  volumes:
+    - ./report:/home/report
+  env_file: .env
+  working_dir: /home
+  command: 
+      - bash 
+      - -c 
+      - |
+        git clone https://github.com/digitalfuture/crypto-bot-surfer.git && \
+        cd crypto-bot-surfer && \
+        npm install && \
+        npm run report
+
+# Creating containers
+services:
+
+  market-change:
+    <<: *basic-container
+    environment:
+      - HEARTBEAT_INTERVAL=1m
+      - REPORT_FILE_NAME=~market-average
+      - INDICATOR=market-change
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # #
+
+  dump--03m:
+    <<: *basic-container
+    environment:
+      - HEARTBEAT_INTERVAL=3m
+      - REPORT_FILE_NAME=dump--03m
+
+  dump--05m:
+    <<: *basic-container
+    environment:
+      - HEARTBEAT_INTERVAL=5m
+      - REPORT_FILE_NAME=dump--05m
+
+  dump-basic--07m:
+    <<: *basic-container
+    environment:
+      - HEARTBEAT_INTERVAL=7m
+      - REPORT_FILE_NAME=dump--07m
+
+  dump--09m:
+    <<: *basic-container
+    environment:
+      - HEARTBEAT_INTERVAL=09m
+      - REPORT_FILE_NAME=dump--09m
+
+  dump--11m:
+    <<: *basic-container
+    environment:
+      - HEARTBEAT_INTERVAL=11m
+      - REPORT_FILE_NAME=dump--11m
+
+# # # # # # # # # # # # # # # # # # # # # # # # # # #
+
+  dump--btc-filter--03m:
+    <<: *basic-container
+    environment:
+      - HEARTBEAT_INTERVAL=03m
+      - BTC_FILTER=true
+      - REPORT_FILE_NAME=dump--btc-filter--03m
+
+  dump--btc-filter--05m:
+    <<: *basic-container
+    environment:
+      - HEARTBEAT_INTERVAL=05m
+      - BTC_FILTER=true
+      - REPORT_FILE_NAME=dump--btc-filter--05m
+
+  dump-trailing-btc-filter-07m:
+    <<: *basic-container
+    environment:
+      - HEARTBEAT_INTERVAL=7m
+      - BTC_FILTER=true
+      - REPORT_FILE_NAME=dump--btc-filter--07m
+
+  dump-trailing-btc-filter-09m:
+    <<: *basic-container
+    environment:
+      - HEARTBEAT_INTERVAL=9m
+      - BTC_FILTER=true
+      - REPORT_FILE_NAME=dump--btc-filter--09m
+
+  dump-trailing-btc-filter-11m:
+    <<: *basic-container
+    environment:
+      - HEARTBEAT_INTERVAL=11m
+      - BTC_FILTER=true
+      - REPORT_FILE_NAME=dump--btc-filter--11m
