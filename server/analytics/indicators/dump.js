@@ -80,7 +80,7 @@ export async function getTradeSignals({
 
     if (!lastMarketAveragePrice) lastMarketAveragePrice = marketAveragePrice;
 
-    const marketAveragePriceDiff = marketAveragePrice - lastMarketAveragePrice;
+    const marketPriceChange = marketAveragePrice - lastMarketAveragePrice;
     lastMarketAveragePrice = marketAveragePrice;
 
     //
@@ -125,7 +125,7 @@ export async function getTradeSignals({
       isBuySignal,
       isSellSignal,
       btcUsdtPrice,
-      marketAveragePriceDiff,
+      marketPriceChange,
     };
 
     // console.info("\nCheck signals result:", {
