@@ -132,7 +132,11 @@ export function report({
       "Profit total %": +profitTotal.toFixed(4),
     });
   } else {
-    const diff = lastPrice === undefined ? price : lastPrice;
+    const profitTotal = lastPrice === undefined ? 0 : price - lastPrice;
+
+    console.log("lastPrice:", lastPrice);
+    console.log("price:", price);
+    console.log("profitTotal:", profitTotal);
 
     csvStream.write({
       Count: count,
@@ -144,7 +148,7 @@ export function report({
       "Trade price": +price.toFixed(4),
       Comission: 0,
       "Profit %": 0,
-      "Profit total %": +(price - diff).toFixed(4),
+      "Profit total %": +profitTotal.toFixed(4),
     });
 
     lastPrice = price;
