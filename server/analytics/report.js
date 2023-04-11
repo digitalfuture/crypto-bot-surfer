@@ -38,7 +38,7 @@ function createTable() {
     "Comission",
     "Profit %",
     "Profit total %",
-    "Market change",
+    "Market average",
   ];
 
   execSync(`rm -rf ${filePath}`);
@@ -61,7 +61,7 @@ export function report({
   price,
   priceChangePercent,
   btcUsdtPrice,
-  marketPriceChange,
+  marketAveragePrice,
 }) {
   const stream = fs.createWriteStream(filePath, fileOptions);
   const csvStream = format({
@@ -96,7 +96,7 @@ export function report({
       Comission: +comission.toFixed(4),
       "Profit %": +profitPercent.toFixed(4),
       "Profit total %": +profitTotal.toFixed(4),
-      "Market change": +marketPriceChange.toFixed(4),
+      "Market average": +marketAveragePrice.toFixed(4),
     });
 
     lastPrice = price;
@@ -115,7 +115,7 @@ export function report({
       Comission: +comission.toFixed(4),
       "Profit %": +profitPercent.toFixed(4),
       "Profit total %": +profitTotal.toFixed(4),
-      "Market change": +marketPriceChange.toFixed(4),
+      "Market average": +marketAveragePrice.toFixed(4),
     });
 
     lastPrice = price;
@@ -131,7 +131,7 @@ export function report({
       Comission: 0,
       "Profit %": 0,
       "Profit total %": +profitTotal.toFixed(4),
-      "Market change": +marketPriceChange.toFixed(4),
+      "Market average": +marketAveragePrice.toFixed(4),
     });
   }
 
