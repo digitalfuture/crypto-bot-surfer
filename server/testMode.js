@@ -3,7 +3,7 @@ import { sendMessage } from "./api/telegram/telegram.js";
 // import { prepareChartData } from "./analytics/charts.js";
 import { getLastPrice } from "./api/binance/info.js";
 import { delay, getHeartbeatInterval } from "./helpers/functions.js";
-import { getSignals } from "./analytics/indicators/index.js";
+import { getSignals } from "./indicators/index.js";
 import { report } from "./analytics/report.js";
 import util from "node:util";
 

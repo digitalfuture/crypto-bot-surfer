@@ -1,5 +1,5 @@
-import { getPrevDayData, getTradingTickers } from "../../api/binance/info.js";
-import { getLastPrice } from "../../api/binance/info.js";
+import { getPrevDayData, getTradingTickers } from "../api/binance/info.js";
+import { getLastPrice } from "../api/binance/info.js";
 
 export async function getTradeSignals({
   secondarySymbol,
