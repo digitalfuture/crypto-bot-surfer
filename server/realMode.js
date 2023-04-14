@@ -64,16 +64,12 @@ async function startServer() {
     console.info("\n");
     console.info(`${secondarySymbol} Bot started`);
 
-    const intervalString = interval.endsWith("s")
-      ? heartbeatInterval / 1000 + "s"
-      : heartbeatInterval / 1000 / 60 + "m";
-
-    console.info("Heartbeat interval:", intervalString);
+    console.info("Heartbeat interval:", interval);
     console.info("Using indicator:", indicator);
 
     let startMessage = `<b>${secondarySymbol} Surfer Bot started</b>\n\n`;
     startMessage += `<b>Chart Interval:</b> 1d\n`;
-    startMessage += `<b>Hearbeat interval:</b> ${intervalString}\n`;
+    startMessage += `<b>Hearbeat interval:</b> ${interval}\n`;
     await sendMessage(startMessage);
 
     await getStartupBalances();

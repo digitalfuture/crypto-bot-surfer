@@ -84,16 +84,12 @@ async function startServer() {
     // Disable console output for PRODUCTION mode
     if (appMode === "PRODUCTION") console.info = () => {};
 
-    const intervalString = interval.endsWith("s")
-      ? heartbeatInterval / 1000 + "s"
-      : heartbeatInterval / 1000 / 60 + "m";
-
-    console.info("Heartbeat interval:", intervalString);
+    console.info("Heartbeat interval:", interval);
     console.info("Using indicator:", indicator);
 
     let startMessage = `<b>${secondarySymbol} Bot started</b>\n\n`;
     startMessage += `<b>Chart Interval:</b> 1d\n`;
-    startMessage += `<b>Hearbeat interval:</b> ${intervalString}\n`;
+    startMessage += `<b>Hearbeat interval:</b> ${interval}\n`;
 
     await sendMessage(startMessage);
   } catch (error) {
@@ -123,7 +119,7 @@ async function startLoop() {
       console.info("-----------------------------------------------------");
       console.info("\n");
 
-      await delay(heartbeatInterval);
+      await delay(!currentSymbol ? 1000 * 60 : heartbeatInterval);
 
       loopCount++;
     }
