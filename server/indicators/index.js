@@ -11,7 +11,7 @@ switch (indicatorName) {
     getTradeSignals = indicatorDump.getTradeSignals;
     break;
   case "flat":
-    getTradeSignals = indicatorPump.getTradeSignals;
+    getTradeSignals = indicatorFlat.getTradeSignals;
     break;
   case "flat":
     getTradeSignals = indicatorPump.getTradeSignals;

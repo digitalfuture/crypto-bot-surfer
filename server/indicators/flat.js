@@ -1,8 +1,6 @@
 import { getPrevDayData, getTradingTickers } from "../api/binance/info.js";
 import { getLastPrice } from "../api/binance/info.js";
 
-let lastTickerListToBuy = null;
-
 export async function getTradeSignals({
   secondarySymbol,
   currentSymbol,
@@ -48,13 +46,12 @@ export async function getTradeSignals({
       )
       .filter(({ primarySymbol }) => primarySymbol !== lastTrade.symbol)
       .filter(({ primarySymbol }) => primarySymbol !== currentSymbol)
-      .sort((a, b) => b.priceChangePercent - a.priceChangePercent);
-
-    lastTickerListToBuy = tickerListToBuy;
+      .sort((a, b) => b.priceChangePercent - a.priceChangePercent)
+      .filter(({ priceChangePercent }) => priceChangePercent < 0);
 
     //
     // Buy signal
-    const tickerToBuy = tickerListToBuy[tickerListToBuy.length - 1];
+    const tickerToBuy = tickerListToBuy[0];
     const buyPrimarySymbol = tickerToBuy.primarySymbol;
     const buyTickerName = tickerToBuy.tickerName;
     const buyPrice = tickerToBuy && parseFloat(tickerToBuy.lastPrice);
