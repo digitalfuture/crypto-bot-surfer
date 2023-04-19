@@ -60,8 +60,8 @@ export async function getTradeSignals({
     const buyCondition = !currentSymbol;
     const isBuySignal = buyCondition;
 
-    console.log("tickerToBuy:", tickerToBuy);
-    console.log("changePercent:", tickerToBuy.priceChangePercent);
+    // console.log("tickerToBuy:", tickerToBuy);
+    // console.log("changePercent:", tickerToBuy.priceChangePercent);
 
     //
     // Sell signal
