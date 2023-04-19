@@ -20,13 +20,11 @@ example config:
 ```env
 TEST_MODE=true
 
-USE_QUEUE=false
-QUEUE_URL=http://queue-service:8000/queue
-
 REPORT_FILE_DIR=/home/report
 REPORT_FILE_NAME=trades
 
 INDICATOR=dump
+INDICATOR_DEVIATION_PERCENT=10
 
 DELAY=1000
 HEARTBEAT_INTERVAL=5m

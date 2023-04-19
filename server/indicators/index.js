@@ -13,7 +13,7 @@ switch (indicatorName) {
   case "flat":
     getTradeSignals = indicatorFlat.getTradeSignals;
     break;
-  case "flat":
+  case "pump":
     getTradeSignals = indicatorPump.getTradeSignals;
     break;
 }
