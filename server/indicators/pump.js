@@ -49,17 +49,7 @@ export async function getTradeSignals({
       .filter(({ primarySymbol }) => primarySymbol !== lastTrade.symbol)
       .filter(({ primarySymbol }) => primarySymbol !== currentSymbol)
       .sort((a, b) => b.priceChangePercent - a.priceChangePercent)
-      .filter(({ priceChangePercent }, index, array) => {
-        const isLastTicker = index === array.length - 1;
-
-        if (priceChangePercent > changePercent) {
-          return true;
-        } else if (isLastTicker) {
-          return true;
-        } else {
-          return false;
-        }
-      });
+      .filter(({ priceChangePercent }) => priceChangePercent > changePercent);
 
     //
     // Buy signal
@@ -68,7 +58,7 @@ export async function getTradeSignals({
     const buyTickerName = tickerToBuy.tickerName;
     const buyPrice = tickerToBuy && parseFloat(tickerToBuy.lastPrice);
     const buyTickerPriceChangePercent = tickerToBuy.priceChangePercent;
-    const buyCondition = !currentSymbol;
+    const buyCondition = !currentSymbol && tickerToBuy;
     const isBuySignal = buyCondition;
 
     // console.log("tickerToBuy:", tickerToBuy);
