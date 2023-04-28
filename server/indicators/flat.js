@@ -90,7 +90,7 @@ export async function getTradeSignals({
         sum = sum + parseFloat(lastPrice);
 
         if (index === array.length - 1) {
-          return sum / array.length;
+          return (sum - btcUsdtPrice) / array.length;
         } else {
           return sum;
         }
