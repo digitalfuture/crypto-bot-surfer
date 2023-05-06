@@ -13,36 +13,40 @@ export async function getTradeSignals({
     // console.info("\nlastCheck:", lastCheck);
     // console.info("lastTrade:", lastTrade);
 
+    // BTC / USDT
+    const btcUsdtPrice = await getLastPrice("BTCUSDT");
+
     const tradingTickers = await getTradingTickers();
     // console.info("tradingTickers:", tradingTickers);
 
     const priceListData = await getPrevDayData();
     // console.info("priceListData:", priceListData);
 
-    const mappedList = priceListData.map(
-      ({
-        symbol,
-        priceChangePercent,
-        lastPrice,
-        openTime,
-        closeTime,
-        ...others
-      }) => ({
-        primarySymbol: symbol.split(secondarySymbol)[0],
-        secondarySymbol,
-        tickerName: symbol,
-        priceChangePercent: parseFloat(priceChangePercent),
-        lastPrice: parseFloat(lastPrice),
-        openTime,
-        closeTime,
-        ...others,
-      })
-    );
-
-    const tickerListToBuy = mappedList
+    const tickerList = priceListData
+      .map(
+        ({
+          symbol,
+          priceChangePercent,
+          lastPrice,
+          openTime,
+          closeTime,
+          ...others
+        }) => ({
+          primarySymbol: symbol.split(secondarySymbol)[0],
+          secondarySymbol,
+          tickerName: symbol,
+          priceChangePercent: parseFloat(priceChangePercent),
+          lastPrice: parseFloat(lastPrice),
+          openTime,
+          closeTime,
+          ...others,
+        })
+      )
       .filter(({ tickerName }) => tickerName.endsWith(secondarySymbol))
       .filter(({ primarySymbol }) => !primarySymbol.endsWith("DOWN"))
-      .filter(({ primarySymbol }) => !primarySymbol.endsWith("UP"))
+      .filter(({ primarySymbol }) => !primarySymbol.endsWith("UP"));
+
+    const tickerListToBuy = tickerList
       .filter(({ primarySymbol }) =>
         tradingTickers.includes(primarySymbol + secondarySymbol)
       )
@@ -66,7 +70,7 @@ export async function getTradeSignals({
 
     //
     // Sell signal
-    const tickerToSell = mappedList.find(
+    const tickerToSell = tickerList.find(
       ({ primarySymbol }) => primarySymbol === currentSymbol
     );
 
@@ -78,20 +82,12 @@ export async function getTradeSignals({
     const sellCondition2 = sellPrice < lastCheck.price;
     const isSellSignal = sellCondition1 && sellCondition2;
 
-    // BTC / USDT
-    const btcUsdtPrice = await getLastPrice("BTCUSDT");
-
     // Market average
-    const filteredListForMarketChange = mappedList
-      .filter(({ tickerName }) => tickerName.endsWith(secondarySymbol))
-      .filter(({ primarySymbol }) => !primarySymbol.endsWith("DOWN"))
-      .filter(({ primarySymbol }) => !primarySymbol.endsWith("UP"))
+    const marketAveragePrice = tickerList
       .filter(({ primarySymbol }) =>
         tradingTickers.includes(primarySymbol + secondarySymbol)
-      );
-
-    const marketAveragePrice = filteredListForMarketChange.reduce(
-      (sum, { lastPrice }, index, array) => {
+      )
+      .reduce((sum, { lastPrice }, index, array) => {
         sum = sum + parseFloat(lastPrice);
 
         if (index === array.length - 1) {
@@ -99,9 +95,7 @@ export async function getTradeSignals({
         } else {
           return sum;
         }
-      },
-      0
-    );
+      }, 0);
 
     //
     // Result

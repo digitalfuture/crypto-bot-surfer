@@ -23,8 +23,8 @@ let loopCount = 1;
 const balancesInit = [{ symbol: secondarySymbol, available: 100, usdtRate: 1 }];
 let balances = balancesInit;
 let currentSymbol = null;
-let lastTrade = { symbol: secondarySymbol, price: 1 };
-let lastCheck = { symbol: secondarySymbol, price: 1 };
+let lastTrade = { symbol: secondarySymbol };
+let lastCheck = { symbol: secondarySymbol };
 
 export default async function start() {
   console.log("\nTEST mode is active");

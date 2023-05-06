@@ -19,38 +19,36 @@ export async function getTradeSignals({
     const priceListData = await getPrevDayData();
     // console.info("priceListData:", priceListData);
 
-    const mappedList = priceListData.map(
-      ({
-        symbol,
-        priceChangePercent,
-        lastPrice,
-        openTime,
-        closeTime,
-        ...others
-      }) => ({
-        primarySymbol: symbol.split(secondarySymbol)[0],
-        secondarySymbol,
-        tickerName: symbol,
-        priceChangePercent: parseFloat(priceChangePercent),
-        lastPrice: parseFloat(lastPrice),
-        openTime,
-        closeTime,
-        ...others,
-      })
-    );
-
-    const filteredListForMarketChange = mappedList
+    const tickerList = priceListData
+      .map(
+        ({
+          symbol,
+          priceChangePercent,
+          lastPrice,
+          openTime,
+          closeTime,
+          ...others
+        }) => ({
+          primarySymbol: symbol.split(secondarySymbol)[0],
+          secondarySymbol,
+          tickerName: symbol,
+          priceChangePercent: parseFloat(priceChangePercent),
+          lastPrice: parseFloat(lastPrice),
+          openTime,
+          closeTime,
+          ...others,
+        })
+      )
       .filter(({ tickerName }) => tickerName.endsWith(secondarySymbol))
       .filter(({ primarySymbol }) => !primarySymbol.endsWith("DOWN"))
-      .filter(({ primarySymbol }) => !primarySymbol.endsWith("UP"))
-      .filter(({ primarySymbol }) =>
-        tradingTickers.includes(primarySymbol + secondarySymbol)
-      );
+      .filter(({ primarySymbol }) => !primarySymbol.endsWith("UP"));
 
-    const tickerListToBuy = mappedList
+    const filteredListForMarketChange = tickerList
       .filter(({ tickerName }) => tickerName.endsWith(secondarySymbol))
-      .filter(({ primarySymbol }) => !primarySymbol.endsWith("DOWN"))
-      .filter(({ primarySymbol }) => !primarySymbol.endsWith("UP"))
+      .filter(({ tickerName }) => tradingTickers.includes(tickerName));
+
+    const tickerListToBuy = tickerList
+
       .filter(({ primarySymbol }) =>
         tradingTickers.includes(primarySymbol + secondarySymbol)
       )
@@ -83,7 +81,7 @@ export async function getTradeSignals({
 
     //
     // Sell signal
-    const tickerToSell = mappedList.find(
+    const tickerToSell = tickerList.find(
       ({ primarySymbol }) => primarySymbol === currentSymbol
     );
 

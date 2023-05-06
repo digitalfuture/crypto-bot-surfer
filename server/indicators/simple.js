@@ -12,27 +12,30 @@ export async function getTradeSignals({ secondarySymbol, currentSymbol }) {
     const priceListData = await getPrevDayData();
     // console.info("priceListData:", priceListData);
 
-    const mappedList = priceListData.map(
-      ({
-        symbol,
-        priceChangePercent,
-        lastPrice,
-        openTime,
-        closeTime,
-        ...others
-      }) => ({
-        primarySymbol: symbol.split(secondarySymbol)[0],
-        secondarySymbol,
-        tickerName: symbol,
-        priceChangePercent: parseFloat(priceChangePercent),
-        lastPrice: parseFloat(lastPrice),
-        openTime,
-        closeTime,
-        ...others,
-      })
-    );
+    const tickerList = priceListData
+      .map(
+        ({
+          symbol,
+          priceChangePercent,
+          lastPrice,
+          openTime,
+          closeTime,
+          ...others
+        }) => ({
+          primarySymbol: symbol.split(secondarySymbol)[0],
+          secondarySymbol,
+          tickerName: symbol,
+          priceChangePercent: parseFloat(priceChangePercent),
+          lastPrice: parseFloat(lastPrice),
+          openTime,
+          closeTime,
+          ...others,
+        })
+      )
+      .filter(({ primarySymbol }) => !primarySymbol.endsWith("DOWN"))
+      .filter(({ primarySymbol }) => !primarySymbol.endsWith("UP"));
 
-    const tickerListToBuy = mappedList.filter(
+    const tickerListToBuy = tickerList.filter(
       ({ tickerName }) => tickerName === "BTCUSDT"
     );
 
@@ -47,10 +50,9 @@ export async function getTradeSignals({ secondarySymbol, currentSymbol }) {
 
     //
     // Sell signal
-    const tickerToSell = mappedList.find(
+    const tickerToSell = tickerList.find(
       ({ primarySymbol }) => primarySymbol === currentSymbol
     );
-
     const sellPrimarySymbol = tickerToSell?.primarySymbol;
     const sellTickerName = tickerToSell?.tickerName;
     const sellPrice = tickerToSell && parseFloat(tickerToSell.lastPrice);
@@ -61,10 +63,8 @@ export async function getTradeSignals({ secondarySymbol, currentSymbol }) {
     const btcUsdtPrice = await getLastPrice("BTCUSDT");
 
     // Market average
-    const filteredListForMarketChange = mappedList
+    const filteredListForMarketChange = tickerList
       .filter(({ tickerName }) => tickerName.endsWith(secondarySymbol))
-      .filter(({ primarySymbol }) => !primarySymbol.endsWith("DOWN"))
-      .filter(({ primarySymbol }) => !primarySymbol.endsWith("UP"))
       .filter(({ primarySymbol }) =>
         tradingTickers.includes(primarySymbol + secondarySymbol)
       );
