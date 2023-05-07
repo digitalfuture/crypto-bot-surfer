@@ -10,7 +10,6 @@ import { delay, getHeartbeatInterval } from "./helpers/functions.js";
 import { getSignals } from "./indicators/index.js";
 
 const secondarySymbol = process.env.SECONDARY_SYMBOL;
-const interval = process.env.HEARTBEAT_INTERVAL;
 const indicator = process.env.INDICATOR;
 const minTradeUsdValue = parseFloat(process.env.MIN_TRADE_USD_VALUE);
 const minChangePercent = parseFloat(process.env.MIN_CHANGE_PERCENT);
@@ -18,8 +17,11 @@ const isfixedValue = JSON.parse(process.env.USE_FIXED_TRADE_VALUE);
 const fixedValue = parseFloat(process.env.FIXED_TRADE_VALUE);
 const fixedPercent = parseFloat(process.env.FIXED_TRADE_PERCENT);
 const appMode = process.env.MODE;
-const heartbeatInterval = getHeartbeatInterval(process.env.HEARTBEAT_INTERVAL);
-const nextTradeDelay = getHeartbeatInterval(process.env.NEXT_TARDE_DELAY);
+const interval = process.env.HEARTBEAT_INTERVAL;
+const delayInterval = process.env.NEXT_TARDE_DELAY;
+
+const heartbeatInterval = getHeartbeatInterval(interval);
+const nextTradeDelay = getHeartbeatInterval(delayInterval);
 
 let loopCount = 1;
 let currentSymbols = [];

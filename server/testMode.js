@@ -15,8 +15,10 @@ const fixedValue = parseFloat(process.env.FIXED_TRADE_VALUE);
 const fixedPercent = parseFloat(process.env.FIXED_TRADE_PERCENT);
 const appMode = process.env.MODE;
 const interval = process.env.HEARTBEAT_INTERVAL;
-const heartbeatInterval = getHeartbeatInterval(process.env.HEARTBEAT_INTERVAL);
-const nextTradeDelay = getHeartbeatInterval(process.env.NEXT_TARDE_DELAY);
+const delayInterval = process.env.NEXT_TARDE_DELAY;
+
+const heartbeatInterval = getHeartbeatInterval(interval);
+const nextTradeDelay = getHeartbeatInterval(delayInterval);
 
 let loopCount = 1;
 
