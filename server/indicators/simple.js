@@ -35,13 +35,11 @@ export async function getTradeSignals({ secondarySymbol, currentSymbol }) {
       .filter(({ primarySymbol }) => !primarySymbol.endsWith("DOWN"))
       .filter(({ primarySymbol }) => !primarySymbol.endsWith("UP"));
 
-    const tickerListToBuy = tickerList.filter(
-      ({ tickerName }) => tickerName === "BTCUSDT"
-    );
-
     //
     // Buy signal
-    const tickerToBuy = tickerListToBuy[0];
+    const tickerToBuy = tickerList.find(
+      ({ primarySymbol }) => primarySymbol === process.env.PRIMARY_SYMBOL
+    );
     const buyPrimarySymbol = tickerToBuy.primarySymbol;
     const buyTickerName = tickerToBuy.tickerName;
     const buyPrice = tickerToBuy && parseFloat(tickerToBuy.lastPrice);
@@ -63,14 +61,12 @@ export async function getTradeSignals({ secondarySymbol, currentSymbol }) {
     const btcUsdtPrice = await getLastPrice("BTCUSDT");
 
     // Market average
-    const filteredListForMarketChange = tickerList
+    const marketAveragePrice = tickerList
       .filter(({ tickerName }) => tickerName.endsWith(secondarySymbol))
       .filter(({ primarySymbol }) =>
         tradingTickers.includes(primarySymbol + secondarySymbol)
-      );
-
-    const marketAveragePrice = filteredListForMarketChange.reduce(
-      (sum, { lastPrice }, index, array) => {
+      )
+      .reduce((sum, { lastPrice }, index, array) => {
         sum = sum + parseFloat(lastPrice);
 
         if (index === array.length - 1) {
@@ -78,9 +74,7 @@ export async function getTradeSignals({ secondarySymbol, currentSymbol }) {
         } else {
           return sum;
         }
-      },
-      0
-    );
+      }, 0);
 
     //
     // Result

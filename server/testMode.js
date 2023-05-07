@@ -8,15 +8,15 @@ import { report } from "./analytics/report.js";
 import util from "node:util";
 
 const secondarySymbol = process.env.SECONDARY_SYMBOL;
-const interval = process.env.HEARTBEAT_INTERVAL;
 const indicator = process.env.INDICATOR;
 const minChangePercent = parseFloat(process.env.MIN_CHANGE_PERCENT);
 const isfixedValue = JSON.parse(process.env.USE_FIXED_TRADE_VALUE);
 const fixedValue = parseFloat(process.env.FIXED_TRADE_VALUE);
 const fixedPercent = parseFloat(process.env.FIXED_TRADE_PERCENT);
 const appMode = process.env.MODE;
-
-const heartbeatInterval = getHeartbeatInterval(interval);
+const interval = process.env.HEARTBEAT_INTERVAL;
+const heartbeatInterval = getHeartbeatInterval(process.env.HEARTBEAT_INTERVAL);
+const nextTradeDelay = getHeartbeatInterval(process.env.NEXT_TARDE_DELAY);
 
 let loopCount = 1;
 
@@ -119,7 +119,7 @@ async function startLoop() {
       console.info("-----------------------------------------------------");
       console.info("\n");
 
-      await delay(!currentSymbol ? 1000 * 60 : heartbeatInterval);
+      await delay(!currentSymbol ? nextTradeDelay : heartbeatInterval);
 
       loopCount++;
     }
