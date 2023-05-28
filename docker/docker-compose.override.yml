@@ -26,69 +26,87 @@ services:
 
 # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
-  dump--03m:
+  simple--01m:
     <<: *basic-container
     environment:
-      - HEARTBEAT_INTERVAL=3m
-      - REPORT_FILE_NAME=dump--03m
+      - HEARTBEAT_INTERVAL=01m
+      - NEXT_TRADE_DELAY=01m
+      - REPORT_FILE_NAME=simple--01m
 
-  dump--05m:
+  simple--02m:
     <<: *basic-container
     environment:
-      - HEARTBEAT_INTERVAL=5m
-      - REPORT_FILE_NAME=dump--05m
+      - HEARTBEAT_INTERVAL=02m
+      - NEXT_TRADE_DELAY=02m
+      - REPORT_FILE_NAME=simple--02m
 
-  dump-basic--07m:
-    <<: *basic-container
-    environment:
-      - HEARTBEAT_INTERVAL=7m
-      - REPORT_FILE_NAME=dump--07m
-
-  dump--09m:
-    <<: *basic-container
-    environment:
-      - HEARTBEAT_INTERVAL=09m
-      - REPORT_FILE_NAME=dump--09m
-
-  dump--11m:
-    <<: *basic-container
-    environment:
-      - HEARTBEAT_INTERVAL=11m
-      - REPORT_FILE_NAME=dump--11m
-
-# # # # # # # # # # # # # # # # # # # # # # # # # # #
-
-  dump--btc-filter--03m:
+  simple--03m:
     <<: *basic-container
     environment:
       - HEARTBEAT_INTERVAL=03m
-      - BTC_FILTER=true
-      - REPORT_FILE_NAME=dump--btc-filter--03m
+      - NEXT_TRADE_DELAY=03m
+      - REPORT_FILE_NAME=simple--03m
 
-  dump--btc-filter--05m:
+  simple--04m:
+    <<: *basic-container
+    environment:
+      - HEARTBEAT_INTERVAL=04m
+      - NEXT_TRADE_DELAY=04m
+      - REPORT_FILE_NAME=simple--04m
+
+  simple--05m:
     <<: *basic-container
     environment:
       - HEARTBEAT_INTERVAL=05m
-      - BTC_FILTER=true
-      - REPORT_FILE_NAME=dump--btc-filter--05m
+      - NEXT_TRADE_DELAY=05m
+      - REPORT_FILE_NAME=simple--05m
 
-  dump-trailing-btc-filter-07m:
+  simple--06m:
     <<: *basic-container
     environment:
-      - HEARTBEAT_INTERVAL=7m
-      - BTC_FILTER=true
-      - REPORT_FILE_NAME=dump--btc-filter--07m
+      - HEARTBEAT_INTERVAL=06m
+      - NEXT_TRADE_DELAY=06m
+      - REPORT_FILE_NAME=simple--06m
 
-  dump-trailing-btc-filter-09m:
+  simple--07m:
     <<: *basic-container
     environment:
-      - HEARTBEAT_INTERVAL=9m
-      - BTC_FILTER=true
-      - REPORT_FILE_NAME=dump--btc-filter--09m
+      - HEARTBEAT_INTERVAL=07m
+      - NEXT_TRADE_DELAY=07m
+      - REPORT_FILE_NAME=simple--07m
 
-  dump-trailing-btc-filter-11m:
+  simple--08m:
+    <<: *basic-container
+    environment:
+      - HEARTBEAT_INTERVAL=08m
+      - NEXT_TRADE_DELAY=08m
+      - REPORT_FILE_NAME=simple--08m
+
+  simple--09m:
+    <<: *basic-container
+    environment:
+      - HEARTBEAT_INTERVAL=09m
+      - NEXT_TRADE_DELAY=09m
+      - REPORT_FILE_NAME=simple--09m
+
+  simple--10m:
+    <<: *basic-container
+    environment:
+      - INDICATOR=simple
+      - HEARTBEAT_INTERVAL=10m
+      - NEXT_TRADE_DELAY=10m
+      - REPORT_FILE_NAME=simple--10m
+
+  simple--11m:
     <<: *basic-container
     environment:
       - HEARTBEAT_INTERVAL=11m
-      - BTC_FILTER=true
-      - REPORT_FILE_NAME=dump--btc-filter--11m
+      - NEXT_TRADE_DELAY=11m
+      - REPORT_FILE_NAME=simple--11m
+
+  simple--12m:
+    <<: *basic-container
+    environment:
+      - HEARTBEAT_INTERVAL=12m
+      - NEXT_TRADE_DELAY=12m
+      - REPORT_FILE_NAME=simple--12m
