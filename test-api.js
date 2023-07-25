@@ -1,14 +1,11 @@
-import binance from "./server/api/binance/connection.js";
+// const delayMs = JSON.parse(process.env.DELAY);
 
-const delayMs = JSON.parse(process.env.DELAY);
-
-import {
-  getExchangeInfo,
-  getPrevDayData,
-  getTradingTickers,
-} from "./server/api/binance/info.js";
+import // getExchangeInfo,
+// getPrevDayData,
+// getTradingTickers,
+"./server/api/binance/info.js";
 import Binance from "node-binance-api";
-import util from "node:util";
+// import util from "node:util";
 
 export const binance = new Binance().options({
   APIKEY: process.env.BINANCE_APIKEY,
@@ -21,45 +18,43 @@ export const binance = new Binance().options({
 
 test();
 
-// async function test() {
-//   try {
-//     await getInfo("BNBUSDT");
-//     // testGetPrevDayData();
-//     // marketBuy("MITHUSDT", 20);
-//   } catch (error) {
-//     const { statusCode, statusMessage, body, type, errorSrcData } = error;
-
-//     if (statusCode) {
-//       console.error(
-//         `\nType: ${type || ""}\nStatus message: ${statusMessage || ""}\nBody: ${
-//           JSON.parse(body).msg
-//         }`
-//       );
-
-//       console.info(
-//         `\nError source data:`,
-//         util.inspect(errorSrcData, {
-//           showHidden: false,
-//           depth: null,
-//           colors: true,
-//         })
-//       );
-//     } else {
-//       console.info(
-//         `\nUnexpected Error:`,
-//         util.inspect(error, { showHidden: false, depth: null, colors: true })
-//       );
-//       console.info(
-//         `\nError source data:`,
-//         util.inspect(errorSrcData, {
-//           showHidden: false,
-//           depth: null,
-//           colors: true,
-//         })
-//       );
-//     }
-//   }
-// }
+async function test() {
+  //   try {
+  //     await getInfo("BNBUSDT");
+  //     // testGetPrevDayData();
+  //     // marketBuy("MITHUSDT", 20);
+  //   } catch (error) {
+  //     const { statusCode, statusMessage, body, type, errorSrcData } = error;
+  //     if (statusCode) {
+  //       console.error(
+  //         `\nType: ${type || ""}\nStatus message: ${statusMessage || ""}\nBody: ${
+  //           JSON.parse(body).msg
+  //         }`
+  //       );
+  //       console.info(
+  //         `\nError source data:`,
+  //         util.inspect(errorSrcData, {
+  //           showHidden: false,
+  //           depth: null,
+  //           colors: true,
+  //         })
+  //       );
+  //     } else {
+  //       console.info(
+  //         `\nUnexpected Error:`,
+  //         util.inspect(error, { showHidden: false, depth: null, colors: true })
+  //       );
+  //       console.info(
+  //         `\nError source data:`,
+  //         util.inspect(errorSrcData, {
+  //           showHidden: false,
+  //           depth: null,
+  //           colors: true,
+  //         })
+  //       );
+  //     }
+  //   }
+}
 
 // // function delay(ms) {
 // //   return new Promise((resolve) => setTimeout(() => resolve(), ms));
