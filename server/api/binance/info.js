@@ -44,8 +44,8 @@ export async function getExchangeInfo(tickerName) {
     const minOrderValue = parseFloat(tickerLimits.minNotional);
     const stepSize = tickerLimits.stepSize;
 
-    // console.info('\n')
-    // console.info('tickerLimits:', tickerLimits)
+    console.info("\n");
+    console.info("tickerLimits:", tickerLimits);
 
     return {
       minOrderQuantity,

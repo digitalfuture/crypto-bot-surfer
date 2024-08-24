@@ -8,7 +8,7 @@
     "logs:clear": "pm2 flush crypto-bot-surfer",
     "restart": "npm stop && npm start && npm run logs",
     "start": "pm2 start ecosystem.config.cjs",
-    "nodemon": "nodemon -- -r  dotenv/config ./server/bot.js",
+    "dev": "nodemon -- -r  dotenv/config ./server/bot.js",
     "inspect": "node --inspect -r dotenv/config ./server/bot.js",
     "node": "node --trace-warnings -r dotenv/config ./server/bot.js",
     "report": "node ./server/bot.js",
@@ -21,7 +21,7 @@
     "chartjs-node-canvas": "^3.1.0",
     "dotenv": "^8.2.0",
     "fast-csv": "^4.3.6",
-    "node-binance-api": "^0.13.0",
+    "node-binance-api": "^0.13.1",
     "node-fetch": "^3.3.1",
     "telegraf": "^4.1.1"
   },

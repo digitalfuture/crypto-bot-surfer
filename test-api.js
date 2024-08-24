@@ -1,11 +1,10 @@
 // const delayMs = JSON.parse(process.env.DELAY);
 
-import // getExchangeInfo,
-// getPrevDayData,
-// getTradingTickers,
-"./server/api/binance/info.js";
+import { getExchangeInfo } from "./server/api/binance/info.js";
+// import getPrevDayData from "./server/api/binance/info.js";
+// import getTradingTickers from "./server/api/binance/info.js";
 import Binance from "node-binance-api";
-// import util from "node:util";
+import util from "node:util";
 
 export const binance = new Binance().options({
   APIKEY: process.env.BINANCE_APIKEY,
@@ -14,75 +13,76 @@ export const binance = new Binance().options({
   recWindow: 60000,
   verbose: true,
   useServerTime: true,
+  family: 0,
 });
 
 test();
 
 async function test() {
-  //   try {
-  //     await getInfo("BNBUSDT");
-  //     // testGetPrevDayData();
-  //     // marketBuy("MITHUSDT", 20);
-  //   } catch (error) {
-  //     const { statusCode, statusMessage, body, type, errorSrcData } = error;
-  //     if (statusCode) {
-  //       console.error(
-  //         `\nType: ${type || ""}\nStatus message: ${statusMessage || ""}\nBody: ${
-  //           JSON.parse(body).msg
-  //         }`
-  //       );
-  //       console.info(
-  //         `\nError source data:`,
-  //         util.inspect(errorSrcData, {
-  //           showHidden: false,
-  //           depth: null,
-  //           colors: true,
-  //         })
-  //       );
-  //     } else {
-  //       console.info(
-  //         `\nUnexpected Error:`,
-  //         util.inspect(error, { showHidden: false, depth: null, colors: true })
-  //       );
-  //       console.info(
-  //         `\nError source data:`,
-  //         util.inspect(errorSrcData, {
-  //           showHidden: false,
-  //           depth: null,
-  //           colors: true,
-  //         })
-  //       );
-  //     }
-  //   }
+  try {
+    await getInfo("BNBUSDT");
+    // testGetPrevDayData();
+    // marketBuy("MITHUSDT", 20);
+  } catch (error) {
+    const { statusCode, statusMessage, body, type, errorSrcData } = error;
+    if (statusCode) {
+      console.error(
+        `\nType: ${type || ""}\nStatus message: ${statusMessage || ""}\nBody: ${
+          JSON.parse(body).msg
+        }`
+      );
+      console.info(
+        `\nError source data:`,
+        util.inspect(errorSrcData, {
+          showHidden: false,
+          depth: null,
+          colors: true,
+        })
+      );
+    } else {
+      console.info(
+        `\nUnexpected Error:`,
+        util.inspect(error, { showHidden: false, depth: null, colors: true })
+      );
+      console.info(
+        `\nError source data:`,
+        util.inspect(errorSrcData, {
+          showHidden: false,
+          depth: null,
+          colors: true,
+        })
+      );
+    }
+  }
 }
 
 // // function delay(ms) {
 // //   return new Promise((resolve) => setTimeout(() => resolve(), ms));
 // // }
 
-// async function getInfo(tickerName) {
-//   try {
-//     const data = await getExchangeInfo(tickerName);
-//     console.info("\n");
-//     console.info(
-//       "Exchange info:",
-//       util.inspect(data, {
-//         showHidden: false,
-//         depth: null,
-//         colors: true,
-//       })
-//     );
+async function getInfo(tickerName) {
+  try {
+    const data = await getExchangeInfo(tickerName);
+    console.info("\n");
+    console.info(
+      "Exchange info:",
+      util.inspect(data, {
+        showHidden: false,
+        depth: null,
+        colors: true,
+      })
+    );
 
-//     console.info("\n");
-//     console.info("tickerName:", tickerName);
-//   } catch (error) {
-//     throw {
-//       type: "Get Exchange Info",
-//       ...error,
-//       errorSrcData: error,
-//     };
-//   }
-// }
+    console.info("\n");
+    console.info("tickerName:", tickerName);
+  } catch (error) {
+    throw {
+      type: "Get Exchange Info",
+      ...error,
+      errorSrcData: error,
+    };
+  }
+}
 
 // // async function testGetPrevDayData() {
 // //   try {

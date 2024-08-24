@@ -11,6 +11,7 @@ const options = {
   recvWindow: 60000,
   verbose: true,
   useServerTime: true,
+  family: 0,
 };
 
 const binance = new Binance().options(options);
