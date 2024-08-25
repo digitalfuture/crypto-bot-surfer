@@ -10,12 +10,11 @@ const reportFileName = process.env.REPORT_FILE_NAME;
 const comissionPercent = parseFloat(process.env.TEST_COMISSION_PERCENT);
 
 ////
-const fileName = `${reportFileName}.csv`;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = reportFileDir
-  ? reportFileDir
-  : `${path.dirname(__filename)}../../../report`;
-const filePath = path.join(__dirname, fileName);
+  ? path.resolve(reportFileDir)
+  : path.resolve(path.dirname(__filename), "../../report");
+const filePath = path.join(__dirname, reportFileName);
 const fileOptions = { flags: "a" };
 
 let profitTotal = 0;

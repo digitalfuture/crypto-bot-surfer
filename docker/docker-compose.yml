@@ -2,28 +2,34 @@
 
 version: "3.9"
 
-services:
- queue:
-    image: node:14
-    hostname: queue-service
-    working_dir: /home
-    environment:
-      - DELAY=100
-      - PORT=8080
-      - DEBUG_MODE=true
-    command:
-      - bash 
-      - -c 
-      - |
-        git clone https://github.com/digitalfuture/crypto-bot-surfer-queue.git && \
-        cd crypto-bot-surfer-queue && \
-        npm install && \
-        npm start
+# Basic service template
+x-template: &basic-container
+  depends_on:
+    queue:
+      condition: service_healthy
+  image: node:20
+  volumes:
+    - /home/koshkindom/report:/report
+  env_file: .env
+  working_dir: /home/koshkindom/app
+  command:
+    - bash
+    - -c
+    - |
+      git clone --branch signal-trading https://github.com/digitalfuture/crypto-bot-surfer.git && \
+      cd crypto-bot-surfer && \
+      npm install && \
+      npm run nodemon
 
-    ports:
-      - 8080:8080
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/healthcheck"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
+# Creating containers
+services:
+  # # # # # # # # # # # # # # # # # # # # # # # # # # #
+
+  external-signals--01m:
+    container_name: crypto-bot-surfer
+    <<: *basic-container
+    environment:
+      - HEARTBEAT_INTERVAL=01m
+      - NEXT_TRADE_DELAY=01m
+      - REPORT_FILE_DIR=/home/koshkindom
+      - REPORT_FILE_NAME=trades-01m

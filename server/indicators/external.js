@@ -1,9 +1,29 @@
-import signals from "../../report/signals.json" assert { type: "json" };
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import path from "node:path";
 import { getPrevDayData, getTradingTickers } from "../api/binance/info.js";
 import { getLastPrice } from "../api/binance/info.js";
 
 const primarySymbol = process.env.PRIMARY_SYMBOL;
 const secondarySymbol = process.env.SECONDARY_SYMBOL;
+const reportFileDir = process.env.REPORT_FILE_DIR;
+
+function readSignalData() {
+  const fileName = "signals.json";
+  const __filename = fileURLToPath(import.meta.url);
+  const __dirname = reportFileDir
+    ? path.resolve(reportFileDir)
+    : path.resolve(path.dirname(__filename), "../../report");
+  const filePath = path.join(__dirname, fileName);
+
+  try {
+    const fileContent = readFileSync(filePath, "utf-8");
+    return JSON.parse(fileContent);
+  } catch (error) {
+    console.error("Error reading JSON file:", error);
+    throw error;
+  }
+}
 
 export async function getTradeSignals() {
   try {
@@ -18,6 +38,7 @@ export async function getTradeSignals() {
     //   }
     // ]
 
+    const signals = readSignalData();
     const { ticker, signal } = signals.reverse()[0];
     const tickerName = primarySymbol + secondarySymbol;
 
@@ -116,22 +137,22 @@ export async function getTradeSignals() {
       marketAveragePrice,
     };
 
-    console.info("\nCheck signals result:", {
-      buySignal: {
-        buyPrimarySymbol: result.buyPrimarySymbol,
-        buyTickerName: result.buyTickerName,
-        buyPrice: result.buyPrice,
-        buyTickerPriceChangePercent: result.buyTickerPriceChangePercent,
-        isBuySignal: result.isBuySignal,
-      },
-      sellSignal: {
-        sellPrimarySymbol: result.sellPrimarySymbol,
-        sellTickerName: result.sellTickerName,
-        sellPrice: result.sellPrice,
-        sellTickerPriceChangePercent: result.sellTickerPriceChangePercent,
-        isSellSignal: result.isSellSignal,
-      },
-    });
+    // console.info("\nCheck signals result:", {
+    //   buySignal: {
+    //     buyPrimarySymbol: result.buyPrimarySymbol,
+    //     buyTickerName: result.buyTickerName,
+    //     buyPrice: result.buyPrice,
+    //     buyTickerPriceChangePercent: result.buyTickerPriceChangePercent,
+    //     isBuySignal: result.isBuySignal,
+    //   },
+    //   sellSignal: {
+    //     sellPrimarySymbol: result.sellPrimarySymbol,
+    //     sellTickerName: result.sellTickerName,
+    //     sellPrice: result.sellPrice,
+    //     sellTickerPriceChangePercent: result.sellTickerPriceChangePercent,
+    //     isSellSignal: result.isSellSignal,
+    //   },
+    // });
 
     return result;
   } catch (error) {
