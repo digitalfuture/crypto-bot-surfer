@@ -14,7 +14,7 @@ const fileName = `${reportFileName}.csv`;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = reportFileDir
   ? reportFileDir
-  : `${path.dirname(__filename)}../../../_report`;
+  : `${path.dirname(__filename)}../.././report`;
 const filePath = path.join(__dirname, fileName);
 const fileOptions = { flags: "a" };
 

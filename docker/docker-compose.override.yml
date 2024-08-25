@@ -9,7 +9,7 @@ x-template: &basic-container
       condition: service_healthy
   image: node:14
   volumes:
-    - ./_report:/home/_report
+    - /report:/home/_report
   env_file: .env
   working_dir: /home
   command:
