@@ -21,14 +21,14 @@ export async function getTradeSignals() {
     const { ticker, signal } = signals.reverse()[0];
     const tickerName = primarySymbol + secondarySymbol;
 
-    console.info("SIGNAL from file:", signal);
-    console.info("TICKER from file:", ticker);
-    console.info("");
-    console.info("TRADING TICKER:", tickerName);
+    // console.info("SIGNAL from file:", signal);
+    // console.info("TICKER from file:", ticker);
+    // console.info("");
+    // console.info("TRADING TICKER:", tickerName);
 
-    const isTradingTockerMatch = ticker !== tickerName;
+    const isTradingTickerMatch = ticker === tickerName;
 
-    if (isTradingTockerMatch) {
+    if (!isTradingTickerMatch) {
       console.log(
         `Trading ticker ${tickerName} does not match with Signal ticker ${ticker}`
       );
@@ -66,28 +66,19 @@ export async function getTradeSignals() {
       .filter(({ primarySymbol }) => !primarySymbol.endsWith("DOWN"))
       .filter(({ primarySymbol }) => !primarySymbol.endsWith("UP"));
 
+    const tradingTicker = tickerList.find(
+      (item) => item.primarySymbol === primarySymbol
+    );
+
     //
     // Buy signal
-    const tickerToBuy = tickerList.find(
-      ({ primarySymbol }) => primarySymbol === process.env.PRIMARY_SYMBOL
-    );
-    const buyPrimarySymbol = tickerToBuy.primarySymbol;
-    const buyTickerName = tickerToBuy.tickerName;
-    const buyPrice = tickerToBuy && parseFloat(tickerToBuy.lastPrice);
-    const buyTickerPriceChangePercent = tickerToBuy.priceChangePercent;
-    const isBuySignal = signal === "BUY" && isTradingTockerMatch;
+    const buyPrice = tradingTicker && parseFloat(tradingTicker.lastPrice);
+    const isBuySignal = signal === "BUY" && isTradingTickerMatch;
 
     //
     // Sell signal
-    const tickerToSell = tickerList.find(
-      ({ primarySymbol }) => primarySymbol === primarySymbol
-    );
-
-    const sellPrimarySymbol = tickerToSell?.primarySymbol;
-    const sellTickerName = tickerToSell?.tickerName;
-    const sellPrice = tickerToSell && parseFloat(tickerToSell.lastPrice);
-    const sellTickerPriceChangePercent = tickerToSell?.priceChangePercent;
-    const isSellSignal = signal === "SELL" && isTradingTockerMatch;
+    const isSellSignal = signal === "SELL" && isTradingTickerMatch;
+    const sellPrice = tradingTicker && parseFloat(tradingTicker.lastPrice);
 
     // BTC / USDT
     const btcUsdtPrice = await getLastPrice("BTCUSDT");
@@ -111,36 +102,36 @@ export async function getTradeSignals() {
     //
     // Result
     const result = {
-      sellPrimarySymbol,
-      buyPrimarySymbol,
-      sellTickerName,
-      buyTickerName,
+      buyPrimarySymbol: primarySymbol,
+      sellPrimarySymbol: primarySymbol,
+      buyTickerName: tickerName,
+      sellTickerName: tickerName,
       buyPrice,
       sellPrice,
-      buyTickerPriceChangePercent,
-      sellTickerPriceChangePercent,
+      buyTickerPriceChangePercent: tradingTicker.priceChangePercent,
+      sellTickerPriceChangePercent: tradingTicker.priceChangePercent,
       isBuySignal,
       isSellSignal,
       btcUsdtPrice,
       marketAveragePrice,
     };
 
-    // console.info("\nCheck signals result:", {
-    //   buySignal: {
-    //     buyPrimarySymbol,
-    //     buyTickerName,
-    //     buyPrice,
-    //     buyTickerPriceChangePercent,
-    //     isBuySignal,
-    //   },
-    //   sellSignal: {
-    //     sellPrimarySymbol,
-    //     sellTickerName,
-    //     sellPrice,
-    //     sellTickerPriceChangePercent,
-    //     isSellSignal,
-    //   },
-    // });
+    console.info("\nCheck signals result:", {
+      buySignal: {
+        buyPrimarySymbol: result.buyPrimarySymbol,
+        buyTickerName: result.buyTickerName,
+        buyPrice: result.buyPrice,
+        buyTickerPriceChangePercent: result.buyTickerPriceChangePercent,
+        isBuySignal: result.isBuySignal,
+      },
+      sellSignal: {
+        sellPrimarySymbol: result.sellPrimarySymbol,
+        sellTickerName: result.sellTickerName,
+        sellPrice: result.sellPrice,
+        sellTickerPriceChangePercent: result.sellTickerPriceChangePercent,
+        isSellSignal: result.isSellSignal,
+      },
+    });
 
     return result;
   } catch (error) {
