@@ -1,11 +1,13 @@
-import signals from "../../_signals/report_analysis.json" assert { type: "json" };
+// import signals from "../../_signals/report_analysis.json" assert { type: "json" };
 import { getPrevDayData, getTradingTickers } from "../api/binance/info.js";
 import { getLastPrice } from "../api/binance/info.js";
+
+const signals = require("../../_signals/report_analysis.json");
 
 const primarySymbol = process.env.PRIMARY_SYMBOL;
 const secondarySymbol = process.env.SECONDARY_SYMBOL;
 
-export async function getTradeSignals({ currentSymbol }) {
+export async function getTradeSignals() {
   try {
     // File structure
     //
