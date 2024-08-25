@@ -141,7 +141,7 @@ async function startLoop() {
       console.info("-----------------------------------------------------");
       console.info("\n");
 
-      await delay(!currentSymbol ? nextTradeDelay : heartbeatInterval);
+      await delay(currentSymbol === null ? nextTradeDelay : heartbeatInterval);
 
       loopCount++;
     }

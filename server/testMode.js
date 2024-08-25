@@ -203,7 +203,7 @@ async function heartBeatLoop() {
 
       // await sendImage(chart);
       await sendMessage(message);
-    } else if (isBuySignal && !currentSymbol) {
+    } else if (isBuySignal && currentSymbol === null) {
       console.info("\n");
       console.info("Buy condition:", true);
 

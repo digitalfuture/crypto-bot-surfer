@@ -58,7 +58,7 @@ export async function getTradeSignals({
     const buyTickerName = tickerToBuy.tickerName;
     const buyPrice = tickerToBuy && parseFloat(tickerToBuy.lastPrice);
     const buyTickerPriceChangePercent = tickerToBuy.priceChangePercent;
-    const buyCondition = !currentSymbol;
+    const buyCondition = currentSymbol === null;
     const isBuySignal = buyCondition;
 
     //
