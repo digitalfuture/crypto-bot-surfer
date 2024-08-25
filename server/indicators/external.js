@@ -1,4 +1,4 @@
-import signals from "../../_signals/index.json" assert { type: "json" };
+import signals from "../../_signals/report_analysis.json" assert { type: "json" };
 import { getPrevDayData, getTradingTickers } from "../api/binance/info.js";
 import { getLastPrice } from "../api/binance/info.js";
 
