@@ -9,22 +9,21 @@ x-template: &basic-container
       condition: service_healthy
   image: node:14
   volumes:
-    - ./report:/home/report
+    - ./_report:/home/_report
   env_file: .env
   working_dir: /home
-  command: 
-      - bash 
-      - -c 
-      - |
-        git clone https://github.com/digitalfuture/crypto-bot-surfer.git && \
-        cd crypto-bot-surfer && \
-        npm install && \
-        npm run report
+  command:
+    - bash
+    - -c
+    - |
+      git clone https://github.com/digitalfuture/crypto-bot-surfer.git && \
+      cd crypto-bot-surfer && \
+      npm install && \
+      npm run report
 
 # Creating containers
 services:
-
-# # # # # # # # # # # # # # # # # # # # # # # # # # #
+  # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
   simple--01m:
     <<: *basic-container

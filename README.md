@@ -20,7 +20,7 @@ example config:
 ```env
 TEST_MODE=true
 
-REPORT_FILE_DIR=/home/report
+REPORT_FILE_DIR=/home/_report
 REPORT_FILE_NAME=trades
 
 INDICATOR=dump

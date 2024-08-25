@@ -1,6 +1,6 @@
 import { sendMessage, sendImage } from "./api/telegram/telegram.js";
 import { marketBuy, marketSell } from "./api/binance/trading.js";
-import { prepareChartData } from "./analytics/charts.js";
+// import { prepareChartData } from "./analytics/charts.js";
 import {
   getLastPrice,
   getSymbolBalance,
@@ -217,12 +217,12 @@ async function heartBeatLoop() {
         return;
       }
 
-      const chart = await prepareChartData({
-        primarySymbol: sellPrimarySymbol,
-        secondarySymbol,
-        interval: "1d",
-        priceChangePercent: sellTickerPriceChangePercent,
-      });
+      // const chart = await prepareChartData({
+      //   primarySymbol: sellPrimarySymbol,
+      //   secondarySymbol,
+      //   interval: "1d",
+      //   priceChangePercent: sellTickerPriceChangePercent,
+      // });
 
       const newPrimarySymbolBalance = await getSymbolBalance(sellPrimarySymbol);
       const newSecondarySymbolBalance = await getSymbolBalance(secondarySymbol);
@@ -269,7 +269,7 @@ async function heartBeatLoop() {
 
       console.info("Trade accomplished");
 
-      await sendImage(chart);
+      // await sendImage(chart);
       await sendMessage(message);
     } else if (isBuySignal) {
       console.info("\n");
@@ -309,12 +309,12 @@ async function heartBeatLoop() {
         return;
       }
 
-      const chart = await prepareChartData({
-        primarySymbol: buyPrimarySymbol,
-        secondarySymbol,
-        interval: "1d",
-        priceChangePercent: buyTickerPriceChangePercent,
-      });
+      // const chart = await prepareChartData({
+      //   primarySymbol: buyPrimarySymbol,
+      //   secondarySymbol,
+      //   interval: "1d",
+      //   priceChangePercent: buyTickerPriceChangePercent,
+      // });
 
       currentSymbols.push(buyPrimarySymbol);
 
@@ -360,7 +360,7 @@ async function heartBeatLoop() {
 
       console.info("Trade accomplished");
 
-      await sendImage(chart);
+      // await sendImage(chart);
       await sendMessage(message);
     } else {
       // message += "<b>No trade signals</b>";

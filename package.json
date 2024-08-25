@@ -8,7 +8,7 @@
     "logs:clear": "pm2 flush crypto-bot-surfer",
     "restart": "npm stop && npm start && npm run logs",
     "start": "pm2 start ecosystem.config.cjs",
-    "dev": "nodemon -- -r  dotenv/config ./server/bot.js",
+    "nodemon": "nodemon -- -r  dotenv/config ./server/bot.js",
     "inspect": "node --inspect -r dotenv/config ./server/bot.js",
     "node": "node --trace-warnings -r dotenv/config ./server/bot.js",
     "report": "node ./server/bot.js",
@@ -18,18 +18,16 @@
     "test:api": "node -r dotenv/config test-api.js"
   },
   "dependencies": {
-    "chartjs-node-canvas": "^3.1.0",
-    "dotenv": "^8.2.0",
-    "fast-csv": "^4.3.6",
+    "dotenv": "^16.4.5",
+    "fast-csv": "^5.0.1",
     "node-binance-api": "^0.13.1",
-    "node-fetch": "^3.3.1",
-    "telegraf": "^4.1.1"
+    "nodemon": "^3.1.4",
+    "telegraf": "^4.16.3"
   },
   "devDependencies": {
-    "babel-eslint": "^10.1.0",
-    "eslint": "^6.7.2",
-    "eslint-plugin-prettier": "^3.3.1",
-    "nodemon": "^2.0.20"
+    "@babel/eslint-parser": "^7.25.1",
+    "eslint": "^8.57.0",
+    "eslint-plugin-prettier": "^3.3.1"
   },
   "eslintConfig": {
     "root": true,
@@ -43,7 +41,12 @@
     "parserOptions": {
       "parser": "babel-eslint",
       "sourceType": "module",
-      "ecmaVersion": 2020
+      "ecmaVersion": 2024,
+      "babelOptions": {
+        "presets": [
+          "@babel/preset-env"
+        ]
+      }
     },
     "rules": {}
   },
