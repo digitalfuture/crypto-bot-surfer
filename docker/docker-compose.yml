@@ -4,18 +4,16 @@ version: "3.9"
 
 # Basic service template
 x-template: &basic-container
-  depends_on:
-    queue:
-      condition: service_healthy
   image: node:20
   volumes:
-    - /home/koshkindom/report:/report
+    - /home/koshkindom/app/report:/home/report
   env_file: .env
-  working_dir: /home/koshkindom/app
+  working_dir: /home
   command:
     - bash
     - -c
     - |
+      rm -rf crypto-bot-surfer && \
       git clone --branch signal-trading https://github.com/digitalfuture/crypto-bot-surfer.git && \
       cd crypto-bot-surfer && \
       npm install && \
@@ -29,7 +27,7 @@ services:
     container_name: crypto-bot-surfer
     <<: *basic-container
     environment:
-      - HEARTBEAT_INTERVAL=01m
+      - HEARTBEAT_INTERVAL=15m
       - NEXT_TRADE_DELAY=01m
-      - REPORT_FILE_DIR=/home/koshkindom
-      - REPORT_FILE_NAME=trades-01m
+      - REPORT_FILE_DIR=/home/report
+      - REPORT_FILE_NAME=trades-15m.csv
