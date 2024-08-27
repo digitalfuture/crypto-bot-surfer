@@ -1,27 +1,39 @@
-import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
-import path from "node:path";
 import { getPrevDayData, getTradingTickers } from "../api/binance/info.js";
 import { getLastPrice } from "../api/binance/info.js";
+import OpenAI from "openai";
 
+const apiKey = process.env.OPENAI_API_KEY;
 const primarySymbol = process.env.PRIMARY_SYMBOL;
 const secondarySymbol = process.env.SECONDARY_SYMBOL;
-const reportFileDir = process.env.REPORT_FILE_DIR;
 
-function readSignalData() {
-  const fileName = "signals.json";
-  const __filename = fileURLToPath(import.meta.url);
-  const __dirname = reportFileDir
-    ? path.resolve(reportFileDir)
-    : path.resolve(path.dirname(__filename), "../../report");
-  const filePath = path.join(__dirname, fileName);
+const ticker = primarySymbol + secondarySymbol;
 
+const openai = new OpenAI({ apiKey });
+
+async function getSignal(ticker) {
   try {
-    const fileContent = readFileSync(filePath, "utf-8");
-    return JSON.parse(fileContent);
+    const chatCompletion = await openai.chat.completions.create({
+      model: "gpt-3.5-turbo",
+      messages: [
+        { role: "system", content: "You are a trading assistant." },
+        {
+          role: "user",
+          content: `Generate a trading recommendation for ${ticker} with a price point and signal BUY, SELL or HOLD.`,
+        },
+      ],
+    });
+
+    const outputText = chatCompletion.choices[0].message.content.trim();
+
+    const recommendation = {
+      datetime: new Date().toISOString(),
+      ticker,
+      signal: outputText.toUpperCase().includes("BUY") ? "BUY" : "SELL",
+    };
+
+    return recommendation;
   } catch (error) {
-    console.error("Error reading JSON file:", error);
-    throw error;
+    throw { type: "Get AI Data Error", ...error, errorSrcData: error };
   }
 }
 
@@ -38,14 +50,8 @@ export async function getTradeSignals() {
     //   }
     // ]
 
-    const signals = readSignalData();
-    const { ticker, signal } = signals.reverse()[0];
+    const { signal } = await getSignal(ticker);
     const tickerName = primarySymbol + secondarySymbol;
-
-    // console.info("SIGNAL from file:", signal);
-    // console.info("TICKER from file:", ticker);
-    // console.info("");
-    // console.info("TRADING TICKER:", tickerName);
 
     const isTradingTickerMatch = ticker === tickerName;
 
@@ -136,8 +142,6 @@ export async function getTradeSignals() {
       btcUsdtPrice,
       marketAveragePrice,
     };
-
-    console.log("marketAveragePrice:", marketAveragePrice);
 
     // console.info("\nCheck signals result:", {
     //   buySignal: {

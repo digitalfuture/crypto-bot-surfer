@@ -3,6 +3,7 @@ import * as indicatorFlat from "./flat.js";
 import * as indicatorPump from "./pump.js";
 import * as indicatorSimple from "./simple.js";
 import * as indicatorExternal from "./external.js";
+import * as indicatorAi from "./ai.js";
 
 const indicatorName = process.env.INDICATOR;
 
@@ -23,6 +24,9 @@ switch (indicatorName) {
     break;
   case "external":
     getTradeSignals = indicatorExternal.getTradeSignals;
+    break;
+  case "ai":
+    getTradeSignals = indicatorAi.getTradeSignals;
     break;
 }
 

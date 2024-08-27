@@ -21,6 +21,7 @@
     "fast-csv": "^5.0.1",
     "node-binance-api": "^0.13.1",
     "nodemon": "^3.1.4",
+    "openai": "^4.56.1",
     "telegraf": "^4.16.3"
   },
   "devDependencies": {

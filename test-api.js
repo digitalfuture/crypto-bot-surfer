@@ -1,6 +1,7 @@
 // const delayMs = JSON.parse(process.env.DELAY);
 
-import { getExchangeInfo } from "./server/api/binance/info.js";
+// import { getExchangeInfo } from "./server/api/binance/info.js";
+import { getLastPrice } from "./server/api/binance/info.js";
 // import getPrevDayData from "./server/api/binance/info.js";
 // import getTradingTickers from "./server/api/binance/info.js";
 import Binance from "node-binance-api";
@@ -20,11 +21,14 @@ test();
 
 async function test() {
   try {
-    await getInfo("BNBUSDT");
+    // await getInfo("BNBUSDT");
     // testGetPrevDayData();
     // marketBuy("MITHUSDT", 20);
+    const price = await getLastPrice("BTCUSDT");
+    console.log(price);
   } catch (error) {
     const { statusCode, statusMessage, body, type, errorSrcData } = error;
+
     if (statusCode) {
       console.error(
         `\nType: ${type || ""}\nStatus message: ${statusMessage || ""}\nBody: ${
@@ -60,29 +64,30 @@ async function test() {
 // //   return new Promise((resolve) => setTimeout(() => resolve(), ms));
 // // }
 
-async function getInfo(tickerName) {
-  try {
-    const data = await getExchangeInfo(tickerName);
-    console.info("\n");
-    console.info(
-      "Exchange info:",
-      util.inspect(data, {
-        showHidden: false,
-        depth: null,
-        colors: true,
-      })
-    );
+// async function getInfo(tickerName) {
+//   try {
+//     const data = await getExchangeInfo(tickerName);
 
-    console.info("\n");
-    console.info("tickerName:", tickerName);
-  } catch (error) {
-    throw {
-      type: "Get Exchange Info",
-      ...error,
-      errorSrcData: error,
-    };
-  }
-}
+//     console.info("\n");
+//     console.info(
+//       "Exchange info:",
+//       util.inspect(data, {
+//         showHidden: false,
+//         depth: null,
+//         colors: true,
+//       })
+//     );
+
+//     console.info("\n");
+//     console.info("tickerName:", tickerName);
+//   } catch (error) {
+//     throw {
+//       type: "Get Exchange Info",
+//       ...error,
+//       errorSrcData: error,
+//     };
+//   }
+// }
 
 // // async function testGetPrevDayData() {
 // //   try {
