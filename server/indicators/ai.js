@@ -13,12 +13,16 @@ const openai = new OpenAI({ apiKey });
 async function getSignal(ticker) {
   try {
     const chatCompletion = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",
+      model: "gpt-4-turbo", // Используем GPT-4-turbo для сложного анализа и поиска информации
       messages: [
-        { role: "system", content: "You are a trading assistant." },
+        {
+          role: "system",
+          content:
+            "You are a trading assistant with access to real-time internet data.",
+        },
         {
           role: "user",
-          content: `Generate a trading recommendation for ${ticker} with a price point and signal BUY, SELL or HOLD.`,
+          content: `Generate a trading recommendation for ${ticker} considering current market trends and news. Provide a signal: BUY, SELL, or HOLD.`,
         },
       ],
     });
@@ -28,7 +32,11 @@ async function getSignal(ticker) {
     const recommendation = {
       datetime: new Date().toISOString(),
       ticker,
-      signal: outputText.toUpperCase().includes("BUY") ? "BUY" : "SELL",
+      signal: /BUY/.test(outputText)
+        ? "BUY"
+        : /SELL/.test(outputText)
+        ? "SELL"
+        : "HOLD",
     };
 
     return recommendation;
