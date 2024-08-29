@@ -23,11 +23,42 @@ x-template: &basic-container
 services:
   # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
-  external-signals--01m:
-    container_name: crypto-bot-surfer
+  external-signals--1h:
+    container_name: crypto-bot-surfer-1
     <<: *basic-container
     environment:
-      - HEARTBEAT_INTERVAL=15m
-      - NEXT_TRADE_DELAY=01m
+      - INDICATOR=external
+      - HEARTBEAT_INTERVAL=1h
+      - NEXT_TRADE_DELAY=1h
       - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=trades-15m.csv
+      - REPORT_FILE_NAME=trades-external-1h.csv
+
+  pump--15m:
+    container_name: crypto-bot-surfer-2
+    <<: *basic-container
+    environment:
+      - INDICATOR=pump
+      - HEARTBEAT_INTERVAL=15m
+      - NEXT_TRADE_DELAY=1m
+      - REPORT_FILE_DIR=/home/report
+      - REPORT_FILE_NAME=trades-pump-15m.csv
+
+  dump--15m:
+    container_name: crypto-bot-surfer-3
+    <<: *basic-container
+    environment:
+      - INDICATOR=dump
+      - HEARTBEAT_INTERVAL=15m
+      - NEXT_TRADE_DELAY=1m
+      - REPORT_FILE_DIR=/home/report
+      - REPORT_FILE_NAME=trades-dump-15m.csv
+
+  flat--15m:
+    container_name: crypto-bot-surfer-4
+    <<: *basic-container
+    environment:
+      - INDICATOR=flat
+      - HEARTBEAT_INTERVAL=15m
+      - NEXT_TRADE_DELAY=1m
+      - REPORT_FILE_DIR=/home/report
+      - REPORT_FILE_NAME=trades-flat-15m.csv
