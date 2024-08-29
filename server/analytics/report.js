@@ -18,7 +18,7 @@ const filePath = path.join(__dirname, reportFileName);
 const fileOptions = { flags: "a" };
 
 let profitTotal = 0;
-let lastPrice;
+let lastPrice = 0;
 let count = 0;
 
 ////
@@ -75,12 +75,8 @@ export function report({
   const comission = price * comissionPercent;
 
   if (trade === "SELL") {
-    const onePercent = lastPrice === undefined ? 0 : lastPrice / 100;
-
-    const profitPercent =
-      lastPrice !== undefined
-        ? (price - lastPrice) / onePercent - comissionPercent
-        : -comissionPercent;
+    const onePercent = lastPrice / 100;
+    const profitPercent = (price - lastPrice) / onePercent - comissionPercent;
 
     profitTotal += profitPercent;
 
