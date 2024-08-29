@@ -72,7 +72,7 @@ export function report({
 
   count++;
 
-  const comission = price * comissionPercent;
+  const comission = (price * comissionPercent) / 100;
 
   if (trade === "SELL") {
     const onePercent = lastPrice / 100;
