@@ -168,9 +168,7 @@ async function heartBeatLoop() {
       console.info("\n");
       console.info("Sell condition:", true);
 
-      if (currentSymbol) {
-        currentSymbol = null;
-      }
+      currentSymbol = null;
 
       const newPrimarySymbolBalance = 0;
 
