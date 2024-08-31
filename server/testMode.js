@@ -89,7 +89,7 @@ async function startServer() {
     console.info("Heartbeat interval:", interval);
     console.info("Using indicator:", indicator);
 
-    let startMessage = `<b>${secondarySymbol} Bot started</b>\n\n`;
+    let startMessage = `<b>${secondarySymbol} Bot started</b>\n`;
     startMessage += `<b>Chart Interval:</b> 1d\n`;
     startMessage += `<b>Hearbeat interval:</b> ${interval}\n`;
 
@@ -184,7 +184,7 @@ async function heartBeatLoop() {
       message += `<b>${sellPrimarySymbol} price</b>: ${parseFloat(
         sellPrice
       )} ${secondarySymbol}\n`;
-      message += `<b>Sold</b>: 1 ${sellPrimarySymbol}\n\n`;
+      message += `<b>Sold</b>: 1 ${sellPrimarySymbol}\n`;
       message += `<b>${sellPrimarySymbol} balance</b>: ${parseFloat(
         newPrimarySymbolBalance
       )}`;
@@ -235,12 +235,12 @@ async function heartBeatLoop() {
       lastTrade = { symbol: buyPrimarySymbol, price: buyPrice };
       lastCheck = lastTrade;
 
-      console.info("\n\nNew current symbol:", currentSymbol);
+      console.info("New current symbol:", currentSymbol);
 
       message += `<b>${buyPrimarySymbol} price</b>: ${parseFloat(
         buyPrice
       )} ${secondarySymbol}\n`;
-      message += `<b>Bought</b>: ${newPrimarySymbolBalance} ${buyPrimarySymbol}\n\n`;
+      message += `<b>Bought</b>: ${newPrimarySymbolBalance} ${buyPrimarySymbol}\n`;
       message += `<b>${buyPrimarySymbol} balance</b>: ${parseFloat(
         newPrimarySymbolBalance
       )}`;
@@ -271,7 +271,7 @@ async function heartBeatLoop() {
       });
     }
 
-    console.info("\n\nCurrent symbol:", currentSymbol);
+    console.info("\nCurrent symbol:", currentSymbol);
     console.info("\nlastCheck:", lastCheck);
   } catch (error) {
     throw { type: "Heartbeat Loop Error", ...error, errorSrcData: error };
