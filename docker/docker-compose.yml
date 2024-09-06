@@ -13,6 +13,7 @@ x-template: &basic-container
     - bash
     - -c
     - |
+      sleep ${SLEEP_DURATION:-0} && \
       rm -rf crypto-bot-surfer && \
       git clone --branch signal-trading https://github.com/digitalfuture/crypto-bot-surfer.git && \
       cd crypto-bot-surfer && \
@@ -24,41 +25,122 @@ services:
   # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
   external-signals--1h:
-    container_name: crypto-bot-surfer-1
+    container_name: crypto-bot-surfer-external
     <<: *basic-container
     environment:
       - INDICATOR=external
       - HEARTBEAT_INTERVAL=1h
       - NEXT_TRADE_DELAY=1h
       - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=trades-external-1h.csv
+      - REPORT_FILE_NAME=_external-01h.csv
+      - SLEEP_DURATION=0
 
-  pump--15m:
+  dump--30s:
+    container_name: crypto-bot-surfer-1
+    <<: *basic-container
+    environment:
+      - INDICATOR=dump
+      - HEARTBEAT_INTERVAL=30s
+      - NEXT_TRADE_DELAY=30s
+      - REPORT_FILE_DIR=/home/report
+      - REPORT_FILE_NAME=dump-30s.csv
+      - SLEEP_DURATION=10
+
+  dump--60s:
     container_name: crypto-bot-surfer-2
     <<: *basic-container
     environment:
-      - INDICATOR=pump
-      - HEARTBEAT_INTERVAL=15m
-      - NEXT_TRADE_DELAY=1m
+      - INDICATOR=dump
+      - HEARTBEAT_INTERVAL=60s
+      - NEXT_TRADE_DELAY=60s
       - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=trades-pump-15m.csv
+      - REPORT_FILE_NAME=dump-60s.csv
+      - SLEEP_DURATION=20
 
-  dump--15m:
+  dump--90s:
     container_name: crypto-bot-surfer-3
     <<: *basic-container
     environment:
       - INDICATOR=dump
-      - HEARTBEAT_INTERVAL=15m
-      - NEXT_TRADE_DELAY=1m
+      - HEARTBEAT_INTERVAL=90s
+      - NEXT_TRADE_DELAY=90s
       - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=trades-dump-15m.csv
+      - REPORT_FILE_NAME=dump-90s.csv
+      - SLEEP_DURATION=30
 
-  flat--15m:
+  dump--120s:
     container_name: crypto-bot-surfer-4
     <<: *basic-container
     environment:
-      - INDICATOR=flat
-      - HEARTBEAT_INTERVAL=15m
-      - NEXT_TRADE_DELAY=1m
+      - INDICATOR=dump
+      - HEARTBEAT_INTERVAL=120s
+      - NEXT_TRADE_DELAY=120s
       - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=trades-flat-15m.csv
+      - REPORT_FILE_NAME=dump-120s.csv
+      - SLEEP_DURATION=40
+
+  dump--150s:
+    container_name: crypto-bot-surfer-5
+    <<: *basic-container
+    environment:
+      - INDICATOR=dump
+      - HEARTBEAT_INTERVAL=150s
+      - NEXT_TRADE_DELAY=150s
+      - REPORT_FILE_DIR=/home/report
+      - REPORT_FILE_NAME=dump-150s.csv
+      - SLEEP_DURATION=50
+
+  dump--180s:
+    container_name: crypto-bot-surfer-6
+    <<: *basic-container
+    environment:
+      - INDICATOR=dump
+      - HEARTBEAT_INTERVAL=180s
+      - NEXT_TRADE_DELAY=180s
+      - REPORT_FILE_DIR=/home/report
+      - REPORT_FILE_NAME=dump-180s.csv
+      - SLEEP_DURATION=60
+
+  dump--210s:
+    container_name: crypto-bot-surfer-7
+    <<: *basic-container
+    environment:
+      - INDICATOR=dump
+      - HEARTBEAT_INTERVAL=210s
+      - NEXT_TRADE_DELAY=210s
+      - REPORT_FILE_DIR=/home/report
+      - REPORT_FILE_NAME=dump-210s.csv
+      - SLEEP_DURATION=70
+
+  dump--240s:
+    container_name: crypto-bot-surfer-8
+    <<: *basic-container
+    environment:
+      - INDICATOR=dump
+      - HEARTBEAT_INTERVAL=240s
+      - NEXT_TRADE_DELAY=240s
+      - REPORT_FILE_DIR=/home/report
+      - REPORT_FILE_NAME=dump-240s.csv
+      - SLEEP_DURATION=80
+
+  dump--270s:
+    container_name: crypto-bot-surfer-9
+    <<: *basic-container
+    environment:
+      - INDICATOR=dump
+      - HEARTBEAT_INTERVAL=270s
+      - NEXT_TRADE_DELAY=270s
+      - REPORT_FILE_DIR=/home/report
+      - REPORT_FILE_NAME=dump-270s.csv
+      - SLEEP_DURATION=90
+
+  dump--300s:
+    container_name: crypto-bot-surfer-10
+    <<: *basic-container
+    environment:
+      - INDICATOR=dump
+      - HEARTBEAT_INTERVAL=300s
+      - NEXT_TRADE_DELAY=300s
+      - REPORT_FILE_DIR=/home/report
+      - REPORT_FILE_NAME=dump-300s.csv
+      - SLEEP_DURATION=100
