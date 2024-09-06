@@ -17,7 +17,7 @@ const __dirname = reportFileDir
 const filePath = path.join(__dirname, reportFileName);
 const fileOptions = { flags: "a" };
 
-let profitTotal = 0;
+let profitTotalPercent = 0;
 let lastPrice = 0;
 let count = 0;
 
@@ -74,59 +74,60 @@ export function report({
 
   const comission = (price * comissionPercent) / 100;
 
-  if (trade === "SELL") {
+  if (trade === "BUY") {
+    profitTotalPercent -= comission;
+    const profitPercent = -comission;
+
+    csvStream.write({
+      Count: count,
+      Date: date.toISOString(),
+      "BTC / USDT price": btcUsdtPrice,
+      "Token name": symbol,
+      "24h price change %": +priceChangePercent,
+      Trade: trade,
+      "Trade price": +price,
+      Comission: +comission.toFixed(8),
+      "Profit %": +profitPercent.toFixed(8),
+      "Profit total %": +profitTotalPercent.toFixed(8),
+      "Market average": +marketAveragePrice.toFixed(8),
+    });
+
+    lastPrice = price;
+  } else if (trade === "SELL") {
     const onePercent = lastPrice / 100;
-    const profitPercent = (price - lastPrice) / onePercent - comissionPercent;
+    const profit = price - lastPrice - comission;
+    const profitPercent = profit / onePercent;
 
-    profitTotal += profitPercent;
-
-    csvStream.write({
-      Count: count,
-      Date: date.toISOString(),
-      "BTC / USDT price": btcUsdtPrice,
-      "Token name": symbol,
-      "24h price change %": +priceChangePercent.toFixed(4),
-      Trade: trade,
-      "Trade price": +price.toFixed(4),
-      Comission: +comission.toFixed(4),
-      "Profit %": +profitPercent.toFixed(4),
-      "Profit total %": +profitTotal.toFixed(4),
-      "Market average": +marketAveragePrice.toFixed(4),
-    });
-
-    lastPrice = price;
-  } else if (trade === "BUY") {
-    profitTotal -= comissionPercent;
-    const profitPercent = -comissionPercent;
+    profitTotalPercent += profitPercent;
 
     csvStream.write({
       Count: count,
       Date: date.toISOString(),
       "BTC / USDT price": btcUsdtPrice,
       "Token name": symbol,
-      "24h price change %": +priceChangePercent.toFixed(4),
+      "24h price change %": +priceChangePercent,
       Trade: trade,
-      "Trade price": +price.toFixed(4),
-      Comission: +comission.toFixed(4),
-      "Profit %": +profitPercent.toFixed(4),
-      "Profit total %": +profitTotal.toFixed(4),
-      "Market average": +marketAveragePrice.toFixed(4),
+      "Trade price": +price,
+      Comission: +comission.toFixed(8),
+      "Profit %": +profitPercent.toFixed(8),
+      "Profit total %": +profitTotalPercent.toFixed(8),
+      "Market average": +marketAveragePrice.toFixed(8),
     });
 
     lastPrice = price;
-  } else if (trade === "PASS") {
+  } else {
     csvStream.write({
       Count: count,
       Date: date.toISOString(),
       "BTC / USDT price": btcUsdtPrice,
       "Token name": "",
-      "24h price change %": +(priceChangePercent || 0).toFixed(4),
+      "24h price change %": +(priceChangePercent || 0),
       Trade: "",
       "Trade price": "",
       Comission: 0,
       "Profit %": 0,
-      "Profit total %": +profitTotal.toFixed(4),
-      "Market average": +marketAveragePrice.toFixed(4),
+      "Profit total %": +profitTotalPercent.toFixed(8),
+      "Market average": +marketAveragePrice.toFixed(8),
     });
   }
 
