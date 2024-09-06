@@ -2,30 +2,22 @@ export function delay(ms) {
   return new Promise((resolve) => setTimeout(() => resolve(), ms));
 }
 
-function parseInterval(interval) {
+export function getHeartbeatInterval(interval) {
   const match = interval.match(/^(\d+)(s|m|h)$/);
   if (!match) {
     throw new Error(`Invalid interval format: ${interval}`);
   }
+
   const value = parseInt(match[1], 10);
   const unit = match[2];
-  if (value < 1 || value > 60) {
-    throw new Error(`Invalid interval value: ${value}`);
-  }
-  if (unit !== "s" && unit !== "m" && unit !== "h") {
-    throw new Error(`Invalid interval unit: ${unit}`);
-  }
-  const values = {
-    s: value * 1000,
-    m: value * 60 * 1000,
-    h: value * 60 * 60 * 1000,
-  };
-  return values[unit];
-}
 
-export function getHeartbeatInterval(interval) {
-  const intervalMs = parseInterval(interval);
-  return intervalMs;
+  const values = {
+    s: value * 1000, // seconds
+    m: value * 60 * 1000, // minutes
+    h: value * 60 * 60 * 1000, // hours
+  };
+
+  return values[unit];
 }
 
 export function formatDate(timestamp) {
