@@ -30,7 +30,7 @@ export async function getTradeSignals({
           lastPrice,
           openTime,
           closeTime,
-          ...others
+          volume,
         }) => ({
           primarySymbol: symbol.split(secondarySymbol)[0],
           secondarySymbol,
@@ -39,17 +39,20 @@ export async function getTradeSignals({
           lastPrice: parseFloat(lastPrice),
           openTime,
           closeTime,
-          ...others,
+          volume,
         })
       )
       .filter(({ tickerName }) => tickerName.endsWith(secondarySymbol))
       .filter(({ primarySymbol }) => !primarySymbol.endsWith("DOWN"))
-      .filter(({ primarySymbol }) => !primarySymbol.endsWith("UP"));
-
-    const tickerListToBuy = tickerList
+      .filter(({ primarySymbol }) => !primarySymbol.endsWith("UP"))
       .filter(({ primarySymbol }) =>
         tradingTickers.includes(primarySymbol + secondarySymbol)
-      )
+      );
+
+    const tickerListToBuy = tickerList
+      .sort((a, b) => a.volume - b.volume)
+      .slice(Math.round(-tickerList.length / 2))
+      .sort((a, b) => a.price - b.price)
       .filter(({ primarySymbol }) => primarySymbol !== lastTrade.symbol)
       .filter(({ primarySymbol }) => primarySymbol !== currentSymbol)
       .sort((a, b) => b.priceChangePercent - a.priceChangePercent)
@@ -57,7 +60,8 @@ export async function getTradeSignals({
 
     //
     // Buy signal
-    const tickerToBuy = tickerListToBuy.reverse()[0];
+    const tickerToBuy =
+      tickerListToBuy[Math.floor(Math.random() * tickerListToBuy.length)];
     const buyPrimarySymbol = tickerToBuy?.primarySymbol;
     const buyTickerName = tickerToBuy?.tickerName;
     const buyPrice = parseFloat(tickerToBuy?.lastPrice);
