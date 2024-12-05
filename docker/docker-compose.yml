@@ -25,9 +25,38 @@ services:
     container_name: crypto-bot-surfer-1
     <<: *basic-container
     environment:
-      - INDICATOR=dump
+      - INDICATOR=pump
       - HEARTBEAT_INTERVAL=5m
       - NEXT_TRADE_DELAY=01m
       - REPORT_FILE_DIR=/home/report
       - REPORT_FILE_NAME=pump-fast-05m.csv
 
+  pump--10m-fast:
+    container_name: crypto-bot-surfer-2
+    <<: *basic-container
+    environment:
+      - INDICATOR=pump
+      - HEARTBEAT_INTERVAL=10m
+      - NEXT_TRADE_DELAY=01m
+      - REPORT_FILE_DIR=/home/report
+      - REPORT_FILE_NAME=pump-fast-10m.csv
+
+  pump--15m-fast:
+    container_name: crypto-bot-surfer-3
+    <<: *basic-container
+    environment:
+      - INDICATOR=pump
+      - HEARTBEAT_INTERVAL=15m
+      - NEXT_TRADE_DELAY=01m
+      - REPORT_FILE_DIR=/home/report
+      - REPORT_FILE_NAME=pump-fast-15m.csv
+
+  pump--20m-fast:
+    container_name: crypto-bot-surfer-4
+    <<: *basic-container
+    environment:
+      - INDICATOR=pump
+      - HEARTBEAT_INTERVAL=20m
+      - NEXT_TRADE_DELAY=01m
+      - REPORT_FILE_DIR=/home/report
+      - REPORT_FILE_NAME=pump-fast-20m.csv
