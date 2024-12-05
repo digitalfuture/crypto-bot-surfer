@@ -1,12 +1,10 @@
 # docker-compose.yml
 
-version: "3.9"
-
 # Basic service template
 x-template: &basic-container
   image: node:20
   volumes:
-    - /home/koshkindom/app/report:/home/report
+    - /home/report:/home/report
   env_file: .env
   working_dir: /home
   command:
@@ -23,113 +21,13 @@ x-template: &basic-container
 services:
   # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
-  signals--1h:
-    container_name: crypto-bot-surfer-external
-    <<: *basic-container
-    environment:
-      - INDICATOR=external
-      - HEARTBEAT_INTERVAL=1h
-      - NEXT_TRADE_DELAY=1h
-      - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=signals-01h.csv
-
-  dump--05m:
+  pump--5m-fast:
     container_name: crypto-bot-surfer-1
     <<: *basic-container
     environment:
       - INDICATOR=dump
-      - HEARTBEAT_INTERVAL=05m
-      - NEXT_TRADE_DELAY=05m
-      - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=dump-05m.csv
-
-  dump--08m:
-    container_name: crypto-bot-surfer-2
-    <<: *basic-container
-    environment:
-      - INDICATOR=dump
-      - HEARTBEAT_INTERVAL=08m
-      - NEXT_TRADE_DELAY=08m
-      - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=dump-08m.csv
-
-  dump--11m:
-    container_name: crypto-bot-surfer-3
-    <<: *basic-container
-    environment:
-      - INDICATOR=dump
-      - HEARTBEAT_INTERVAL=11m
-      - NEXT_TRADE_DELAY=11m
-      - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=dump-11m.csv
-
-  dump--14m:
-    container_name: crypto-bot-surfer-4
-    <<: *basic-container
-    environment:
-      - INDICATOR=dump
-      - HEARTBEAT_INTERVAL=14m
-      - NEXT_TRADE_DELAY=14m
-      - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=dump-14m.csv
-
-  dump--17m:
-    container_name: crypto-bot-surfer-5
-    <<: *basic-container
-    environment:
-      - INDICATOR=dump
-      - HEARTBEAT_INTERVAL=17m
-      - NEXT_TRADE_DELAY=17m
-      - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=dump-17m.csv
-
-  dump--05m-fast:
-    container_name: crypto-bot-surfer-6
-    <<: *basic-container
-    environment:
-      - INDICATOR=dump
-      - HEARTBEAT_INTERVAL=05m
+      - HEARTBEAT_INTERVAL=5m
       - NEXT_TRADE_DELAY=01m
       - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=dump-fast-05m.csv
-
-  dump--08m-fast:
-    container_name: crypto-bot-surfer-7
-    <<: *basic-container
-    environment:
-      - INDICATOR=dump
-      - HEARTBEAT_INTERVAL=08m
-      - NEXT_TRADE_DELAY=01m
-      - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=dump-fast-08m.csv
-
-  dump--11m-fast:
-    container_name: crypto-bot-surfer-8
-    <<: *basic-container
-    environment:
-      - INDICATOR=dump
-      - HEARTBEAT_INTERVAL=11m
-      - NEXT_TRADE_DELAY=01m
-      - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=dump-fast-11m.csv
-
-  dump--14m-fast:
-    container_name: crypto-bot-surfer-9
-    <<: *basic-container
-    environment:
-      - INDICATOR=dump
-      - HEARTBEAT_INTERVAL=14m
-      - NEXT_TRADE_DELAY=01m
-      - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=dump-fast-14m.csv
-
-  dump--17m-fast:
-    container_name: crypto-bot-surfer-10
-    <<: *basic-container
-    environment:
-      - INDICATOR=dump
-      - HEARTBEAT_INTERVAL=17m
-      - NEXT_TRADE_DELAY=01m
-      - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=dump-fast-17m.csv
+      - REPORT_FILE_NAME=pump-fast-05m.csv
 
