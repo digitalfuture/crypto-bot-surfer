@@ -21,7 +21,7 @@ x-template: &basic-container
 services:
   # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
-  pump--5m-fast:
+  pump--5m-fast-1:
     container_name: crypto-bot-surfer-1
     <<: *basic-container
     environment:
@@ -29,34 +29,74 @@ services:
       - HEARTBEAT_INTERVAL=5m
       - NEXT_TRADE_DELAY=01m
       - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=pump-fast-05m.csv
+      - REPORT_FILE_NAME=pump-fast-05m-1.csv
 
-  pump--10m-fast:
+  pump--5m-fast-2:
     container_name: crypto-bot-surfer-2
     <<: *basic-container
     environment:
       - INDICATOR=pump
-      - HEARTBEAT_INTERVAL=10m
-      - NEXT_TRADE_DELAY=01m
+      - HEARTBEAT_INTERVAL=5m
+      - NEXT_TRADE_DELAY=02m
       - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=pump-fast-10m.csv
+      - REPORT_FILE_NAME=pump-fast-05m-2.csv
 
-  pump--15m-fast:
+  pump--5m-fast-3:
     container_name: crypto-bot-surfer-3
     <<: *basic-container
     environment:
       - INDICATOR=pump
-      - HEARTBEAT_INTERVAL=15m
-      - NEXT_TRADE_DELAY=01m
+      - HEARTBEAT_INTERVAL=05m
+      - NEXT_TRADE_DELAY=03m
       - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=pump-fast-15m.csv
+      - REPORT_FILE_NAME=pump-fast-05m-3.csv
 
-  pump--20m-fast:
+  pump--5m-fast-4:
     container_name: crypto-bot-surfer-4
     <<: *basic-container
     environment:
       - INDICATOR=pump
-      - HEARTBEAT_INTERVAL=20m
-      - NEXT_TRADE_DELAY=01m
+      - HEARTBEAT_INTERVAL=05m
+      - NEXT_TRADE_DELAY=04m
       - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=pump-fast-20m.csv
+      - REPORT_FILE_NAME=pump-fast-05m-4.csv
+
+  pump--5m-slow-1:
+    container_name: crypto-bot-surfer-5
+    <<: *basic-container
+    environment:
+      - INDICATOR=pump
+      - HEARTBEAT_INTERVAL=5m
+      - NEXT_TRADE_DELAY=06m
+      - REPORT_FILE_DIR=/home/report
+      - REPORT_FILE_NAME=pump-slow-05m-5.csv
+
+  pump--5m-slow-2:
+    container_name: crypto-bot-surfer-6
+    <<: *basic-container
+    environment:
+      - INDICATOR=pump
+      - HEARTBEAT_INTERVAL=5m
+      - NEXT_TRADE_DELAY=07m
+      - REPORT_FILE_DIR=/home/report
+      - REPORT_FILE_NAME=pump-slow-05m-6.csv
+
+  pump--5m-slow-3:
+    container_name: crypto-bot-surfer-7
+    <<: *basic-container
+    environment:
+      - INDICATOR=pump
+      - HEARTBEAT_INTERVAL=05m
+      - NEXT_TRADE_DELAY=08m
+      - REPORT_FILE_DIR=/home/report
+      - REPORT_FILE_NAME=pump-slow-05m-7.csv
+
+  pump--5m-slow-4:
+    container_name: crypto-bot-surfer-8
+    <<: *basic-container
+    environment:
+      - INDICATOR=pump
+      - HEARTBEAT_INTERVAL=05m
+      - NEXT_TRADE_DELAY=09m
+      - REPORT_FILE_DIR=/home/report
+      - REPORT_FILE_NAME=pump-slow-05m-8.csv
