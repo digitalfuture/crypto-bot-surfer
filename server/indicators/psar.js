@@ -4,11 +4,107 @@ import {
   getLastPrice,
   getCandlestickData,
 } from "../api/binance/info.js";
-import { psar } from "indicatorts";
 
-const buyTicker = process.env.PRIMARY_SYMBOL + process.env.SECONDARY_SYMBOL;
+const tickerName = process.env.PRIMARY_SYMBOL + process.env.SECONDARY_SYMBOL;
 const interval = process.env.HEARTBEAT_INTERVAL;
 const periods = process.env.BACKTEST_PERIODS;
+
+function calculatePsar(data) {
+  const afStart = 0.02; // Initial acceleration factor
+  const afStep = 0.02; // Increment for acceleration
+  const afMax = 0.2; // Maximum acceleration factor
+
+  let psar = data[0].low; // Start with the first low
+  let ep = data[0].high; // Extreme point (initial high)
+  let af = afStart; // Initial acceleration factor
+  let isUptrend = true; // Start with an uptrend
+
+  const psarSegments = [];
+  let currentSegment = [];
+
+  for (let i = 1; i < data.length; i++) {
+    const bar = data[i];
+
+    if (isUptrend) {
+      psar = psar + af * (ep - psar); // Calculate next PSAR for uptrend
+      if (bar.low < psar) {
+        // Switch to downtrend
+        if (currentSegment.length > 0) psarSegments.push(currentSegment);
+        currentSegment = [];
+        isUptrend = false;
+        psar = ep; // Reset PSAR to previous extreme point
+        ep = bar.low; // New extreme point
+        af = afStart; // Reset acceleration factor
+      }
+    } else {
+      psar = psar + af * (ep - psar); // Calculate next PSAR for downtrend
+      if (bar.high > psar) {
+        // Switch to uptrend
+        if (currentSegment.length > 0) psarSegments.push(currentSegment);
+        currentSegment = [];
+        isUptrend = true;
+        psar = ep; // Reset PSAR to previous extreme point
+        ep = bar.high; // New extreme point
+        af = afStart; // Reset acceleration factor
+      }
+    }
+
+    // Update extreme point and acceleration factor
+    if (isUptrend && bar.high > ep) {
+      ep = bar.high; // Adjust extreme point to new high
+      af = Math.min(af + afStep, afMax); // Increase acceleration factor
+    } else if (!isUptrend && bar.low < ep) {
+      ep = bar.low; // Adjust extreme point to new low
+      af = Math.min(af + afStep, afMax); // Increase acceleration factor
+    }
+
+    // Add PSAR point to the current segment
+    currentSegment.push({ time: bar.time, value: psar, isUptrend });
+  }
+
+  // Push the last segment if it has data
+  if (currentSegment.length > 0) {
+    psarSegments.push(currentSegment);
+  }
+
+  return psarSegments;
+}
+
+// Генерация сигналов на основе PSAR
+function generateSignals(psarSegments, candlestickData) {
+  // Соответствуем цены закрытия с временной меткой
+  const closingPrices = candlestickData.map(({ time, close }) => ({
+    time,
+    close,
+  }));
+
+  const signals = [];
+
+  psarSegments.forEach((segment) => {
+    segment.forEach(({ time, value: psar, isUptrend }) => {
+      const closingPrice = closingPrices.find(
+        (price) => price.time === time
+      )?.close;
+
+      if (closingPrice !== undefined) {
+        // Логика сигналов
+        const isBuySignal = isUptrend && psar < closingPrice;
+        const isSellSignal = !isUptrend && psar > closingPrice;
+
+        signals.push({
+          time,
+          isBuySignal,
+          isSellSignal,
+          psar,
+          closingPrice,
+          trend: isUptrend ? "uptrend" : "downtrend",
+        });
+      }
+    });
+  });
+
+  return signals;
+}
 
 export async function getTradeSignals({
   currentSymbol,
@@ -52,7 +148,12 @@ export async function getTradeSignals({
         tradingTickers.includes(primarySymbol + secondarySymbol)
       );
 
-    const buyPrice = await getLastPrice(buyTicker);
+    const buyTicker = tickerList.find(
+      ({ primarySymbol, secondarySymbol }) =>
+        primarySymbol + secondarySymbol === tickerName
+    );
+
+    const buyPrice = parseFloat(buyTicker?.lastPrice);
 
     const buyPrimarySymbol = buyTicker?.primarySymbol;
     const buyTickerName = buyTicker?.tickerName;
@@ -60,50 +161,26 @@ export async function getTradeSignals({
 
     //
     // Buy signal
-    const rawData = await getCandlestickData({
-      tickerName: buyTicker,
+    const candlestickData = await getCandlestickData({
+      tickerName,
       interval,
       periods,
     });
 
-    const transformedData = rawData.reduce(
-      (acc, [, , high, low, close]) => {
-        acc.highs.push(high);
-        acc.lows.push(low);
-        acc.closings.push(close);
-        return acc;
-      },
-      { highs: [], lows: [], closings: [] }
+    const transformedData = candlestickData.map(
+      ([time, , high, low, close]) => ({
+        time,
+        high,
+        low,
+        close,
+      })
     );
+    // Рассчитываем PSAR сегменты с новыми параметрами
+    const psarSegments = calculatePsar(transformedData);
+    // console.log("psarSegments", psarSegments);
 
-    const { highs, lows, closings } = transformedData;
-
-    const defaultConfig = { step: 0.02, max: 0.2 };
-
-    const { trends, psarResult } = psar(highs, lows, closings, defaultConfig);
-
-    const generateSignals = (psarResult, trends, closings) => {
-      const signals = psarResult.map((psar, index) => {
-        const isUptrend = trends[index] === "uptrend";
-        const isDowntrend = trends[index] === "downtrend";
-        const closingPrice = closings[index];
-
-        const isBuySignal = psar < closingPrice && isUptrend;
-        const isSellSignal = psar > closingPrice && isDowntrend;
-
-        return {
-          isBuySignal,
-          isSellSignal,
-          psar,
-          closingPrice,
-          trend: trends[index],
-        };
-      });
-
-      return signals;
-    };
-
-    const signals = generateSignals(psarResult, trends, closings);
+    // Генерация сигналов
+    const signals = generateSignals(psarSegments, transformedData);
 
     const currentSignal = signals[signals.length - 1];
     // console.log("Current Signal:", currentSignal);
@@ -157,6 +234,8 @@ export async function getTradeSignals({
       btcUsdtPrice,
       marketAveragePrice,
     };
+
+    console.log("result:", result);
 
     // console.info("\nCheck signals result:", {
     //   buySignal: {
