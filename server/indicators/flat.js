@@ -41,7 +41,7 @@ export async function getTradeSignals({
       .filter(({ primarySymbol }) => !primarySymbol.endsWith("DOWN"))
       .filter(({ primarySymbol }) => !primarySymbol.endsWith("UP"));
 
-    const tickerListToBuy = tickerList
+    const buyTickerList = tickerList
       .filter(({ tickerName }) => tickerName.endsWith(secondarySymbol))
       .filter(({ primarySymbol }) =>
         tradingTickers.includes(primarySymbol + secondarySymbol)
@@ -53,11 +53,11 @@ export async function getTradeSignals({
 
     //
     // Buy signal
-    const tickerToBuy = tickerListToBuy[0];
-    const buyPrimarySymbol = tickerToBuy.primarySymbol;
-    const buyTickerName = tickerToBuy.tickerName;
-    const buyPrice = tickerToBuy && parseFloat(tickerToBuy.lastPrice);
-    const buyTickerPriceChangePercent = tickerToBuy.priceChangePercent;
+    const buyTicker = buyTickerList[0];
+    const buyPrimarySymbol = buyTicker.primarySymbol;
+    const buyTickerName = buyTicker.tickerName;
+    const buyPrice = buyTicker && parseFloat(buyTicker.lastPrice);
+    const buyTickerPriceChangePercent = buyTicker.priceChangePercent;
     const buyCondition = currentSymbol === null;
     const isBuySignal = buyCondition;
 

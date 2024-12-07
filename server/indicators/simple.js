@@ -37,13 +37,13 @@ export async function getTradeSignals({ secondarySymbol, currentSymbol }) {
 
     //
     // Buy signal
-    const tickerToBuy = tickerList.find(
+    const buyTicker = tickerList.find(
       ({ primarySymbol }) => primarySymbol === process.env.PRIMARY_SYMBOL
     );
-    const buyPrimarySymbol = tickerToBuy.primarySymbol;
-    const buyTickerName = tickerToBuy.tickerName;
-    const buyPrice = tickerToBuy && parseFloat(tickerToBuy.lastPrice);
-    const buyTickerPriceChangePercent = tickerToBuy.priceChangePercent;
+    const buyPrimarySymbol = buyTicker.primarySymbol;
+    const buyTickerName = buyTicker.tickerName;
+    const buyPrice = buyTicker && parseFloat(buyTicker.lastPrice);
+    const buyTickerPriceChangePercent = buyTicker.priceChangePercent;
     const isBuySignal = currentSymbol === null;
 
     //

@@ -1,4 +1,4 @@
-import { sendMessage, sendImage } from "./api/telegram/telegram.js";
+import { sendMessage /* sendImage */ } from "./api/telegram/telegram.js";
 import { marketBuy, marketSell } from "./api/binance/trading.js";
 // import { prepareChartData } from "./analytics/charts.js";
 import {
@@ -168,8 +168,6 @@ async function heartBeatLoop() {
       buyTickerName,
       sellPrice,
       buyPrice,
-      sellTickerPriceChangePercent,
-      buyTickerPriceChangePercent,
       isSellSignal,
       isBuySignal,
     } = await getSignals({

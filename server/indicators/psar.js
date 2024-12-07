@@ -1,26 +1,29 @@
-import { getPrevDayData, getTradingTickers } from "../api/binance/info.js";
-import { getLastPrice } from "..//api/binance/info.js";
+import {
+  getPrevDayData,
+  getTradingTickers,
+  getLastPrice,
+  getCandlestickData,
+} from "../api/binance/info.js";
+import { psar } from "indicatorts";
 
-const changePercent = parseFloat(process.env.INDICATOR_CHANGE_PERCENT);
+const buyTicker = process.env.PRIMARY_SYMBOL + process.env.SECONDARY_SYMBOL;
+const interval = process.env.HEARTBEAT_INTERVAL;
+const periods = process.env.BACKTEST_PERIODS;
 
 export async function getTradeSignals({
-  secondarySymbol,
   currentSymbol,
-  lastTrade,
   lastCheck,
+  secondarySymbol,
 }) {
   try {
     // console.info("\nlastCheck:", lastCheck);
     // console.info("lastTrade:", lastTrade);
 
-    // BTC / USDT
     const btcUsdtPrice = await getLastPrice("BTCUSDT");
+    const priceListData = await getPrevDayData();
 
     const tradingTickers = await getTradingTickers();
     // console.info("tradingTickers:", tradingTickers);
-
-    const priceListData = await getPrevDayData();
-    // console.info("priceListData:", priceListData);
 
     const tickerList = priceListData
       .map(
@@ -49,24 +52,63 @@ export async function getTradeSignals({
         tradingTickers.includes(primarySymbol + secondarySymbol)
       );
 
-    const buyTickerList = tickerList
-      .filter(({ primarySymbol }) => primarySymbol !== lastTrade.symbol)
-      .filter(({ primarySymbol }) => primarySymbol !== currentSymbol)
-      .filter(({ priceChangePercent }) => priceChangePercent > changePercent)
-      .sort((a, b) => a.volume - b.volume)
-      .slice(-10)
-      .sort((a, b) => b.priceChangePercent - a.priceChangePercent);
+    const buyPrice = await getLastPrice(buyTicker);
+
+    const buyPrimarySymbol = buyTicker?.primarySymbol;
+    const buyTickerName = buyTicker?.tickerName;
+    const buyTickerPriceChangePercent = buyTicker?.priceChangePercent;
 
     //
     // Buy signal
-    const buyTicker =
-      buyTickerList[Math.floor(Math.random() * buyTickerList.length)];
-    const buyPrimarySymbol = buyTicker?.primarySymbol;
-    const buyTickerName = buyTicker?.tickerName;
-    const buyPrice = parseFloat(buyTicker?.lastPrice);
-    const buyTickerPriceChangePercent = buyTicker?.priceChangePercent;
-    const buyCondition = currentSymbol === null && buyTicker;
-    const isBuySignal = buyCondition;
+    const rawData = await getCandlestickData({
+      tickerName: buyTicker,
+      interval,
+      periods,
+    });
+
+    const transformedData = rawData.reduce(
+      (acc, [, , high, low, close]) => {
+        acc.highs.push(high);
+        acc.lows.push(low);
+        acc.closings.push(close);
+        return acc;
+      },
+      { highs: [], lows: [], closings: [] }
+    );
+
+    const { highs, lows, closings } = transformedData;
+
+    const defaultConfig = { step: 0.02, max: 0.2 };
+
+    const { trends, psarResult } = psar(highs, lows, closings, defaultConfig);
+
+    const generateSignals = (psarResult, trends, closings) => {
+      const signals = psarResult.map((psar, index) => {
+        const isUptrend = trends[index] === "uptrend";
+        const isDowntrend = trends[index] === "downtrend";
+        const closingPrice = closings[index];
+
+        const isBuySignal = psar < closingPrice && isUptrend;
+        const isSellSignal = psar > closingPrice && isDowntrend;
+
+        return {
+          isBuySignal,
+          isSellSignal,
+          psar,
+          closingPrice,
+          trend: trends[index],
+        };
+      });
+
+      return signals;
+    };
+
+    const signals = generateSignals(psarResult, trends, closings);
+
+    const currentSignal = signals[signals.length - 1];
+    // console.log("Current Signal:", currentSignal);
+
+    const isBuySignal = currentSymbol === null && currentSignal.isBuySignal;
 
     // console.log("buyTicker:", buyTicker);
     // console.log("changePercent:", buyTicker.priceChangePercent);
@@ -82,8 +124,7 @@ export async function getTradeSignals({
     const sellPrice = parseFloat(tickerToSell?.lastPrice);
     const sellTickerPriceChangePercent = tickerToSell?.priceChangePercent;
     const sellCondition1 = lastCheck.symbol === currentSymbol;
-    const sellCondition2 = sellPrice < lastCheck.price;
-    const isSellSignal = sellCondition1 && sellCondition2;
+    const isSellSignal = sellCondition1 && currentSignal.isSellSignal;
 
     // Market average
     const marketAveragePrice = tickerList
