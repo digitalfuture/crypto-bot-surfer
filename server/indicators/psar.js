@@ -235,7 +235,7 @@ export async function getTradeSignals({
       marketAveragePrice,
     };
 
-    console.log("result:", result);
+    // console.log("result:", result);
 
     // console.info("\nCheck signals result:", {
     //   buySignal: {
