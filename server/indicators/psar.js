@@ -198,7 +198,7 @@ export async function getTradeSignals({
 
     const sellPrimarySymbol = tickerToSell?.primarySymbol;
     const sellTickerName = tickerToSell?.tickerName;
-    const sellPrice = parseFloat(tickerToSell?.lastPrice);
+    const sellPrice = parseFloat(tickerToSell?.lastPrice || null);
     const sellTickerPriceChangePercent = tickerToSell?.priceChangePercent;
     const sellCondition1 = lastCheck.symbol === currentSymbol;
     const isSellSignal = sellCondition1 && currentSignal.isSellSignal;
@@ -235,7 +235,7 @@ export async function getTradeSignals({
       marketAveragePrice,
     };
 
-    // console.log("result:", result);
+    console.log("result:", result);
 
     // console.info("\nCheck signals result:", {
     //   buySignal: {

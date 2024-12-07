@@ -26,7 +26,7 @@ services:
     environment:
       - INDICATOR=psar
       - HEARTBEAT_INTERVAL=5m
-      - PRiMARY_SYMBOL=BTC
+      - PRIMARY_SYMBOL=BTC
       - BACKTEST_PERIODS=500
       - NEXT_TRADE_DELAY=01m
       - REPORT_FILE_DIR=/home/report
@@ -38,7 +38,7 @@ services:
     environment:
       - INDICATOR=psar
       - HEARTBEAT_INTERVAL=5m
-      - PRiMARY_SYMBOL=BNB
+      - PRIMARY_SYMBOL=BNB
       - BACKTEST_PERIODS=500
       - NEXT_TRADE_DELAY=01m
       - REPORT_FILE_DIR=/home/report
@@ -50,7 +50,7 @@ services:
     environment:
       - INDICATOR=psar
       - HEARTBEAT_INTERVAL=5m
-      - PRiMARY_SYMBOL=XRP
+      - PRIMARY_SYMBOL=XRP
       - BACKTEST_PERIODS=500
       - NEXT_TRADE_DELAY=01m
       - REPORT_FILE_DIR=/home/report
@@ -62,7 +62,7 @@ services:
     environment:
       - INDICATOR=psar
       - HEARTBEAT_INTERVAL=5m
-      - PRiMARY_SYMBOL=DOGE
+      - PRIMARY_SYMBOL=DOGE
       - BACKTEST_PERIODS=500
       - NEXT_TRADE_DELAY=01m
       - REPORT_FILE_DIR=/home/report
@@ -74,7 +74,7 @@ services:
     environment:
       - INDICATOR=psar
       - HEARTBEAT_INTERVAL=5m
-      - PRiMARY_SYMBOL=CAKE
+      - PRIMARY_SYMBOL=CAKE
       - BACKTEST_PERIODS=500
       - NEXT_TRADE_DELAY=01m
       - REPORT_FILE_DIR=/home/report
@@ -86,7 +86,7 @@ services:
     environment:
       - INDICATOR=psar
       - HEARTBEAT_INTERVAL=5m
-      - PRiMARY_SYMBOL=TON
+      - PRIMARY_SYMBOL=TON
       - BACKTEST_PERIODS=500
       - NEXT_TRADE_DELAY=01m
       - REPORT_FILE_DIR=/home/report
@@ -98,7 +98,7 @@ services:
     environment:
       - INDICATOR=psar
       - HEARTBEAT_INTERVAL=5m
-      - PRiMARY_SYMBOL=ADA
+      - PRIMARY_SYMBOL=ADA
       - BACKTEST_PERIODS=500
       - NEXT_TRADE_DELAY=01m
       - REPORT_FILE_DIR=/home/report
@@ -110,7 +110,7 @@ services:
     environment:
       - INDICATOR=psar
       - HEARTBEAT_INTERVAL=5m
-      - PRiMARY_SYMBOL=DOT
+      - PRIMARY_SYMBOL=DOT
       - BACKTEST_PERIODS=500
       - NEXT_TRADE_DELAY=01m
       - REPORT_FILE_DIR=/home/report
