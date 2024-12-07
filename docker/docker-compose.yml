@@ -17,86 +17,101 @@ x-template: &basic-container
       npm install && \
       npm run nodemon
 
-# Creating containers
 services:
   # # # # # # # # # # # # # # # # # # # # # # # # # # #
 
-  pump--5m-fast-1:
+  psar--5m-fast-1:
     container_name: crypto-bot-surfer-1
     <<: *basic-container
     environment:
-      - INDICATOR=pump
+      - INDICATOR=psar
       - HEARTBEAT_INTERVAL=5m
+      - PRYMARY_SYMBOL=BTC
+      - BACKTEST_PERIODS=500
       - NEXT_TRADE_DELAY=01m
       - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=pump-fast-05m-1.csv
+      - REPORT_FILE_NAME=psar-fast-05m-1.csv
 
-  pump--5m-fast-2:
+  psar--5m-fast-2:
     container_name: crypto-bot-surfer-2
     <<: *basic-container
     environment:
-      - INDICATOR=pump
+      - INDICATOR=psar
       - HEARTBEAT_INTERVAL=5m
-      - NEXT_TRADE_DELAY=02m
+      - PRYMARY_SYMBOL=BNB
+      - BACKTEST_PERIODS=500
+      - NEXT_TRADE_DELAY=01m
       - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=pump-fast-05m-2.csv
+      - REPORT_FILE_NAME=psar-fast-05m-2.csv
 
-  pump--5m-fast-3:
+  psar--5m-fast-3:
     container_name: crypto-bot-surfer-3
     <<: *basic-container
     environment:
-      - INDICATOR=pump
-      - HEARTBEAT_INTERVAL=05m
-      - NEXT_TRADE_DELAY=03m
+      - INDICATOR=psar
+      - HEARTBEAT_INTERVAL=5m
+      - PRYMARY_SYMBOL=XRP
+      - BACKTEST_PERIODS=500
+      - NEXT_TRADE_DELAY=01m
       - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=pump-fast-05m-3.csv
+      - REPORT_FILE_NAME=psar-fast-05m-3.csv
 
-  pump--5m-fast-4:
+  psar--5m-fast-4:
     container_name: crypto-bot-surfer-4
     <<: *basic-container
     environment:
-      - INDICATOR=pump
-      - HEARTBEAT_INTERVAL=05m
-      - NEXT_TRADE_DELAY=04m
+      - INDICATOR=psar
+      - HEARTBEAT_INTERVAL=5m
+      - PRYMARY_SYMBOL=DOGE
+      - BACKTEST_PERIODS=500
+      - NEXT_TRADE_DELAY=01m
       - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=pump-fast-05m-4.csv
+      - REPORT_FILE_NAME=psar-fast-05m-4.csv
 
-  pump--5m-slow-1:
+  psar--5m-fast-5:
     container_name: crypto-bot-surfer-5
     <<: *basic-container
     environment:
-      - INDICATOR=pump
+      - INDICATOR=psar
       - HEARTBEAT_INTERVAL=5m
-      - NEXT_TRADE_DELAY=06m
+      - PRYMARY_SYMBOL=CAKE
+      - BACKTEST_PERIODS=500
+      - NEXT_TRADE_DELAY=01m
       - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=pump-slow-05m-5.csv
+      - REPORT_FILE_NAME=psar-fast-05m-5.csv
 
-  pump--5m-slow-2:
+  psar--5m-fast-6:
     container_name: crypto-bot-surfer-6
     <<: *basic-container
     environment:
-      - INDICATOR=pump
+      - INDICATOR=psar
       - HEARTBEAT_INTERVAL=5m
-      - NEXT_TRADE_DELAY=07m
+      - PRYMARY_SYMBOL=TON
+      - BACKTEST_PERIODS=500
+      - NEXT_TRADE_DELAY=01m
       - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=pump-slow-05m-6.csv
+      - REPORT_FILE_NAME=psar-fast-05m-6.csv
 
-  pump--5m-slow-3:
+  psar--5m-fast-7:
     container_name: crypto-bot-surfer-7
     <<: *basic-container
     environment:
-      - INDICATOR=pump
-      - HEARTBEAT_INTERVAL=05m
-      - NEXT_TRADE_DELAY=08m
+      - INDICATOR=psar
+      - HEARTBEAT_INTERVAL=5m
+      - PRYMARY_SYMBOL=ADA
+      - BACKTEST_PERIODS=500
+      - NEXT_TRADE_DELAY=01m
       - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=pump-slow-05m-7.csv
+      - REPORT_FILE_NAME=psar-fast-05m-7.csv
 
-  pump--5m-slow-4:
+  psar--5m-fast-8:
     container_name: crypto-bot-surfer-8
     <<: *basic-container
     environment:
-      - INDICATOR=pump
-      - HEARTBEAT_INTERVAL=05m
-      - NEXT_TRADE_DELAY=09m
+      - INDICATOR=psar
+      - HEARTBEAT_INTERVAL=5m
+      - PRYMARY_SYMBOL=DOT
+      - BACKTEST_PERIODS=500
+      - NEXT_TRADE_DELAY=01m
       - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=pump-slow-05m-8.csv
+      - REPORT_FILE_NAME=psar-fast-05m-8.csv
