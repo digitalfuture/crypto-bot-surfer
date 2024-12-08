@@ -1,9 +1,6 @@
 import { getPrevDayData, getTradingTickers } from "../../api/binance/info.js";
 import { getLastPrice } from "../../api/binance/info.js";
 
-const changePercent = parseFloat(process.env.INDICATOR_CHANGE_PERCENT);
-const volumeThreshold = parseFloat(process.env.INDICATOR_VOLUME_THRESHOLD);
-
 export async function getTradeSignals({
   secondarySymbol,
   currentSymbol,
@@ -42,20 +39,18 @@ export async function getTradeSignals({
         tradingTickers.includes(primarySymbol + secondarySymbol)
       );
 
-    const buyTickerList = tickerList
+    const buyTickerListRaw = tickerList
       .filter(({ primarySymbol }) => primarySymbol !== lastTrade?.symbol)
-      .filter(({ primarySymbol }) => primarySymbol !== currentSymbol)
-      .filter(({ priceChangePercent, volume }) => {
-        return (
-          priceChangePercent > changePercent &&
-          volume > volumeThreshold &&
-          priceChangePercent < 30 // Исключаем слишком большие пампы
-        );
-      })
-      .sort((a, b) => b.priceChangePercent - a.priceChangePercent)
-      .slice(0, 5); // Берем топ-5 активов
+      .filter(({ primarySymbol }) => primarySymbol !== currentSymbol);
 
-    const buyTicker = buyTickerList[0]; // Берем самый перспективный
+    const buyTickerList = buyTickerListRaw
+      .filter(({ priceChangePercent }) => priceChangePercent < 30)
+      .sort((a, b) => a.volume - b.volume)
+      .slice(-Math.floor(buyTickerListRaw.length / 2))
+      .sort((a, b) => b.priceChangePercent - a.priceChangePercent);
+
+    const buyTicker =
+      buyTickerList[Math.floor(Math.random() * buyTickerList.length)];
     const buyPrimarySymbol = buyTicker?.primarySymbol;
     const buyTickerName = buyTicker?.tickerName;
     const buyPrice = parseFloat(buyTicker?.lastPrice);

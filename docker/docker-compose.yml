@@ -102,7 +102,7 @@ services:
       - BACKTEST_PERIODS=500
       - NEXT_TRADE_DELAY=01m
       - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=pump-15m.csv
+      - REPORT_FILE_NAME=pump-15m-random.csv
 
   crypto-bot-surfer-8:
     container_name: crypto-bot-surfer-8
@@ -114,4 +114,4 @@ services:
       - BACKTEST_PERIODS=500
       - NEXT_TRADE_DELAY=01m
       - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=pump-15m-8.csv
+      - REPORT_FILE_NAME=pump-15m-random.csv
