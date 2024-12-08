@@ -79,7 +79,7 @@ export async function getTradeSignals({
 
     const sellPrimarySymbol = tickerToSell?.primarySymbol;
     const sellTickerName = tickerToSell?.tickerName;
-    const sellPrice = parseFloat(tickerToSell?.lastPrice);
+    const sellPrice = parseFloat(tickerToSell?.lastPrice) || undefined;
     const sellTickerPriceChangePercent = tickerToSell?.priceChangePercent;
     const sellCondition1 = lastCheck.symbol === currentSymbol;
     const sellCondition2 = sellPrice < lastCheck.price;
