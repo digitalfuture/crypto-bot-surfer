@@ -80,7 +80,7 @@ services:
     environment:
       - INDICATOR=pump
       - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=pump-15m-random-1.csv
+      - REPORT_FILE_NAME=pump-random-1.csv
 
   crypto-bot-surfer-8:
     container_name: crypto-bot-surfer-8
