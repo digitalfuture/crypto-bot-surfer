@@ -78,7 +78,7 @@ services:
       - BACKTEST_PERIODS=500
       - NEXT_TRADE_DELAY=01m
       - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=double-ema-BTC-15m.csv
+      - REPORT_FILE_NAME=double-ema-15m-BTC.csv
 
   crypto-bot-surfer-6:
     container_name: crypto-bot-surfer-6
@@ -90,7 +90,7 @@ services:
       - BACKTEST_PERIODS=500
       - NEXT_TRADE_DELAY=01m
       - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=volume-momentum-BTC-15m.csv
+      - REPORT_FILE_NAME=volume-momentum-15m-BTC.csv
 
   crypto-bot-surfer-7:
     container_name: crypto-bot-surfer-7
