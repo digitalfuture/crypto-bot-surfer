@@ -68,8 +68,8 @@ export async function getTradeSignals({
     const sellTickerPriceChangePercent = tickerToSell?.priceChangePercent;
 
     const sellCondition1 = lastCheck?.symbol === currentSymbol;
-    const sellCondition2 = sellPrice < lastCheck?.price; // Если цена падает ниже последней
-    const sellCondition3 = sellTickerPriceChangePercent < -5; // Падение на 5%
+    const sellCondition2 = sellPrice < lastCheck?.price;
+    const sellCondition3 = sellTickerPriceChangePercent < lastCheck.price;
     const isSellSignal = sellCondition1 && (sellCondition2 || sellCondition3);
 
     const marketAveragePrice = tickerList.reduce(
