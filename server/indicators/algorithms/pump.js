@@ -1,7 +1,8 @@
-import { getPrevDayData, getTradingTickers } from "../api/binance/info.js";
-import { getLastPrice } from "..//api/binance/info.js";
+import { getPrevDayData, getTradingTickers } from "../../api/binance/info.js";
+import { getLastPrice } from "../../api/binance/info.js";
 
 const changePercent = parseFloat(process.env.INDICATOR_CHANGE_PERCENT);
+const volumeThreshold = parseFloat(process.env.INDICATOR_VOLUME_THRESHOLD);
 
 export async function getTradeSignals({
   secondarySymbol,
@@ -10,17 +11,9 @@ export async function getTradeSignals({
   lastCheck,
 }) {
   try {
-    // console.info("\nlastCheck:", lastCheck);
-    // console.info("lastTrade:", lastTrade);
-
-    // BTC / USDT
     const btcUsdtPrice = await getLastPrice("BTCUSDT");
-
     const tradingTickers = await getTradingTickers();
-    // console.info("tradingTickers:", tradingTickers);
-
     const priceListData = await getPrevDayData();
-    // console.info("priceListData:", priceListData);
 
     const tickerList = priceListData
       .map(
@@ -39,7 +32,7 @@ export async function getTradeSignals({
           lastPrice: parseFloat(lastPrice),
           openTime,
           closeTime,
-          volume,
+          volume: parseFloat(volume),
         })
       )
       .filter(({ tickerName }) => tickerName.endsWith(secondarySymbol))
@@ -50,29 +43,26 @@ export async function getTradeSignals({
       );
 
     const buyTickerList = tickerList
-      .filter(({ primarySymbol }) => primarySymbol !== lastTrade.symbol)
+      .filter(({ primarySymbol }) => primarySymbol !== lastTrade?.symbol)
       .filter(({ primarySymbol }) => primarySymbol !== currentSymbol)
-      .filter(({ priceChangePercent }) => priceChangePercent > changePercent)
-      .sort((a, b) => a.volume - b.volume)
-      .slice(-10)
-      .sort((a, b) => b.priceChangePercent - a.priceChangePercent);
+      .filter(({ priceChangePercent, volume }) => {
+        return (
+          priceChangePercent > changePercent &&
+          volume > volumeThreshold &&
+          priceChangePercent < 30 // Исключаем слишком большие пампы
+        );
+      })
+      .sort((a, b) => b.priceChangePercent - a.priceChangePercent)
+      .slice(0, 5); // Берем топ-5 активов
 
-    //
-    // Buy signal
-    const buyTicker =
-      buyTickerList[Math.floor(Math.random() * buyTickerList.length)];
+    const buyTicker = buyTickerList[0]; // Берем самый перспективный
     const buyPrimarySymbol = buyTicker?.primarySymbol;
     const buyTickerName = buyTicker?.tickerName;
     const buyPrice = parseFloat(buyTicker?.lastPrice);
     const buyTickerPriceChangePercent = buyTicker?.priceChangePercent;
-    const buyCondition = currentSymbol === null && buyTicker;
+    const buyCondition = !currentSymbol && buyTicker;
     const isBuySignal = buyCondition;
 
-    // console.log("buyTicker:", buyTicker);
-    // console.log("changePercent:", buyTicker.priceChangePercent);
-
-    //
-    // Sell signal
     const tickerToSell = tickerList.find(
       ({ primarySymbol }) => primarySymbol === currentSymbol
     );
@@ -81,28 +71,22 @@ export async function getTradeSignals({
     const sellTickerName = tickerToSell?.tickerName;
     const sellPrice = parseFloat(tickerToSell?.lastPrice) || undefined;
     const sellTickerPriceChangePercent = tickerToSell?.priceChangePercent;
-    const sellCondition1 = lastCheck.symbol === currentSymbol;
-    const sellCondition2 = sellPrice < lastCheck.price;
-    const isSellSignal = sellCondition1 && sellCondition2;
 
-    // Market average
-    const marketAveragePrice = tickerList
-      .filter(({ primarySymbol }) =>
-        tradingTickers.includes(primarySymbol + secondarySymbol)
-      )
-      .reduce((sum, { lastPrice }, index, array) => {
-        sum = sum + parseFloat(lastPrice);
+    const sellCondition1 = lastCheck?.symbol === currentSymbol;
+    const sellCondition2 = sellPrice < lastCheck?.price; // Если цена падает ниже последней
+    const sellCondition3 = sellTickerPriceChangePercent < -5; // Падение на 5%
+    const isSellSignal = sellCondition1 && (sellCondition2 || sellCondition3);
 
-        if (index === array.length - 1) {
-          return (sum - btcUsdtPrice) / array.length;
-        } else {
-          return sum;
-        }
-      }, 0);
+    const marketAveragePrice = tickerList.reduce(
+      (sum, { lastPrice }, idx, arr) => {
+        return idx === arr.length - 1
+          ? (sum + parseFloat(lastPrice) - btcUsdtPrice) / arr.length
+          : sum + parseFloat(lastPrice);
+      },
+      0
+    );
 
-    //
-    // Result
-    const result = {
+    return {
       sellPrimarySymbol,
       buyPrimarySymbol,
       sellTickerName,
@@ -116,25 +100,6 @@ export async function getTradeSignals({
       btcUsdtPrice,
       marketAveragePrice,
     };
-
-    // console.info("\nCheck signals result:", {
-    //   buySignal: {
-    //     buyPrimarySymbol,
-    //     buyTickerName,
-    //     buyPrice,
-    //     buyTickerPriceChangePercent,
-    //     isBuySignal,
-    //   },
-    //   sellSignal: {
-    //     sellPrimarySymbol,
-    //     sellTickerName,
-    //     sellPrice,
-    //     sellTickerPriceChangePercent,
-    //     isSellSignal,
-    //   },
-    // });
-
-    return result;
   } catch (error) {
     throw { type: "Get Trade Signals Error", ...error, errorSrcData: error };
   }

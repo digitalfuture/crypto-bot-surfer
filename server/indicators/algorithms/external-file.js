@@ -1,8 +1,8 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
-import { getPrevDayData, getTradingTickers } from "../api/binance/info.js";
-import { getLastPrice } from "../api/binance/info.js";
+import { getPrevDayData, getTradingTickers } from "../../api/binance/info.js";
+import { getLastPrice } from "../../api/binance/info.js";
 
 const primarySymbol = process.env.PRIMARY_SYMBOL;
 const secondarySymbol = process.env.SECONDARY_SYMBOL;

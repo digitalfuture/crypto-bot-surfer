@@ -1,9 +1,8 @@
-import * as indicatorDump from "./dump.js";
-import * as indicatorFlat from "./flat.js";
-import * as indicatorPump from "./pump.js";
-import * as indicatorSimple from "./simple.js";
-import * as indicatorExternal from "./external.js";
-import * as indicatorPsar from "./psar.js";
+import * as indicatorExternalFile from "./algorithms/external-file.js";
+import * as indicatorPump from "./algorithms/pump.js";
+import * as indicatorPsar from "./algorithms/psar.js";
+import * as indicatorDoubleEma from "./algorithms/double-ema.js";
+import * as indicatorVolumeMomentum from "./algorithms/volume-momentum.js";
 // import * as indicatorAi from "./ai.js";
 
 const indicatorName = process.env.INDICATOR;
@@ -11,23 +10,20 @@ const indicatorName = process.env.INDICATOR;
 let getTradeSignals;
 
 switch (indicatorName) {
-  case "dump":
-    getTradeSignals = indicatorDump.getTradeSignals;
-    break;
-  case "flat":
-    getTradeSignals = indicatorFlat.getTradeSignals;
+  case "external":
+    getTradeSignals = indicatorExternalFile.getTradeSignals;
     break;
   case "pump":
     getTradeSignals = indicatorPump.getTradeSignals;
     break;
-  case "simple":
-    getTradeSignals = indicatorSimple.getTradeSignals;
-    break;
-  case "external":
-    getTradeSignals = indicatorExternal.getTradeSignals;
-    break;
   case "psar":
     getTradeSignals = indicatorPsar.getTradeSignals;
+    break;
+  case "double-ema":
+    getTradeSignals = indicatorDoubleEma.getTradeSignals;
+    break;
+  case "volume-momentum":
+    getTradeSignals = indicatorVolumeMomentum.getTradeSignals;
     break;
   // case "ai":
   //   getTradeSignals = indicatorAi.getTradeSignals;
