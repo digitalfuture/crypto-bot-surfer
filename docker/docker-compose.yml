@@ -25,93 +25,67 @@ services:
     <<: *basic-container
     environment:
       - INDICATOR=psar
-      - HEARTBEAT_INTERVAL=15m
       - PRIMARY_SYMBOL=BTC
-      - BACKTEST_PERIODS=500
-      - NEXT_TRADE_DELAY=01m
       - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=psar-fast-15m-BTC.csv
+      - REPORT_FILE_NAME=psar-fast-BTC.csv
 
   crypto-bot-surfer-2:
     container_name: crypto-bot-surfer-2
     <<: *basic-container
     environment:
       - INDICATOR=psar
-      - HEARTBEAT_INTERVAL=15m
       - PRIMARY_SYMBOL=BNB
-      - BACKTEST_PERIODS=500
-      - NEXT_TRADE_DELAY=01m
       - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=psar-fast-15m-BNB.csv
+      - REPORT_FILE_NAME=psar-fast-BNB.csv
 
   crypto-bot-surfer-3:
     container_name: crypto-bot-surfer-3
     <<: *basic-container
     environment:
       - INDICATOR=psar
-      - HEARTBEAT_INTERVAL=15m
       - PRIMARY_SYMBOL=XRP
-      - BACKTEST_PERIODS=500
-      - NEXT_TRADE_DELAY=01m
       - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=psar-fast-15m-XRP.csv
+      - REPORT_FILE_NAME=psar-fast-XRP.csv
 
   crypto-bot-surfer-4:
     container_name: crypto-bot-surfer-4
     <<: *basic-container
     environment:
       - INDICATOR=psar
-      - HEARTBEAT_INTERVAL=15m
       - PRIMARY_SYMBOL=DOGE
-      - BACKTEST_PERIODS=500
-      - NEXT_TRADE_DELAY=01m
       - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=psar-fast-15m-DOGE.csv
+      - REPORT_FILE_NAME=psar-fast-DOGE.csv
 
   crypto-bot-surfer-5:
     container_name: crypto-bot-surfer-5
     <<: *basic-container
     environment:
       - INDICATOR=double-ema
-      - HEARTBEAT_INTERVAL=15m
       - PRIMARY_SYMBOL=BTC
-      - BACKTEST_PERIODS=500
-      - NEXT_TRADE_DELAY=01m
       - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=double-ema-15m-BTC.csv
+      - REPORT_FILE_NAME=double-ema-BTC.csv
 
   crypto-bot-surfer-6:
     container_name: crypto-bot-surfer-6
     <<: *basic-container
     environment:
       - INDICATOR=volume-momentum
-      - HEARTBEAT_INTERVAL=15m
       - PRIMARY_SYMBOL=BTC
-      - BACKTEST_PERIODS=500
-      - NEXT_TRADE_DELAY=01m
       - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=volume-momentum-15m-BTC.csv
+      - REPORT_FILE_NAME=volume-momentum-BTC.csv
 
   crypto-bot-surfer-7:
     container_name: crypto-bot-surfer-7
     <<: *basic-container
     environment:
       - INDICATOR=pump
-      - HEARTBEAT_INTERVAL=15m
-      - PRIMARY_SYMBOL=
-      - BACKTEST_PERIODS=500
-      - NEXT_TRADE_DELAY=01m
       - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=pump-15m-random.csv
+      - REPORT_FILE_NAME=pump-15m-random-1.csv
 
   crypto-bot-surfer-8:
     container_name: crypto-bot-surfer-8
     <<: *basic-container
     environment:
       - INDICATOR=pump
-      - HEARTBEAT_INTERVAL=15m
-      - PRIMARY_SYMBOL=
-      - BACKTEST_PERIODS=500
-      - NEXT_TRADE_DELAY=01m
       - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=pump-15m-random.csv
+      - REPORT_FILE_NAME=pump-random-2.csv
