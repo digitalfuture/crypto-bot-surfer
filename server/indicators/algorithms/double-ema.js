@@ -6,7 +6,7 @@ import {
 } from "../../api/binance/info.js";
 
 const tickerName = process.env.PRIMARY_SYMBOL + process.env.SECONDARY_SYMBOL;
-const interval = process.env.HEARTBEAT_INTERVAL;
+const interval = process.env.BACKTEST_INTERVAL;
 const periods = process.env.BACKTEST_PERIODS;
 
 function calculateEMA(prices, period) {
@@ -66,6 +66,12 @@ export async function getTradeSignals({
     const priceListData = await getPrevDayData();
     const tradingTickers = await getTradingTickers();
 
+    const candlestickData = await getCandlestickData({
+      tickerName,
+      interval,
+      periods,
+    });
+
     const tickerList = priceListData
       .map(({ symbol, priceChangePercent, lastPrice, volume }) => ({
         primarySymbol: symbol.split(secondarySymbol)[0],
@@ -88,12 +94,6 @@ export async function getTradeSignals({
     );
 
     const buyPrice = parseFloat(buyTicker?.lastPrice);
-
-    const candlestickData = await getCandlestickData({
-      tickerName,
-      interval,
-      periods,
-    });
 
     const transformedData = candlestickData.map(([time, , , , close]) => ({
       time,
