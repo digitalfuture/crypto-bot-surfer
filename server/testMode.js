@@ -15,10 +15,8 @@ const fixedValue = parseFloat(process.env.FIXED_TRADE_VALUE);
 const fixedPercent = parseFloat(process.env.FIXED_TRADE_PERCENT);
 const appMode = process.env.MODE;
 const interval = process.env.HEARTBEAT_INTERVAL;
-const delayInterval = process.env.NEXT_TRADE_DELAY;
 
 const heartbeatInterval = getHeartbeatInterval(interval);
-const nextTradeDelay = getHeartbeatInterval(delayInterval);
 
 let loopCount = 1;
 
@@ -121,7 +119,7 @@ async function startLoop() {
       console.info("-----------------------------------------------------");
       console.info("\n");
 
-      await delay(!currentSymbol ? nextTradeDelay : heartbeatInterval);
+      await delay(heartbeatInterval);
 
       loopCount++;
     }
