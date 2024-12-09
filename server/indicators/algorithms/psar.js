@@ -6,7 +6,7 @@ import {
 } from "../../api/binance/info.js";
 
 const tickerName = process.env.PRIMARY_SYMBOL + process.env.SECONDARY_SYMBOL;
-const interval = process.env.HEARTBEAT_INTERVAL;
+const interval = process.env.BACKTEST_INTERVAL;
 const periods = process.env.BACKTEST_PERIODS;
 
 function calculatePsar(data) {
