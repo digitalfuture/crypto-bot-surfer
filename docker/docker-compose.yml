@@ -27,7 +27,7 @@ services:
       - INDICATOR=psar
       - PRIMARY_SYMBOL=BTC
       - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=psar-fast-BTC.csv
+      - REPORT_FILE_NAME=psar-BTC.csv
 
   crypto-bot-surfer-2:
     container_name: crypto-bot-surfer-2
@@ -45,7 +45,7 @@ services:
       - INDICATOR=psar
       - PRIMARY_SYMBOL=XRP
       - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=psar-fast-XRP.csv
+      - REPORT_FILE_NAME=psar-XRP.csv
 
   crypto-bot-surfer-4:
     container_name: crypto-bot-surfer-4
@@ -54,7 +54,7 @@ services:
       - INDICATOR=psar
       - PRIMARY_SYMBOL=DOGE
       - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=psar-fast-DOGE.csv
+      - REPORT_FILE_NAME=psar-DOGE.csv
 
   crypto-bot-surfer-5:
     container_name: crypto-bot-surfer-5
