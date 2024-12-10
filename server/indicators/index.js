@@ -5,7 +5,7 @@ import * as indicatorDoubleEma from "./algorithms/double-ema.js";
 import * as indicatorVolumeMomentum from "./algorithms/volume-momentum.js";
 import * as indicatorRegression from "./algorithms/regression.js";
 import * as indicatorRsi from "./algorithms/rsi.js";
-import * as indicatorAi from "./ai.js";
+import * as indicatorAi from "./algorithms/ai.js";
 
 const indicatorName = process.env.INDICATOR;
 
