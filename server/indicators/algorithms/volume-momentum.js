@@ -134,6 +134,7 @@ export async function getTradeSignals({
     const isSellSignal =
       lastCheck.symbol === currentSymbol && currentSignal.isSellSignal;
 
+    // Calculate the market average price
     const marketAveragePrice = priceListData
       .filter(({ symbol }) => tradingTickers.includes(symbol))
       .reduce((sum, { lastPrice }, index, array) => {

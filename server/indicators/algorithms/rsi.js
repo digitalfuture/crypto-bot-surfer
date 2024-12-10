@@ -145,10 +145,21 @@ export async function getTradeSignals({
       })
     );
 
+    // Define short and long periods for RSI
+    const shortPeriod = 14; // Short period for RSI
+    const longPeriod = 50; // Long period for RSI
+
+    // Generate initial signals using the defined periods
+    const initialSignals = generateSignals(
+      transformedData,
+      shortPeriod,
+      longPeriod
+    );
+
     // Apply strategy evaluation to find optimal short and long periods for RSI
     const { optimalShortPeriod, optimalLongPeriod } = evaluateStrategy(
       transformedData,
-      50 // Max period used for optimization
+      initialSignals
     );
 
     // Generate trading signals using the optimized RSI periods
