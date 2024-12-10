@@ -49,8 +49,8 @@ function generateSignals(candlestickData, shortPeriod, longPeriod) {
     const trend = isBuySignal
       ? "uptrend"
       : isSellSignal
-      ? "downtrend"
-      : "neutral";
+        ? "downtrend"
+        : "neutral";
 
     return { time, isBuySignal, isSellSignal, trend, momentum };
   });
@@ -64,14 +64,38 @@ export async function getTradeSignals({
 }) {
   try {
     const btcUsdtPrice = await getLastPrice("BTCUSDT");
-    const priceListData = await getPrevDayData();
     const tradingTickers = await getTradingTickers();
-
     const candlestickData = await getCandlestickData({
       tickerName,
       interval,
       periods,
     });
+    const priceListData = await getPrevDayData();
+
+    // Filter and process the price data into a suitable format
+    const tickerList = priceListData
+      .map(({ symbol, priceChangePercent, lastPrice, volume }) => ({
+        primarySymbol: symbol.split(secondarySymbol)[0],
+        secondarySymbol,
+        tickerName: symbol,
+        priceChangePercent: parseFloat(priceChangePercent),
+        lastPrice: parseFloat(lastPrice),
+        volume,
+      }))
+      .filter(({ tickerName }) => tickerName.endsWith(secondarySymbol))
+      .filter(({ primarySymbol }) => !primarySymbol.endsWith("DOWN"))
+      .filter(({ primarySymbol }) => !primarySymbol.endsWith("UP"))
+      .filter(({ primarySymbol }) =>
+        tradingTickers.includes(primarySymbol + secondarySymbol)
+      );
+
+    // Find the ticker that matches the current primary and secondary symbol
+    const buyTicker = tickerList.find(
+      ({ primarySymbol, secondarySymbol }) =>
+        primarySymbol + secondarySymbol === tickerName
+    );
+
+    const buyPrice = parseFloat(buyTicker?.lastPrice);
 
     // Transform the candlestick data to extract time, close, and volume
     const transformedData = candlestickData.map(
@@ -125,10 +149,10 @@ export async function getTradeSignals({
     // Return the result with optimal strategy information
     return {
       sellPrimarySymbol: tickerToSell?.primarySymbol,
-      buyPrimarySymbol: tickerToSell?.primarySymbol,
+      buyPrimarySymbol: buyTicker?.primarySymbol,
       sellTickerName: tickerToSell?.tickerName,
-      buyTickerName: tickerToSell?.tickerName,
-      buyPrice: parseFloat(tickerToSell?.lastPrice),
+      buyTickerName: buyTicker?.tickerName,
+      buyPrice,
       sellPrice,
       isBuySignal,
       isSellSignal,

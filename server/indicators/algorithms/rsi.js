@@ -74,8 +74,8 @@ function generateSignals(candlestickData, shortPeriod, longPeriod) {
     const trend = isBuySignal
       ? "uptrend"
       : isSellSignal
-      ? "downtrend"
-      : "neutral";
+        ? "downtrend"
+        : "neutral";
 
     return {
       time,
@@ -103,6 +103,31 @@ export async function getTradeSignals({
 
     // Fetch the list of active trading tickers
     const tradingTickers = await getTradingTickers();
+
+    // Filter and process the price data into a suitable format
+    const tickerList = priceListData
+      .map(({ symbol, priceChangePercent, lastPrice, volume }) => ({
+        primarySymbol: symbol.split(secondarySymbol)[0],
+        secondarySymbol,
+        tickerName: symbol,
+        priceChangePercent: parseFloat(priceChangePercent),
+        lastPrice: parseFloat(lastPrice),
+        volume,
+      }))
+      .filter(({ tickerName }) => tickerName.endsWith(secondarySymbol))
+      .filter(({ primarySymbol }) => !primarySymbol.endsWith("DOWN"))
+      .filter(({ primarySymbol }) => !primarySymbol.endsWith("UP"))
+      .filter(({ primarySymbol }) =>
+        tradingTickers.includes(primarySymbol + secondarySymbol)
+      );
+
+    // Find the ticker that matches the current primary and secondary symbol
+    const buyTicker = tickerList.find(
+      ({ primarySymbol, secondarySymbol }) =>
+        primarySymbol + secondarySymbol === tickerName
+    );
+
+    const buyPrice = parseFloat(buyTicker?.lastPrice);
 
     // Get candlestick data for the specified ticker
     const candlestickData = await getCandlestickData({
@@ -164,10 +189,10 @@ export async function getTradeSignals({
     // Return the result including the optimal strategy information
     return {
       sellPrimarySymbol: tickerToSell?.primarySymbol,
-      buyPrimarySymbol: tickerToSell?.primarySymbol,
+      buyPrimarySymbol: buyTicker?.primarySymbol,
       sellTickerName: tickerToSell?.tickerName,
-      buyTickerName: tickerToSell?.tickerName,
-      buyPrice: parseFloat(tickerToSell?.lastPrice),
+      buyTickerName: buyTicker?.tickerName,
+      buyPrice,
       sellPrice,
       isBuySignal,
       isSellSignal,

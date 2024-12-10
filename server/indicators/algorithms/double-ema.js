@@ -105,8 +105,8 @@ function generateSignals(candlestickData, shortPeriod, longPeriod) {
     const trend = isBuySignal
       ? "uptrend"
       : isSellSignal
-      ? "downtrend"
-      : "neutral";
+        ? "downtrend"
+        : "neutral";
 
     return { time, isBuySignal, isSellSignal, trend };
   });
@@ -124,15 +124,15 @@ export async function getTradeSignals({
     // Fetch previous day's price and volume data
     const priceListData = await getPrevDayData();
 
-    // Get the list of active trading tickers
-    const tradingTickers = await getTradingTickers();
-
     // Get candlestick data for the selected ticker
     const candlestickData = await getCandlestickData({
       tickerName,
       interval,
       periods,
     });
+
+    // Get the list of active trading tickers
+    const tradingTickers = await getTradingTickers();
 
     // Filter and process the price data into a suitable format for further analysis
     const tickerList = priceListData

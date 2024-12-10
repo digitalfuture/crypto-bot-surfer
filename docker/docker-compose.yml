@@ -87,7 +87,7 @@ services:
     container_name: crypto-bot-surfer-8
     <<: *basic-container
     environment:
-      - INDICATOR=volume-momentum
+      - INDICATOR=regression
       - PRIMARY_SYMBOL=BTC
       - REPORT_FILE_DIR=/home/report
       - REPORT_FILE_NAME=regression-BTC.csv

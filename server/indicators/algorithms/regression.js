@@ -83,8 +83,8 @@ function generateSignals(candlestickData, shortPeriod, longPeriod) {
     const trend = isBuySignal
       ? "uptrend"
       : isSellSignal
-      ? "downtrend"
-      : "neutral";
+        ? "downtrend"
+        : "neutral";
 
     return { time, isBuySignal, isSellSignal, trend };
   });
@@ -115,21 +115,14 @@ export async function getTradeSignals({
   secondarySymbol,
 }) {
   try {
-    // Fetch current prices for BTC/USDT
     const btcUsdtPrice = await getLastPrice("BTCUSDT");
-
-    // Fetch previous day's data for price and volume information
-    const priceListData = await getPrevDayData();
-
-    // Get list of active trading tickers
     const tradingTickers = await getTradingTickers();
-
-    // Fetch candlestick data for the primary symbol
     const candlestickData = await getCandlestickData({
       tickerName,
       interval,
       periods,
     });
+    const priceListData = await getPrevDayData();
 
     // Filter and process the price data into a suitable format
     const tickerList = priceListData
