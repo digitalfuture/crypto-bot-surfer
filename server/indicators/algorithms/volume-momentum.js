@@ -4,7 +4,7 @@ import {
   getLastPrice,
   getCandlestickData,
 } from "../../api/binance/info.js";
-import { evaluateStrategy } from "../backtest";
+import { evaluateStrategy } from "../backtest.js";
 
 const tickerName = process.env.PRIMARY_SYMBOL + process.env.SECONDARY_SYMBOL;
 const interval = process.env.BACKTEST_INTERVAL;

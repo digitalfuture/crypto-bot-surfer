@@ -4,7 +4,8 @@ import * as indicatorPsar from "./algorithms/psar.js";
 import * as indicatorDoubleEma from "./algorithms/double-ema.js";
 import * as indicatorVolumeMomentum from "./algorithms/volume-momentum.js";
 import * as indicatorRegression from "./algorithms/regression.js";
-// import * as indicatorAi from "./ai.js";
+import * as indicatorRsi from "./algorithms/rsi.js";
+import * as indicatorAi from "./ai.js";
 
 const indicatorName = process.env.INDICATOR;
 
@@ -29,9 +30,12 @@ switch (indicatorName) {
   case "regression":
     getTradeSignals = indicatorRegression.getTradeSignals;
     break;
-  // case "ai":
-  //   getTradeSignals = indicatorAi.getTradeSignals;
-  //   break;
+  case "rsi":
+    getTradeSignals = indicatorRsi.getTradeSignals;
+    break;
+  case "ai":
+    getTradeSignals = indicatorAi.getTradeSignals;
+    break;
 }
 
 export const getSignals = getTradeSignals;
