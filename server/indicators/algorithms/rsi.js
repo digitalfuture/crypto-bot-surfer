@@ -4,34 +4,57 @@ import {
   getLastPrice,
   getCandlestickData,
 } from "../../api/binance/info.js";
-import { evaluateStrategy } from "../backtest";
+import { evaluateStrategy } from "../backtest.js";
 
 const tickerName = process.env.PRIMARY_SYMBOL + process.env.SECONDARY_SYMBOL;
 const interval = process.env.BACKTEST_INTERVAL;
 const periods = parseInt(process.env.BACKTEST_PERIODS);
 
-// Function to calculate the Volume Momentum
-function calculateVolumeMomentum(candlestickData) {
-  return candlestickData.map(({ time, close, volume }, index) => {
-    if (index === 0) {
-      return { time, momentum: 0 }; // No change for the first element
+// Function to calculate RSI (Relative Strength Index)
+function calculateRSI(candlestickData, period) {
+  const rsi = [];
+  let gain = 0;
+  let loss = 0;
+
+  // Calculate the initial average gain and loss
+  for (let i = 1; i <= period; i++) {
+    const change = candlestickData[i].close - candlestickData[i - 1].close;
+    if (change >= 0) {
+      gain += change;
+    } else {
+      loss -= change;
+    }
+  }
+
+  gain /= period;
+  loss /= period;
+
+  rsi.push(100 - 100 / (1 + gain / loss));
+
+  // Calculate the RSI for the rest of the data
+  for (let i = period + 1; i < candlestickData.length; i++) {
+    const change = candlestickData[i].close - candlestickData[i - 1].close;
+    if (change >= 0) {
+      gain = (gain * (period - 1) + change) / period;
+      loss = (loss * (period - 1)) / period;
+    } else {
+      loss = (loss * (period - 1) - change) / period;
+      gain = (gain * (period - 1)) / period;
     }
 
-    const prevClose = candlestickData[index - 1].close;
-    const prevVolume = candlestickData[index - 1].volume;
-    const volumeMomentum = (volume - prevVolume) * (close - prevClose);
+    const rs = gain / loss;
+    rsi.push(100 - 100 / (1 + rs));
+  }
 
-    return { time, momentum: volumeMomentum };
-  });
+  return rsi;
 }
 
-// Function to generate signals based on Volume Momentum
-function generateSignals(candlestickData, longPeriod) {
-  // Calculate the Volume Momentum for the given candlestick data
-  const volumeMomentumData = calculateVolumeMomentum(candlestickData);
+// Function to generate signals based on RSI
+function generateSignals(candlestickData, shortPeriod, longPeriod) {
+  const rsiShort = calculateRSI(candlestickData, shortPeriod);
+  const rsiLong = calculateRSI(candlestickData, longPeriod);
 
-  // Generate signals based on the Volume Momentum and the provided periods
-  return volumeMomentumData.map(({ time, momentum }, index) => {
+  return candlestickData.map(({ time }, index) => {
     if (index < longPeriod) {
       // No signals to generate for the first "longPeriod" candles
       return {
@@ -39,20 +62,28 @@ function generateSignals(candlestickData, longPeriod) {
         isBuySignal: false,
         isSellSignal: false,
         trend: "neutral",
-        momentum,
+        rsiShort: rsiShort[index],
+        rsiLong: rsiLong[index],
       };
     }
 
-    // Generate buy/sell signals based on the momentum of the volume
-    const isBuySignal = momentum > 0; // Buy when momentum is positive
-    const isSellSignal = momentum < 0; // Sell when momentum is negative
+    // Generate buy/sell signals based on the RSI
+    const isBuySignal = rsiShort[index] < 30 && rsiLong[index] < 30; // Buy when RSI is below 30 (oversold)
+    const isSellSignal = rsiShort[index] > 70 && rsiLong[index] > 70; // Sell when RSI is above 70 (overbought)
     const trend = isBuySignal
       ? "uptrend"
       : isSellSignal
       ? "downtrend"
       : "neutral";
 
-    return { time, isBuySignal, isSellSignal, trend, momentum };
+    return {
+      time,
+      isBuySignal,
+      isSellSignal,
+      trend,
+      rsiShort: rsiShort[index],
+      rsiLong: rsiLong[index],
+    };
   });
 }
 
@@ -82,13 +113,13 @@ export async function getTradeSignals({
       })
     );
 
-    // Apply strategy evaluation to optimize short and long periods
+    // Apply strategy evaluation to optimize short and long periods for RSI
     const { optimalShortPeriod, optimalLongPeriod } = evaluateStrategy(
       transformedData,
-      interval
+      50 // Set maxPeriod for optimization
     );
 
-    // Generate signals using the optimized periods
+    // Generate signals using the optimized periods for RSI
     const optimalSignals = generateSignals(
       transformedData,
       optimalShortPeriod,

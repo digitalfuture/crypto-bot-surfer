@@ -8,7 +8,7 @@ import { evaluateStrategy } from "../backtest.js";
 
 const tickerName = process.env.PRIMARY_SYMBOL + process.env.SECONDARY_SYMBOL;
 const interval = process.env.BACKTEST_INTERVAL;
-const periods = process.env.BACKTEST_PERIODS;
+const periods = parseInt(process.env.BACKTEST_PERIODS);
 
 function optimizeParameters(prices, maxPeriod = 50) {
   let bestSharpeRatio = -Infinity;
