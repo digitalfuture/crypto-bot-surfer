@@ -78,16 +78,16 @@ services:
     container_name: crypto-bot-surfer-7
     <<: *basic-container
     environment:
-      - INDICATOR=double-ema
-      - PRIMARY_SYMBOL=XRP
+      - INDICATOR=rsi
+      - PRIMARY_SYMBOL=BTC
       - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=double-ema-XRP.csv
+      - REPORT_FILE_NAME=rsi-BTC.csv
 
   crypto-bot-surfer-8:
     container_name: crypto-bot-surfer-8
     <<: *basic-container
     environment:
       - INDICATOR=volume-momentum
-      - PRIMARY_SYMBOL=XRP
+      - PRIMARY_SYMBOL=BTC
       - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=volume-momentum-XRP.csv
+      - REPORT_FILE_NAME=regression-BTC.csv
