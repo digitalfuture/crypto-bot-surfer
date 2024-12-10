@@ -17,19 +17,23 @@ function optimizeParameters(prices, maxPeriod = 50) {
   let optimalShortPeriod = 0;
   let optimalLongPeriod = 0;
 
+  // Loop over possible periods for short and long timeframes
   for (let shortPeriod = 5; shortPeriod < maxPeriod; shortPeriod++) {
     for (
       let longPeriod = shortPeriod + 1;
       longPeriod < maxPeriod;
       longPeriod++
     ) {
+      // Generate signals based on current periods
       const signals = generateSignals(prices, shortPeriod, longPeriod);
 
+      // Use evaluateStrategy to calculate strategy metrics
       const { sharpeRatio, maxDrawdown, profitFactor } = evaluateStrategy(
-        signals,
-        prices
+        signals, // Signals generated based on the periods
+        prices // Historical price data
       );
 
+      // If the current combination of periods gives better results, update the best parameters
       if (
         sharpeRatio > bestSharpeRatio &&
         maxDrawdown < bestMaxDrawdown &&
@@ -44,6 +48,7 @@ function optimizeParameters(prices, maxPeriod = 50) {
     }
   }
 
+  // Return the optimal parameters and performance metrics
   return {
     optimalShortPeriod,
     optimalLongPeriod,
@@ -54,21 +59,25 @@ function optimizeParameters(prices, maxPeriod = 50) {
 }
 
 function generateSignals(candlestickData, shortPeriod, longPeriod) {
+  // Extract close prices from candlestick data
   const closePrices = candlestickData.map(({ close }) => close);
 
+  // Perform linear regression for short and long periods
   const regressionShort = linearRegression(closePrices.slice(0, shortPeriod));
   const regressionLong = linearRegression(closePrices.slice(0, longPeriod));
 
+  // Generate buy/sell signals based on the comparison of regression lines
   return candlestickData.map(({ time }, index) => {
     if (index < longPeriod) {
       return {
         time,
         isBuySignal: false,
         isSellSignal: false,
-        trend: "neutral",
+        trend: "neutral", // No signal for the initial period
       };
     }
 
+    // Generate buy/sell signals based on the trend of short vs long regression
     const isBuySignal = regressionShort[index] > regressionLong[index];
     const isSellSignal = regressionShort[index] < regressionLong[index];
     const trend = isBuySignal
@@ -83,17 +92,20 @@ function generateSignals(candlestickData, shortPeriod, longPeriod) {
 
 function linearRegression(prices) {
   const n = prices.length;
-  const x = Array.from({ length: n }, (_, i) => i);
-  const y = prices;
+  const x = Array.from({ length: n }, (_, i) => i); // X-axis values for the regression (0, 1, 2,...)
+  const y = prices; // Y-axis values are the close prices
 
+  // Calculate sums for regression formula
   const sumX = x.reduce((a, b) => a + b, 0);
   const sumY = y.reduce((a, b) => a + b, 0);
   const sumXY = x.reduce((sum, xi, i) => sum + xi * y[i], 0);
   const sumX2 = x.reduce((sum, xi) => sum + xi * xi, 0);
 
+  // Calculate slope and intercept for linear regression
   const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
   const intercept = (sumY - slope * sumX) / n;
 
+  // Return the regression values for each point in the series
   return x.map((xi) => slope * xi + intercept);
 }
 
@@ -103,16 +115,23 @@ export async function getTradeSignals({
   secondarySymbol,
 }) {
   try {
+    // Fetch current prices for BTC/USDT
     const btcUsdtPrice = await getLastPrice("BTCUSDT");
+
+    // Fetch previous day's data for price and volume information
     const priceListData = await getPrevDayData();
+
+    // Get list of active trading tickers
     const tradingTickers = await getTradingTickers();
 
+    // Fetch candlestick data for the primary symbol
     const candlestickData = await getCandlestickData({
       tickerName,
       interval,
       periods,
     });
 
+    // Filter and process the price data into a suitable format
     const tickerList = priceListData
       .map(({ symbol, priceChangePercent, lastPrice, volume }) => ({
         primarySymbol: symbol.split(secondarySymbol)[0],
@@ -129,6 +148,7 @@ export async function getTradeSignals({
         tradingTickers.includes(primarySymbol + secondarySymbol)
       );
 
+    // Find the ticker that matches the current primary and secondary symbol
     const buyTicker = tickerList.find(
       ({ primarySymbol, secondarySymbol }) =>
         primarySymbol + secondarySymbol === tickerName
@@ -136,31 +156,29 @@ export async function getTradeSignals({
 
     const buyPrice = parseFloat(buyTicker?.lastPrice);
 
+    // Transform candlestick data to match the expected format
     const transformedData = candlestickData.map(([time, , , , close]) => ({
       time,
       close,
     }));
 
-    // Dynamic optimization for regression parameters
-    const metricFunction = (signals) => {
-      // Example: Calculate profit/drawdown ratio from signals
-      const profit = signals.filter((s) => s.isBuySignal).length;
-      const drawdown = signals.filter((s) => s.isSellSignal).length;
-      return profit / (drawdown || 1);
-    };
+    // Optimize parameters using historical data
+    const bestParams = optimizeParameters(transformedData);
 
-    const bestParams = optimizeParameters(transformedData, metricFunction);
-
+    // Generate signals using the optimized short and long periods
     const signals = generateSignals(
       transformedData,
-      bestParams.shortPeriod,
-      bestParams.longPeriod
+      bestParams.optimalShortPeriod,
+      bestParams.optimalLongPeriod
     );
 
+    // Get the most recent signal
     const currentSignal = signals[signals.length - 1];
 
+    // Determine if the current signal is a buy or sell signal
     const isBuySignal = currentSymbol === null && currentSignal.isBuySignal;
 
+    // Find the ticker to sell based on the current symbol
     const tickerToSell = tickerList.find(
       ({ primarySymbol }) => primarySymbol === currentSymbol
     );
@@ -169,6 +187,7 @@ export async function getTradeSignals({
     const isSellSignal =
       lastCheck.symbol === currentSymbol && currentSignal.isSellSignal;
 
+    // Calculate the average market price for tickers
     const marketAveragePrice = tickerList
       .filter(({ primarySymbol }) =>
         tradingTickers.includes(primarySymbol + secondarySymbol)
@@ -183,6 +202,7 @@ export async function getTradeSignals({
         }
       }, 0);
 
+    // Return the trade signal information along with the calculated market price
     return {
       sellPrimarySymbol: tickerToSell?.primarySymbol,
       buyPrimarySymbol: buyTicker?.primarySymbol,
@@ -196,6 +216,7 @@ export async function getTradeSignals({
       marketAveragePrice,
     };
   } catch (error) {
+    // Throw an error with additional context if something fails
     throw { type: "Get Trade Signals Error", ...error };
   }
 }

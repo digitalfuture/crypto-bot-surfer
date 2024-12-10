@@ -26,7 +26,7 @@ function calculateVolumeMomentum(candlestickData) {
 }
 
 // Function to generate signals based on Volume Momentum
-function generateSignals(candlestickData, longPeriod) {
+function generateSignals(candlestickData, shortPeriod, longPeriod) {
   // Calculate the Volume Momentum for the given candlestick data
   const volumeMomentumData = calculateVolumeMomentum(candlestickData);
 
@@ -82,10 +82,13 @@ export async function getTradeSignals({
       })
     );
 
+    // Generate signals using the transformed data and periods (before optimization)
+    const initialSignals = generateSignals(transformedData, periods);
+
     // Apply strategy evaluation to optimize short and long periods
     const { optimalShortPeriod, optimalLongPeriod } = evaluateStrategy(
-      transformedData,
-      interval
+      initialSignals, // Initial signals generated
+      transformedData // Price data for evaluation
     );
 
     // Generate signals using the optimized periods
