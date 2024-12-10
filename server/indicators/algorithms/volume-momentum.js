@@ -4,58 +4,58 @@ import {
   getLastPrice,
   getCandlestickData,
 } from "../../api/binance/info.js";
+import { evaluateStrategy } from "./evaluateStrategy"; // Import the evaluation function
 
 const tickerName = process.env.PRIMARY_SYMBOL + process.env.SECONDARY_SYMBOL;
 const interval = process.env.BACKTEST_INTERVAL;
 const periods = process.env.BACKTEST_PERIODS;
 
-function calculateEMA(prices, period) {
-  const ema = [];
-  const multiplier = 2 / (period + 1);
-
-  let previousEma =
-    prices.slice(0, period).reduce((sum, price) => sum + price, 0) / period;
-
-  for (let i = 0; i < prices.length; i++) {
-    if (i < period) {
-      ema.push(NaN);
-    } else {
-      previousEma = (prices[i] - previousEma) * multiplier + previousEma;
-      ema.push(previousEma);
+// Function to calculate the Volume Momentum
+function calculateVolumeMomentum(candlestickData) {
+  return candlestickData.map(({ time, close, volume }, index) => {
+    if (index === 0) {
+      return { time, momentum: 0 }; // No change for the first element
     }
-  }
 
-  return ema;
+    const prevClose = candlestickData[index - 1].close;
+    const prevVolume = candlestickData[index - 1].volume;
+    const volumeMomentum = (volume - prevVolume) * (close - prevClose);
+
+    return { time, momentum: volumeMomentum };
+  });
 }
 
+// Function to generate signals based on Volume Momentum
 function generateSignals(candlestickData, shortPeriod, longPeriod) {
-  const closePrices = candlestickData.map(({ close }) => close);
+  // Calculate the Volume Momentum for the given candlestick data
+  const volumeMomentumData = calculateVolumeMomentum(candlestickData);
 
-  const emaShort = calculateEMA(closePrices, shortPeriod);
-  const emaLong = calculateEMA(closePrices, longPeriod);
-
-  return candlestickData.map(({ time }, index) => {
+  // Generate signals based on the Volume Momentum and the provided periods
+  return volumeMomentumData.map(({ time, momentum }, index) => {
     if (index < longPeriod) {
+      // No signals to generate for the first "longPeriod" candles
       return {
         time,
         isBuySignal: false,
         isSellSignal: false,
         trend: "neutral",
+        momentum,
       };
     }
 
-    const isBuySignal = emaShort[index] > emaLong[index];
-    const isSellSignal = emaShort[index] < emaLong[index];
+    // Generate buy/sell signals based on the momentum of the volume
+    const isBuySignal = momentum > 0; // Buy when momentum is positive
+    const isSellSignal = momentum < 0; // Sell when momentum is negative
     const trend = isBuySignal
       ? "uptrend"
       : isSellSignal
       ? "downtrend"
       : "neutral";
 
-    return { time, isBuySignal, isSellSignal, trend };
+    return { time, isBuySignal, isSellSignal, trend, momentum };
   });
 }
-
+// Function to get trade signals and apply strategy evaluation
 export async function getTradeSignals({
   currentSymbol,
   lastCheck,
@@ -72,54 +72,48 @@ export async function getTradeSignals({
       periods,
     });
 
-    const tickerList = priceListData
-      .map(({ symbol, priceChangePercent, lastPrice, volume }) => ({
-        primarySymbol: symbol.split(secondarySymbol)[0],
-        secondarySymbol,
-        tickerName: symbol,
-        priceChangePercent: parseFloat(priceChangePercent),
-        lastPrice: parseFloat(lastPrice),
+    // Transform the candlestick data to extract time, close, and volume
+    const transformedData = candlestickData.map(
+      ([time, , , , close, volume]) => ({
+        time,
+        close,
         volume,
-      }))
-      .filter(({ tickerName }) => tickerName.endsWith(secondarySymbol))
-      .filter(({ primarySymbol }) => !primarySymbol.endsWith("DOWN"))
-      .filter(({ primarySymbol }) => !primarySymbol.endsWith("UP"))
-      .filter(({ primarySymbol }) =>
-        tradingTickers.includes(primarySymbol + secondarySymbol)
-      );
-
-    const buyTicker = tickerList.find(
-      ({ primarySymbol, secondarySymbol }) =>
-        primarySymbol + secondarySymbol === tickerName
+      })
     );
 
-    const buyPrice = parseFloat(buyTicker?.lastPrice);
+    // Apply strategy evaluation to optimize short and long periods
+    const {
+      optimalShortPeriod,
+      optimalLongPeriod,
+      sharpeRatio,
+      maxDrawdown,
+      profitFactor,
+    } = evaluateStrategy(
+      transformedData,
+      50 // Set maxPeriod for optimization
+    );
 
-    const transformedData = candlestickData.map(([time, , , , close]) => ({
-      time,
-      close,
-    }));
+    // Generate signals using the optimized periods
+    const optimalSignals = generateSignals(
+      transformedData,
+      optimalShortPeriod,
+      optimalLongPeriod
+    );
 
-    const shortPeriod = 9;
-    const longPeriod = 21;
-    const signals = generateSignals(transformedData, shortPeriod, longPeriod);
-
-    const currentSignal = signals[signals.length - 1];
+    const currentSignal = optimalSignals[optimalSignals.length - 1];
 
     const isBuySignal = currentSymbol === null && currentSignal.isBuySignal;
 
-    const tickerToSell = tickerList.find(
-      ({ primarySymbol }) => primarySymbol === currentSymbol
+    const tickerToSell = priceListData.find(
+      ({ symbol }) => symbol === currentSymbol + secondarySymbol
     );
 
     const sellPrice = parseFloat(tickerToSell?.lastPrice) || undefined;
     const isSellSignal =
       lastCheck.symbol === currentSymbol && currentSignal.isSellSignal;
 
-    const marketAveragePrice = tickerList
-      .filter(({ primarySymbol }) =>
-        tradingTickers.includes(primarySymbol + secondarySymbol)
-      )
+    const marketAveragePrice = priceListData
+      .filter(({ symbol }) => tradingTickers.includes(symbol))
       .reduce((sum, { lastPrice }, index, array) => {
         sum = sum + parseFloat(lastPrice);
 
@@ -130,17 +124,23 @@ export async function getTradeSignals({
         }
       }, 0);
 
+    // Return the result with optimal strategy information
     return {
       sellPrimarySymbol: tickerToSell?.primarySymbol,
-      buyPrimarySymbol: buyTicker?.primarySymbol,
+      buyPrimarySymbol: tickerToSell?.primarySymbol,
       sellTickerName: tickerToSell?.tickerName,
-      buyTickerName: buyTicker?.tickerName,
-      buyPrice,
+      buyTickerName: tickerToSell?.tickerName,
+      buyPrice: parseFloat(tickerToSell?.lastPrice),
       sellPrice,
       isBuySignal,
       isSellSignal,
       btcUsdtPrice,
       marketAveragePrice,
+      optimalShortPeriod, // Return optimized short period
+      optimalLongPeriod, // Return optimized long period
+      sharpeRatio, // Return Sharpe ratio
+      maxDrawdown, // Return max drawdown
+      profitFactor, // Return profit factor
     };
   } catch (error) {
     throw { type: "Get Trade Signals Error", ...error };

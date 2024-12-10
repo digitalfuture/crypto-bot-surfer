@@ -3,6 +3,7 @@ import * as indicatorPump from "./algorithms/pump.js";
 import * as indicatorPsar from "./algorithms/psar.js";
 import * as indicatorDoubleEma from "./algorithms/double-ema.js";
 import * as indicatorVolumeMomentum from "./algorithms/volume-momentum.js";
+import * as indicatorRegression from "./algorithms/regression.js";
 // import * as indicatorAi from "./ai.js";
 
 const indicatorName = process.env.INDICATOR;
@@ -24,6 +25,9 @@ switch (indicatorName) {
     break;
   case "volume-momentum":
     getTradeSignals = indicatorVolumeMomentum.getTradeSignals;
+    break;
+  case "regression":
+    getTradeSignals = indicatorRegression.getTradeSignals;
     break;
   // case "ai":
   //   getTradeSignals = indicatorAi.getTradeSignals;

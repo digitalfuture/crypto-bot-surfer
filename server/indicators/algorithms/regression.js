@@ -10,27 +10,7 @@ const tickerName = process.env.PRIMARY_SYMBOL + process.env.SECONDARY_SYMBOL;
 const interval = process.env.BACKTEST_INTERVAL;
 const periods = process.env.BACKTEST_PERIODS;
 
-function calculateEMA(prices, period) {
-  const ema = [];
-  const multiplier = 2 / (period + 1);
-
-  let previousEma =
-    prices.slice(0, period).reduce((sum, price) => sum + price, 0) / period;
-
-  for (let i = 0; i < prices.length; i++) {
-    if (i < period) {
-      ema.push(NaN);
-    } else {
-      previousEma = (prices[i] - previousEma) * multiplier + previousEma;
-      ema.push(previousEma);
-    }
-  }
-
-  return ema;
-}
-
-// Dynamic optimization for EMA strategy
-function optimizeEMAParameters(prices, maxPeriod = 50) {
+function optimizeParameters(prices, maxPeriod = 50) {
   let bestSharpeRatio = -Infinity;
   let bestProfitFactor = -Infinity;
   let bestMaxDrawdown = Infinity;
@@ -76,8 +56,8 @@ function optimizeEMAParameters(prices, maxPeriod = 50) {
 function generateSignals(candlestickData, shortPeriod, longPeriod) {
   const closePrices = candlestickData.map(({ close }) => close);
 
-  const emaShort = calculateEMA(closePrices, shortPeriod);
-  const emaLong = calculateEMA(closePrices, longPeriod);
+  const regressionShort = linearRegression(closePrices.slice(0, shortPeriod));
+  const regressionLong = linearRegression(closePrices.slice(0, longPeriod));
 
   return candlestickData.map(({ time }, index) => {
     if (index < longPeriod) {
@@ -89,8 +69,8 @@ function generateSignals(candlestickData, shortPeriod, longPeriod) {
       };
     }
 
-    const isBuySignal = emaShort[index] > emaLong[index];
-    const isSellSignal = emaShort[index] < emaLong[index];
+    const isBuySignal = regressionShort[index] > regressionLong[index];
+    const isSellSignal = regressionShort[index] < regressionLong[index];
     const trend = isBuySignal
       ? "uptrend"
       : isSellSignal
@@ -99,6 +79,22 @@ function generateSignals(candlestickData, shortPeriod, longPeriod) {
 
     return { time, isBuySignal, isSellSignal, trend };
   });
+}
+
+function linearRegression(prices) {
+  const n = prices.length;
+  const x = Array.from({ length: n }, (_, i) => i);
+  const y = prices;
+
+  const sumX = x.reduce((a, b) => a + b, 0);
+  const sumY = y.reduce((a, b) => a + b, 0);
+  const sumXY = x.reduce((sum, xi, i) => sum + xi * y[i], 0);
+  const sumX2 = x.reduce((sum, xi) => sum + xi * xi, 0);
+
+  const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+  const intercept = (sumY - slope * sumX) / n;
+
+  return x.map((xi) => slope * xi + intercept);
 }
 
 export async function getTradeSignals({
@@ -145,14 +141,20 @@ export async function getTradeSignals({
       close,
     }));
 
-    // Dynamic optimization for EMA parameters
-    const { optimalShortPeriod, optimalLongPeriod } =
-      optimizeEMAParameters(transformedData);
+    // Dynamic optimization for regression parameters
+    const metricFunction = (signals) => {
+      // Example: Calculate profit/drawdown ratio from signals
+      const profit = signals.filter((s) => s.isBuySignal).length;
+      const drawdown = signals.filter((s) => s.isSellSignal).length;
+      return profit / (drawdown || 1);
+    };
+
+    const bestParams = optimizeParameters(transformedData, metricFunction);
 
     const signals = generateSignals(
       transformedData,
-      optimalShortPeriod,
-      optimalLongPeriod
+      bestParams.shortPeriod,
+      bestParams.longPeriod
     );
 
     const currentSignal = signals[signals.length - 1];
