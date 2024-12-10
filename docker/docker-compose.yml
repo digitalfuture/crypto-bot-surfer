@@ -36,7 +36,7 @@ services:
       - INDICATOR=psar
       - PRIMARY_SYMBOL=BNB
       - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=psar-fast-BNB.csv
+      - REPORT_FILE_NAME=psar-BNB.csv
 
   crypto-bot-surfer-3:
     container_name: crypto-bot-surfer-3

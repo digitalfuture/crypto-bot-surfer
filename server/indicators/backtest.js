@@ -1,4 +1,4 @@
-export function evaluateStrategy(signals, prices) {
+export function evaluateStrategy(signals, candlestickData) {
   let totalProfit = 0;
   let totalLoss = 0;
   let maxDrawdown = 0;
@@ -9,8 +9,8 @@ export function evaluateStrategy(signals, prices) {
     if (index === 0) return; // Skip the first element
 
     const prevSignal = signals[index - 1];
-    const currentPrice = prices[index].close;
-    const previousPrice = prices[index - 1].close;
+    const currentPrice = candlestickData[index].close;
+    const previousPrice = candlestickData[index - 1].close;
 
     if (prevSignal.isBuySignal && !signal.isSellSignal) {
       // Buy
@@ -33,8 +33,8 @@ export function evaluateStrategy(signals, prices) {
   const dailyReturns = signals.map((signal, index) => {
     if (index === 0) return 0; // Skip the first element
     const prevSignal = signals[index - 1];
-    const currentPrice = prices[index].close;
-    const previousPrice = prices[index - 1].close;
+    const currentPrice = candlestickData[index].close;
+    const previousPrice = candlestickData[index - 1].close;
     if (prevSignal.isBuySignal && !signal.isSellSignal) {
       return (currentPrice - previousPrice) / previousPrice;
     } else if (!prevSignal.isBuySignal && signal.isSellSignal) {
