@@ -34,12 +34,21 @@ services:
     <<: *basic-container
     environment:
       - INDICATOR=psar
+      - PRIMARY_SYMBOL=ETH
+      - REPORT_FILE_DIR=/home/report
+      - REPORT_FILE_NAME=psar-ETH.csv
+
+  crypto-bot-surfer-3:
+    container_name: crypto-bot-surfer-3
+    <<: *basic-container
+    environment:
+      - INDICATOR=psar
       - PRIMARY_SYMBOL=BNB
       - REPORT_FILE_DIR=/home/report
       - REPORT_FILE_NAME=psar-BNB.csv
 
-  crypto-bot-surfer-3:
-    container_name: crypto-bot-surfer-3
+  crypto-bot-surfer-4:
+    container_name: crypto-bot-surfer-4
     <<: *basic-container
     environment:
       - INDICATOR=psar
@@ -47,8 +56,8 @@ services:
       - REPORT_FILE_DIR=/home/report
       - REPORT_FILE_NAME=psar-XRP.csv
 
-  crypto-bot-surfer-4:
-    container_name: crypto-bot-surfer-4
+  crypto-bot-surfer-5:
+    container_name: crypto-bot-surfer-5
     <<: *basic-container
     environment:
       - INDICATOR=psar
@@ -56,38 +65,65 @@ services:
       - REPORT_FILE_DIR=/home/report
       - REPORT_FILE_NAME=psar-DOGE.csv
 
-  crypto-bot-surfer-5:
-    container_name: crypto-bot-surfer-5
-    <<: *basic-container
-    environment:
-      - INDICATOR=double-ema
-      - PRIMARY_SYMBOL=BTC
-      - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=double-ema-BTC.csv
-
   crypto-bot-surfer-6:
     container_name: crypto-bot-surfer-6
     <<: *basic-container
     environment:
-      - INDICATOR=volume-momentum
-      - PRIMARY_SYMBOL=BTC
+      - INDICATOR=psar
+      - PRIMARY_SYMBOL=ADA
       - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=volume-momentum-BTC.csv
+      - REPORT_FILE_NAME=psar-ADA.csv
 
   crypto-bot-surfer-7:
     container_name: crypto-bot-surfer-7
     <<: *basic-container
     environment:
-      - INDICATOR=rsi
-      - PRIMARY_SYMBOL=BTC
+      - INDICATOR=psar
+      - PRIMARY_SYMBOL=SOL
       - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=rsi-BTC.csv
+      - REPORT_FILE_NAME=psar-SOL.csv
 
   crypto-bot-surfer-8:
     container_name: crypto-bot-surfer-8
     <<: *basic-container
     environment:
-      - INDICATOR=regression
-      - PRIMARY_SYMBOL=BTC
+      - INDICATOR=psar
+      - PRIMARY_SYMBOL=TRX
       - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=regression-BTC.csv
+      - REPORT_FILE_NAME=psar-TRX.csv
+
+  crypto-bot-surfer-9:
+    container_name: crypto-bot-surfer-9
+    <<: *basic-container
+    environment:
+      - INDICATOR=psar
+      - PRIMARY_SYMBOL=MATIC
+      - REPORT_FILE_DIR=/home/report
+      - REPORT_FILE_NAME=psar-MATIC.csv
+
+  crypto-bot-surfer-10:
+    container_name: crypto-bot-surfer-10
+    <<: *basic-container
+    environment:
+      - INDICATOR=psar
+      - PRIMARY_SYMBOL=DOT
+      - REPORT_FILE_DIR=/home/report
+      - REPORT_FILE_NAME=psar-DOT.csv
+
+  crypto-bot-surfer-11:
+    container_name: crypto-bot-surfer-11
+    <<: *basic-container
+    environment:
+      - INDICATOR=psar
+      - PRIMARY_SYMBOL=AVAX
+      - REPORT_FILE_DIR=/home/report
+      - REPORT_FILE_NAME=psar-AVAX.csv
+
+  crypto-bot-surfer-12:
+    container_name: crypto-bot-surfer-12
+    <<: *basic-container
+    environment:
+      - INDICATOR=psar
+      - PRIMARY_SYMBOL=SHIB
+      - REPORT_FILE_DIR=/home/report
+      - REPORT_FILE_NAME=psar-SHIB.csv

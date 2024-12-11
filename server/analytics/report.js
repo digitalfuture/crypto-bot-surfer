@@ -35,8 +35,8 @@ function createTable() {
     "Trade",
     "Trade price",
     "Comission",
-    "Profit %",
-    "Profit total %",
+    "Profit",
+    "Profit total",
     "Market average",
   ];
 
@@ -87,8 +87,8 @@ export function report({
       Trade: trade,
       "Trade price": +price,
       Comission: +comission.toFixed(8),
-      "Profit %": +profitPercent.toFixed(8),
-      "Profit total %": +profitTotalPercent.toFixed(8),
+      Profit: +profitPercent.toFixed(8),
+      "Profit total": +profitTotalPercent.toFixed(8),
       "Market average": +marketAveragePrice.toFixed(8),
     });
 
@@ -109,8 +109,8 @@ export function report({
       Trade: trade,
       "Trade price": +price,
       Comission: +comission.toFixed(8),
-      "Profit %": +profitPercent.toFixed(8),
-      "Profit total %": +profitTotalPercent.toFixed(8),
+      Profit: +profitPercent.toFixed(8),
+      "Profit total": +profitTotalPercent.toFixed(8),
       "Market average": +marketAveragePrice.toFixed(8),
     });
 
@@ -125,8 +125,8 @@ export function report({
       Trade: "",
       "Trade price": "",
       Comission: 0,
-      "Profit %": 0,
-      "Profit total %": +profitTotalPercent.toFixed(8),
+      Profit: 0,
+      "Profit total": +profitTotalPercent.toFixed(8),
       "Market average": +marketAveragePrice.toFixed(8),
     });
   }
