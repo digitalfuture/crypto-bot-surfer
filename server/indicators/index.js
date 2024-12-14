@@ -22,7 +22,7 @@ switch (indicatorName) {
   case "psar":
     getTradeSignals = indicatorPsar.getTradeSignals;
     break;
-  case "double-ema":
+  case "double-ema-smart":
     getTradeSignals = indicatorDoubleEmaSmart.getTradeSignals;
     break;
   case "double-ema-dynamic":
