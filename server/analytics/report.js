@@ -30,14 +30,14 @@ function createTable() {
     "Count",
     "Date",
     "BTC / USDT price",
+    "Market average",
     "Token name",
     "24h price change %",
     "Trade",
     "Trade price",
     "Comission",
-    "Profit",
-    "Profit total",
-    "Market average",
+    "Profit %",
+    "Profit total %",
   ];
 
   execSync(`rm -rf ${filePath}`);
@@ -82,14 +82,14 @@ export function report({
       Count: count,
       Date: date.toISOString(),
       "BTC / USDT price": btcUsdtPrice,
+      "Market average": +marketAveragePrice.toFixed(8),
       "Token name": symbol,
       "24h price change %": +priceChangePercent,
       Trade: trade,
       "Trade price": +price,
       Comission: +comission.toFixed(8),
-      Profit: +profitPercent.toFixed(8),
-      "Profit total": +profitTotalPercent.toFixed(8),
-      "Market average": +marketAveragePrice.toFixed(8),
+      "Profit %": +profitPercent.toFixed(8),
+      "Profit total %": +profitTotalPercent.toFixed(8),
     });
 
     lastPrice = price;
@@ -104,14 +104,14 @@ export function report({
       Count: count,
       Date: date.toISOString(),
       "BTC / USDT price": btcUsdtPrice,
+      "Market average": +marketAveragePrice.toFixed(8),
       "Token name": symbol,
       "24h price change %": +priceChangePercent,
       Trade: trade,
       "Trade price": +price,
       Comission: +comission.toFixed(8),
-      Profit: +profitPercent.toFixed(8),
-      "Profit total": +profitTotalPercent.toFixed(8),
-      "Market average": +marketAveragePrice.toFixed(8),
+      "Profit %": +profitPercent.toFixed(8),
+      "Profit total %": +profitTotalPercent.toFixed(8),
     });
 
     lastPrice = price;
@@ -120,6 +120,7 @@ export function report({
       Count: count,
       Date: date.toISOString(),
       "BTC / USDT price": btcUsdtPrice,
+      "Market average": +marketAveragePrice.toFixed(8),
       "Token name": "",
       "24h price change %": +(priceChangePercent || 0),
       Trade: "",
@@ -127,7 +128,6 @@ export function report({
       Comission: 0,
       Profit: 0,
       "Profit total": +profitTotalPercent.toFixed(8),
-      "Market average": +marketAveragePrice.toFixed(8),
     });
   }
 

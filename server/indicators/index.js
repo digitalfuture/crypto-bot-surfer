@@ -2,6 +2,7 @@ import * as indicatorExternalFile from "./algorithms/external-file.js";
 import * as indicatorPump from "./algorithms/pump.js";
 import * as indicatorPsar from "./algorithms/psar.js";
 import * as indicatorDoubleEma from "./algorithms/double-ema.js";
+import * as indicatorDoubleEmaDynamic from "./algorithms/double-ema-dynamic.js";
 import * as indicatorVolumeMomentum from "./algorithms/volume-momentum.js";
 import * as indicatorRegression from "./algorithms/regression.js";
 import * as indicatorRsi from "./algorithms/rsi.js";
@@ -23,6 +24,9 @@ switch (indicatorName) {
     break;
   case "double-ema":
     getTradeSignals = indicatorDoubleEma.getTradeSignals;
+    break;
+  case "double-ema-dynamic":
+    getTradeSignals = indicatorDoubleEmaDynamic.getTradeSignals;
     break;
   case "volume-momentum":
     getTradeSignals = indicatorVolumeMomentum.getTradeSignals;
