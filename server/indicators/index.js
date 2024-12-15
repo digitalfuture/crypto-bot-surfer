@@ -1,6 +1,7 @@
 import * as indicatorExternalFile from "./algorithms/external-file.js";
 import * as indicatorPump from "./algorithms/pump.js";
 import * as indicatorPsar from "./algorithms/psar.js";
+import * as indicatorPsarSmart from "./algorithms/psar-smart.js";
 import * as indicatorDoubleEmaSmart from "./algorithms/double-ema-smart.js";
 import * as indicatorDoubleEmaDynamic from "./algorithms/double-ema-dynamic.js";
 import * as indicatorVolumeMomentum from "./algorithms/volume-momentum.js";
@@ -21,6 +22,9 @@ switch (indicatorName) {
     break;
   case "psar":
     getTradeSignals = indicatorPsar.getTradeSignals;
+    break;
+  case "psar-smart":
+    getTradeSignals = indicatorPsarSmart.getTradeSignals;
     break;
   case "double-ema-smart":
     getTradeSignals = indicatorDoubleEmaSmart.getTradeSignals;

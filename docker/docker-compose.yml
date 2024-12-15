@@ -24,88 +24,70 @@ services:
     container_name: crypto-bot-surfer-1
     <<: *basic-container
     environment:
-      - INDICATOR=double-ema-smart
+      - INDICATOR=psar
       - PRIMARY_SYMBOL=BTC
       - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=double-ema-smart-BTC.csv
+      - REPORT_FILE_NAME=psar-1m-BTC.csv
 
   crypto-bot-surfer-2:
     container_name: crypto-bot-surfer-2
     <<: *basic-container
     environment:
-      - INDICATOR=double-ema-smart
+      - INDICATOR=psar
       - PRIMARY_SYMBOL=ETH
       - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=double-ema-smart-ETH.csv
+      - REPORT_FILE_NAME=psar-1m-ETH.csv
 
   crypto-bot-surfer-3:
     container_name: crypto-bot-surfer-3
     <<: *basic-container
     environment:
-      - INDICATOR=double-ema-smart
+      - INDICATOR=psar
       - PRIMARY_SYMBOL=BNB
       - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=double-ema-smart-BNB.csv
+      - REPORT_FILE_NAME=psar-1m-BNB.csv
 
   crypto-bot-surfer-4:
     container_name: crypto-bot-surfer-4
     <<: *basic-container
     environment:
-      - INDICATOR=double-ema-smart
+      - INDICATOR=psar
       - PRIMARY_SYMBOL=XRP
       - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=double-ema-smart-XRP.csv
+      - REPORT_FILE_NAME=psar-1m-XRP.csv
 
   crypto-bot-surfer-5:
     container_name: crypto-bot-surfer-5
     <<: *basic-container
     environment:
-      - INDICATOR=double-ema-smart
+      - INDICATOR=psar
       - PRIMARY_SYMBOL=DOGE
       - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=double-ema-smart-DOGE.csv
+      - REPORT_FILE_NAME=psar-1m-DOGE.csv
 
   crypto-bot-surfer-6:
     container_name: crypto-bot-surfer-6
     <<: *basic-container
     environment:
-      - INDICATOR=double-ema-smart
+      - INDICATOR=psar
       - PRIMARY_SYMBOL=ADA
       - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=double-ema-smart-ADA.csv
+      - REPORT_FILE_NAME=psar-1m-ADA.csv
 
   crypto-bot-surfer-7:
     container_name: crypto-bot-surfer-7
     <<: *basic-container
     environment:
-      - INDICATOR=double-ema-smart
+      - INDICATOR=psar
       - PRIMARY_SYMBOL=SOL
       - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=double-ema-smart-SOL.csv
+      - REPORT_FILE_NAME=psar-1m-SOL.csv
 
   crypto-bot-surfer-8:
-    container_name: crypto-bot-surfer-8
-    <<: *basic-container
-    environment:
-      - INDICATOR=double-ema-smart
-      - PRIMARY_SYMBOL=TRX
-      - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=double-ema-smart-TRX.csv
-
-  crypto-bot-surfer-9:
-    container_name: crypto-bot-surfer-9
-    <<: *basic-container
-    environment:
-      - INDICATOR=double-ema-smart
-      - PRIMARY_SYMBOL=MATIC
-      - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=double-ema-smart-MATIC.csv
-
-  crypto-bot-surfer-10:
     container_name: crypto-bot-surfer-10
     <<: *basic-container
     environment:
-      - INDICATOR=double-ema-smart
+      - INDICATOR=psar
       - PRIMARY_SYMBOL=DOT
       - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=double-ema-smart-DOT.csv
+      - REPORT_FILE_NAME=psar-1m-DOT.csv
