@@ -1,6 +1,8 @@
 import { getPrevDayData, getTradingTickers } from "../../api/binance/info.js";
 import { getLastPrice } from "../../api/binance/info.js";
 
+const indicatorParam1 = JSON.parse(process.env.INDICATOR_PARAM_1);
+
 export async function getTradeSignals({
   secondarySymbol,
   currentSymbol,
@@ -55,15 +57,16 @@ export async function getTradeSignals({
     const buyTickerName = buyTicker?.tickerName;
     const buyPrice = parseFloat(buyTicker?.lastPrice);
     const buyTickerPriceChangePercent = buyTicker?.priceChangePercent;
-    const buyCondition = !currentSymbol && buyTicker;
     const symbolLisrUp = buyTickerList.filter(
       (item) => item.priceChangePercent > 0
     );
     const symbolLisrDown = buyTickerList.filter(
       (item) => item.priceChangePercent < 0
     );
-    const buyCondition2 = symbolLisrUp.length > symbolLisrDown.length;
-    const isBuySignal = buyCondition && buyCondition2;
+    const buyCondition1 = !currentSymbol && buyTicker;
+    const buyCondition2 =
+      symbolLisrUp.length / indicatorParam1 > symbolLisrDown.length;
+    const isBuySignal = buyCondition1 && buyCondition2;
 
     const tickerToSell = tickerList.find(
       ({ primarySymbol }) => primarySymbol === currentSymbol
