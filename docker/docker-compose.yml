@@ -24,70 +24,70 @@ services:
     container_name: crypto-bot-surfer-1
     <<: *basic-container
     environment:
-      - INDICATOR=psar
-      - PRIMARY_SYMBOL=BTC
+      - SYSTEM_PARAM_1=6
+      - SYSTEM_PARAM_2=1
       - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=psar-1m-BTC.csv
+      - REPORT_FILE_NAME=pump-15m-1.csv
 
   crypto-bot-surfer-2:
     container_name: crypto-bot-surfer-2
     <<: *basic-container
     environment:
-      - INDICATOR=psar
-      - PRIMARY_SYMBOL=ETH
+      - SYSTEM_PARAM_1=6
+      - SYSTEM_PARAM_2=2
       - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=psar-1m-ETH.csv
+      - REPORT_FILE_NAME=pump-15m-2.csv
 
   crypto-bot-surfer-3:
     container_name: crypto-bot-surfer-3
     <<: *basic-container
     environment:
-      - INDICATOR=psar
-      - PRIMARY_SYMBOL=BNB
+      - SYSTEM_PARAM_1=6
+      - SYSTEM_PARAM_2=3
       - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=psar-1m-BNB.csv
+      - REPORT_FILE_NAME=pump-15m-3.csv
 
   crypto-bot-surfer-4:
     container_name: crypto-bot-surfer-4
     <<: *basic-container
     environment:
-      - INDICATOR=psar
-      - PRIMARY_SYMBOL=XRP
+      - SYSTEM_PARAM_1=6
+      - SYSTEM_PARAM_2=4
       - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=psar-1m-XRP.csv
+      - REPORT_FILE_NAME=pump-15m-4.csv
 
   crypto-bot-surfer-5:
     container_name: crypto-bot-surfer-5
     <<: *basic-container
     environment:
-      - INDICATOR=psar
-      - PRIMARY_SYMBOL=DOGE
+      - SYSTEM_PARAM_1=6
+      - SYSTEM_PARAM_2=5
       - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=psar-1m-DOGE.csv
+      - REPORT_FILE_NAME=pump-15m-5.csv
 
   crypto-bot-surfer-6:
     container_name: crypto-bot-surfer-6
     <<: *basic-container
     environment:
-      - INDICATOR=psar
-      - PRIMARY_SYMBOL=ADA
+      - SYSTEM_PARAM_1=6
+      - SYSTEM_PARAM_2=6
       - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=psar-1m-ADA.csv
+      - REPORT_FILE_NAME=pump-15m-6.csv
 
   crypto-bot-surfer-7:
     container_name: crypto-bot-surfer-7
     <<: *basic-container
     environment:
-      - INDICATOR=psar
-      - PRIMARY_SYMBOL=SOL
+      - SYSTEM_PARAM_1=6
+      - SYSTEM_PARAM_2=7
       - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=psar-1m-SOL.csv
+      - REPORT_FILE_NAME=pump-15m-7.csv
 
   crypto-bot-surfer-8:
-    container_name: crypto-bot-surfer-10
+    container_name: crypto-bot-surfer-8
     <<: *basic-container
     environment:
-      - INDICATOR=psar
-      - PRIMARY_SYMBOL=DOT
+      - SYSTEM_PARAM_1=6
+      - SYSTEM_PARAM_2=8
       - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=psar-1m-DOT.csv
+      - REPORT_FILE_NAME=pump-15m-8.csv
