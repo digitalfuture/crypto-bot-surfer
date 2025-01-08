@@ -1,5 +1,9 @@
 import { getPrevDayData, getTradingTickers } from "../../api/binance/info.js";
-import { getLastPrice, getCandlestickData } from "../../api/binance/info.js";
+import {
+  getLastPrice,
+  getCandlestickData,
+  getMarketAverage,
+} from "../../api/binance/info.js";
 import OpenAI from "openai";
 
 const apiKey = process.env.OPENAI_API_KEY;
@@ -51,8 +55,8 @@ async function getAISignal(ticker, candlestickData) {
       signal: /BUY/.test(outputText)
         ? "BUY"
         : /SELL/.test(outputText)
-        ? "SELL"
-        : "HOLD",
+          ? "SELL"
+          : "HOLD",
     };
 
     return recommendation;
@@ -115,14 +119,7 @@ export async function getTradeSignals() {
     const isSellSignal = signal === "SELL";
     const sellPrice = buyPrice;
 
-    const marketAveragePrice = tickerList.reduce(
-      (sum, { lastPrice }, idx, arr) => {
-        return idx === arr.length - 1
-          ? (sum + parseFloat(lastPrice) - btcUsdtPrice) / arr.length
-          : sum + parseFloat(lastPrice);
-      },
-      0
-    );
+    const marketAveragePrice = getMarketAverage(tickerList, btcUsdtPrice);
 
     return {
       buyPrimarySymbol: primarySymbol,

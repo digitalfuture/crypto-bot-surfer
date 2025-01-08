@@ -234,3 +234,11 @@ export async function getAccountBalances() {
     throw { type: "Get Account Balances Error", ...error, errorSrcData: error };
   }
 }
+
+export function getMarketAverage(tickerList, btcUsdtPrice) {
+  return tickerList.reduce((sum, { lastPrice }, idx, arr) => {
+    return idx === arr.length - 1
+      ? (sum + parseFloat(lastPrice) - btcUsdtPrice) / arr.length
+      : sum + parseFloat(lastPrice);
+  }, 0);
+}

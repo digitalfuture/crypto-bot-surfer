@@ -1,8 +1,8 @@
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
-import { getPrevDayData, getTradingTickers } from "../../api/binance/info.js";
-import { getLastPrice } from "../../api/binance/info.js";
+import { getPrevDayData } from "../../api/binance/info.js";
+import { getLastPrice, getMarketAverage } from "../../api/binance/info.js";
 
 const primarySymbol = process.env.PRIMARY_SYMBOL;
 const secondarySymbol = process.env.SECONDARY_SYMBOL;
@@ -58,9 +58,6 @@ export async function getTradeSignals() {
     // console.info("\nlastCheck:", lastCheck);
     // console.info("lastTrade:", lastTrade);
 
-    const tradingTickers = await getTradingTickers();
-    // console.info("tradingTickers:", tradingTickers);
-
     const priceListData = await getPrevDayData();
     // console.info("priceListData:", priceListData);
 
@@ -105,20 +102,7 @@ export async function getTradeSignals() {
     const btcUsdtPrice = await getLastPrice("BTCUSDT");
 
     // Market average
-    const marketAveragePrice = tickerList
-      .filter(({ tickerName }) => tickerName.endsWith(secondarySymbol))
-      .filter(({ primarySymbol }) =>
-        tradingTickers.includes(primarySymbol + secondarySymbol)
-      )
-      .reduce((sum, { lastPrice }, index, array) => {
-        sum = sum + parseFloat(lastPrice);
-
-        if (index === array.length - 1) {
-          return (sum - btcUsdtPrice) / array.length;
-        } else {
-          return sum;
-        }
-      }, 0);
+    const marketAveragePrice = getMarketAverage(tickerList, btcUsdtPrice);
 
     //
     // Result
