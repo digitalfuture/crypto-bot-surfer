@@ -2,7 +2,10 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { getPrevDayData } from "../../api/binance/info.js";
-import { getLastPrice, getMarketAverage } from "../../api/binance/info.js";
+import {
+  getLastPrice,
+  getMarketAverageOscillator,
+} from "../../api/binance/info.js";
 
 const primarySymbol = process.env.PRIMARY_SYMBOL;
 const secondarySymbol = process.env.SECONDARY_SYMBOL;
@@ -102,7 +105,7 @@ export async function getTradeSignals() {
     const btcUsdtPrice = await getLastPrice("BTCUSDT");
 
     // Market average
-    const marketAveragePrice = getMarketAverage(tickerList, btcUsdtPrice);
+    const marketAveragePrice = getMarketAverageOscillator(tickerList);
 
     //
     // Result

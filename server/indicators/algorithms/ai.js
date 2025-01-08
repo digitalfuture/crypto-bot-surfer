@@ -2,7 +2,7 @@ import { getPrevDayData, getTradingTickers } from "../../api/binance/info.js";
 import {
   getLastPrice,
   getCandlestickData,
-  getMarketAverage,
+  getMarketAverageOscillator,
 } from "../../api/binance/info.js";
 import OpenAI from "openai";
 
@@ -119,7 +119,7 @@ export async function getTradeSignals() {
     const isSellSignal = signal === "SELL";
     const sellPrice = buyPrice;
 
-    const marketAveragePrice = getMarketAverage(tickerList, btcUsdtPrice);
+    const marketAveragePrice = getMarketAverageOscillator(tickerList);
 
     return {
       buyPrimarySymbol: primarySymbol,

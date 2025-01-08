@@ -242,3 +242,11 @@ export function getMarketAverage(tickerList, btcUsdtPrice) {
       : sum + parseFloat(lastPrice);
   }, 0);
 }
+
+export function getMarketAverageOscillator(tickerList) {
+  const tickerListUp = tickerList.filter(
+    ({ priceChangePercent }) => priceChangePercent > 0
+  ).length;
+
+  return (tickerListUp / tickerList.length) * 100;
+}
