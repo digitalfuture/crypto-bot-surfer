@@ -1,7 +1,8 @@
 import { getPrevDayData, getTradingTickers } from "../../api/binance/info.js";
 import { getLastPrice } from "../../api/binance/info.js";
 
-const indicatorParam1 = JSON.parse(process.env.INDICATOR_PARAM_1);
+const systemParam1 = JSON.parse(process.env.SYSTEM_PARAM_1);
+const systemParam2 = JSON.parse(process.env.SYSTEM_PARAM_2);
 
 export async function getTradeSignals({
   secondarySymbol,
@@ -45,27 +46,22 @@ export async function getTradeSignals({
       .filter(({ primarySymbol }) => primarySymbol !== lastTrade?.symbol)
       .filter(({ primarySymbol }) => primarySymbol !== currentSymbol);
 
-    const buyTickerList = buyTickerListRaw
-      .filter(({ priceChangePercent }) => priceChangePercent < 30)
-      .sort((a, b) => a.volume - b.volume)
-      .slice(-Math.floor(buyTickerListRaw.length / 2))
-      .sort((a, b) => b.priceChangePercent - a.priceChangePercent);
+    const buyTickerList = buyTickerListRaw.sort((a, b) => b.volume - a.volume);
 
-    const buyTicker =
-      buyTickerList[Math.floor(Math.random() * buyTickerList.length)];
+    const buyTicker = buyTickerList[systemParam2];
     const buyPrimarySymbol = buyTicker?.primarySymbol;
     const buyTickerName = buyTicker?.tickerName;
     const buyPrice = parseFloat(buyTicker?.lastPrice);
     const buyTickerPriceChangePercent = buyTicker?.priceChangePercent;
-    const symbolLisrUp = buyTickerList.filter(
+    const tickerListUp = buyTickerList.filter(
       (item) => item.priceChangePercent > 0
     );
-    const symbolLisrDown = buyTickerList.filter(
+    const tickerListDown = buyTickerList.filter(
       (item) => item.priceChangePercent < 0
     );
     const buyCondition1 = !currentSymbol && buyTicker;
     const buyCondition2 =
-      symbolLisrUp.length / indicatorParam1 > symbolLisrDown.length;
+      tickerListUp.length / systemParam1 > tickerListDown.length;
     const isBuySignal = buyCondition1 && buyCondition2;
 
     const tickerToSell = tickerList.find(
