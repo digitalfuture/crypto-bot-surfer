@@ -4,7 +4,8 @@ import {
   getLastPrice,
   getCandlestickData,
   getMarketAverageOscillator,
-} from "../../api/binance/info.js";
+} from "../../../api/binance/info.js";
+import { evaluateStrategy } from "../backtest.js";
 
 const tickerName = process.env.PRIMARY_SYMBOL + process.env.SECONDARY_SYMBOL;
 const interval = process.env.BACKTEST_INTERVAL;
@@ -30,6 +31,55 @@ function calculateEMA(prices, period) {
   }
 
   return ema;
+}
+
+// Dynamic optimization for EMA strategy
+function optimizeEMAParameters(prices, maxPeriod = 50) {
+  let bestSharpeRatio = -Infinity;
+  let bestProfitFactor = -Infinity;
+  let bestMaxDrawdown = Infinity;
+  let optimalShortPeriod = 0;
+  let optimalLongPeriod = 0;
+
+  // Try different combinations of short and long periods to find the best
+  for (let shortPeriod = 5; shortPeriod < maxPeriod; shortPeriod++) {
+    for (
+      let longPeriod = shortPeriod + 1;
+      longPeriod < maxPeriod;
+      longPeriod++
+    ) {
+      // Generate buy/sell signals based on the current short and long periods
+      const signals = generateSignals(prices, shortPeriod, longPeriod);
+
+      // Evaluate the strategy using the generated signals
+      const { sharpeRatio, maxDrawdown, profitFactor } = evaluateStrategy(
+        signals, // Signals generated using the current periods
+        prices // Historical price data
+      );
+
+      // Update the best parameters if the current combination gives better results
+      if (
+        sharpeRatio > bestSharpeRatio &&
+        maxDrawdown < bestMaxDrawdown &&
+        profitFactor > bestProfitFactor
+      ) {
+        bestSharpeRatio = sharpeRatio;
+        bestProfitFactor = profitFactor;
+        bestMaxDrawdown = maxDrawdown;
+        optimalShortPeriod = shortPeriod;
+        optimalLongPeriod = longPeriod;
+      }
+    }
+  }
+
+  // Return the optimal short and long periods along with performance metrics
+  return {
+    optimalShortPeriod,
+    optimalLongPeriod,
+    sharpeRatio: bestSharpeRatio,
+    maxDrawdown: bestMaxDrawdown,
+    profitFactor: bestProfitFactor,
+  };
 }
 
 function generateSignals(candlestickData, shortPeriod, longPeriod) {
@@ -63,33 +113,29 @@ function generateSignals(candlestickData, shortPeriod, longPeriod) {
   });
 }
 
-function calculateEquitySignals(equityData, shortPeriod, longPeriod) {
-  const emaShort = calculateEMA(equityData, shortPeriod);
-  const emaLong = calculateEMA(equityData, longPeriod);
-
-  return equityData.map((value, index) => {
-    if (index < longPeriod) {
-      return false; // No signal for the initial period
-    }
-    return emaShort[index] > emaLong[index];
-  });
-}
-
 export async function getTradeSignals({
   currentSymbol,
   lastCheck,
   secondarySymbol,
 }) {
   try {
+    // Get the current price of BTC/USDT to calculate the market price
     const btcUsdtPrice = await getLastPrice("BTCUSDT");
+
+    // Fetch previous day's price and volume data
     const priceListData = await getPrevDayData();
+
+    // Get candlestick data for the selected ticker
     const candlestickData = await getCandlestickData({
       tickerName,
       interval,
       periods,
     });
+
+    // Get the list of active trading tickers
     const tradingTickers = await getTradingTickers();
 
+    // Filter and process the price data into a suitable format for further analysis
     const tickerList = priceListData
       .map(({ symbol, priceChangePercent, lastPrice, volume }) => ({
         primarySymbol: symbol.split(secondarySymbol)[0],
@@ -106,6 +152,7 @@ export async function getTradeSignals({
         tradingTickers.includes(primarySymbol + secondarySymbol)
       );
 
+    // Find the ticker that matches the primary and secondary symbol for buying
     const buyTicker = tickerList.find(
       ({ primarySymbol, secondarySymbol }) =>
         primarySymbol + secondarySymbol === tickerName
@@ -113,45 +160,42 @@ export async function getTradeSignals({
 
     const buyPrice = parseFloat(buyTicker?.lastPrice);
 
+    // Transform candlestick data into the necessary format for the strategy
     const transformedData = candlestickData.map(([time, , , , close]) => ({
       time,
       close,
     }));
 
-    const signals = generateSignals(transformedData, 10, 50); // Fixed periods for EMA
+    // Optimize EMA parameters dynamically based on historical data
+    const { optimalShortPeriod, optimalLongPeriod } =
+      optimizeEMAParameters(transformedData);
 
-    const equity = signals.reduce((acc, signal, index) => {
-      if (index === 0) return [0];
-      const prevEquity = acc[index - 1];
-      if (signal.isBuySignal) {
-        return [...acc, prevEquity + transformedData[index].close];
-      } else if (signal.isSellSignal) {
-        return [...acc, prevEquity - transformedData[index].close];
-      }
-      return [...acc, prevEquity];
-    }, []);
+    // Generate trade signals based on the optimized EMA periods
+    const signals = generateSignals(
+      transformedData,
+      optimalShortPeriod,
+      optimalLongPeriod
+    );
 
-    const equitySignals = calculateEquitySignals(equity, 10, 50);
-
-    const isTradingEnabled = equitySignals[equitySignals.length - 1];
-
+    // Get the most recent signal
     const currentSignal = signals[signals.length - 1];
 
-    const isBuySignal =
-      isTradingEnabled && currentSymbol === null && currentSignal.isBuySignal;
+    // Check if the current signal is a buy signal
+    const isBuySignal = currentSymbol === null && currentSignal.isBuySignal;
 
+    // Find the ticker to sell based on the current symbol
     const tickerToSell = tickerList.find(
       ({ primarySymbol }) => primarySymbol === currentSymbol
     );
 
     const sellPrice = parseFloat(tickerToSell?.lastPrice) || undefined;
     const isSellSignal =
-      isTradingEnabled &&
-      lastCheck.symbol === currentSymbol &&
-      currentSignal.isSellSignal;
+      lastCheck.symbol === currentSymbol && currentSignal.isSellSignal;
 
+    // Calculate the average market price for tickers
     const marketAveragePrice = getMarketAverageOscillator(tickerList);
 
+    // Return the trade signal data along with calculated prices
     return {
       sellPrimarySymbol: tickerToSell?.primarySymbol,
       buyPrimarySymbol: buyTicker?.primarySymbol,
@@ -165,6 +209,7 @@ export async function getTradeSignals({
       marketAveragePrice,
     };
   } catch (error) {
+    // Throw an error with additional context if something fails
     throw { type: "Get Trade Signals Error", ...error };
   }
 }

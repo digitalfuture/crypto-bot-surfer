@@ -4,7 +4,7 @@ import {
   getLastPrice,
   getCandlestickData,
   getMarketAverageOscillator,
-} from "../../api/binance/info.js";
+} from "../../../api/binance/info.js";
 
 const tickerName = process.env.PRIMARY_SYMBOL + process.env.SECONDARY_SYMBOL;
 const interval = process.env.BACKTEST_INTERVAL;

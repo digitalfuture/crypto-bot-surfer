@@ -1,9 +1,12 @@
-import { getPrevDayData, getTradingTickers } from "../../api/binance/info.js";
+import {
+  getPrevDayData,
+  getTradingTickers,
+} from "../../../api/binance/info.js";
 import {
   getLastPrice,
   getCandlestickData,
   getMarketAverageOscillator,
-} from "../../api/binance/info.js";
+} from "../../../api/binance/info.js";
 import OpenAI from "openai";
 
 const apiKey = process.env.OPENAI_API_KEY;

@@ -7,7 +7,7 @@ import {
   getAccountBalances,
 } from "./api/binance/info.js";
 import { delay, getHeartbeatInterval } from "./helpers/functions.js";
-import { getSignals } from "./indicators/index.js";
+import { getSignals } from "./analytics/indicators/index.js";
 
 const secondarySymbol = process.env.SECONDARY_SYMBOL;
 const indicator = process.env.INDICATOR;

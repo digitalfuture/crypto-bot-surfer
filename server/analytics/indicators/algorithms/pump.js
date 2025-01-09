@@ -1,8 +1,11 @@
-import { getPrevDayData, getTradingTickers } from "../../api/binance/info.js";
+import {
+  getPrevDayData,
+  getTradingTickers,
+} from "../../../api/binance/info.js";
 import {
   getLastPrice,
   getMarketAverageOscillator,
-} from "../../api/binance/info.js";
+} from "../../../api/binance/info.js";
 
 const systemParam1 = JSON.parse(process.env.SYSTEM_PARAM_1);
 const systemParam2 = JSON.parse(process.env.SYSTEM_PARAM_2);
@@ -59,12 +62,11 @@ export async function getTradeSignals({
     const tickerListUp = buyTickerList.filter(
       (item) => item.priceChangePercent > 0
     );
-    const tickerListDown = buyTickerList.filter(
-      (item) => item.priceChangePercent < 0
-    );
+
+    const marketGrowLevel = (tickerListUp.length / tickerList.length) * 100;
+
     const buyCondition1 = !currentSymbol && buyTicker;
-    const buyCondition2 =
-      tickerListUp.length / systemParam1 > tickerListDown.length;
+    const buyCondition2 = marketGrowLevel > systemParam1;
     const isBuySignal = buyCondition1 && buyCondition2;
 
     const tickerToSell = tickerList.find(
