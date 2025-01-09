@@ -24,7 +24,7 @@ services:
     container_name: crypto-bot-surfer-1
     <<: *basic-container
     environment:
-      - SYSTEM_PARAM_1=6
+      - SYSTEM_PARAM_1=75
       - SYSTEM_PARAM_2=1
       - REPORT_FILE_DIR=/home/report
       - REPORT_FILE_NAME=pump-15m-1.csv
@@ -33,7 +33,7 @@ services:
     container_name: crypto-bot-surfer-2
     <<: *basic-container
     environment:
-      - SYSTEM_PARAM_1=6
+      - SYSTEM_PARAM_1=75
       - SYSTEM_PARAM_2=2
       - REPORT_FILE_DIR=/home/report
       - REPORT_FILE_NAME=pump-15m-2.csv
@@ -42,7 +42,7 @@ services:
     container_name: crypto-bot-surfer-3
     <<: *basic-container
     environment:
-      - SYSTEM_PARAM_1=6
+      - SYSTEM_PARAM_1=75
       - SYSTEM_PARAM_2=3
       - REPORT_FILE_DIR=/home/report
       - REPORT_FILE_NAME=pump-15m-3.csv
@@ -51,7 +51,7 @@ services:
     container_name: crypto-bot-surfer-4
     <<: *basic-container
     environment:
-      - SYSTEM_PARAM_1=6
+      - SYSTEM_PARAM_1=75
       - SYSTEM_PARAM_2=4
       - REPORT_FILE_DIR=/home/report
       - REPORT_FILE_NAME=pump-15m-4.csv
@@ -60,7 +60,7 @@ services:
     container_name: crypto-bot-surfer-5
     <<: *basic-container
     environment:
-      - SYSTEM_PARAM_1=6
+      - SYSTEM_PARAM_1=75
       - SYSTEM_PARAM_2=5
       - REPORT_FILE_DIR=/home/report
       - REPORT_FILE_NAME=pump-15m-5.csv
@@ -69,7 +69,7 @@ services:
     container_name: crypto-bot-surfer-6
     <<: *basic-container
     environment:
-      - SYSTEM_PARAM_1=6
+      - SYSTEM_PARAM_1=75
       - SYSTEM_PARAM_2=6
       - REPORT_FILE_DIR=/home/report
       - REPORT_FILE_NAME=pump-15m-6.csv
@@ -78,7 +78,7 @@ services:
     container_name: crypto-bot-surfer-7
     <<: *basic-container
     environment:
-      - SYSTEM_PARAM_1=6
+      - SYSTEM_PARAM_1=75
       - SYSTEM_PARAM_2=7
       - REPORT_FILE_DIR=/home/report
       - REPORT_FILE_NAME=pump-15m-7.csv
@@ -87,7 +87,7 @@ services:
     container_name: crypto-bot-surfer-8
     <<: *basic-container
     environment:
-      - SYSTEM_PARAM_1=6
+      - SYSTEM_PARAM_1=75
       - SYSTEM_PARAM_2=8
       - REPORT_FILE_DIR=/home/report
       - REPORT_FILE_NAME=pump-15m-8.csv
