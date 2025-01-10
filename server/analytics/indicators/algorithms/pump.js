@@ -7,8 +7,8 @@ import {
   getMarketAverageOscillator,
 } from "../../../api/binance/info.js";
 
+const primarySymbol = process.env.PRIMARY_SYMBOL;
 const systemParam1 = JSON.parse(process.env.SYSTEM_PARAM_1);
-const systemParam2 = JSON.parse(process.env.SYSTEM_PARAM_2);
 
 export async function getTradeSignals({
   secondarySymbol,
@@ -52,21 +52,27 @@ export async function getTradeSignals({
       .filter(({ primarySymbol }) => primarySymbol !== lastTrade?.symbol)
       .filter(({ primarySymbol }) => primarySymbol !== currentSymbol);
 
-    const buyTickerList = buyTickerListRaw.sort((a, b) => b.volume - a.volume);
+    const buyTickerList = buyTickerListRaw.sort(
+      (a, b) => b.priceChangePercent - a.priceChangePercent
+    );
 
-    const buyTicker = buyTickerList[systemParam2];
+    const buyTicker = buyTickerList.find(
+      (item) => item.primarySymbol === primarySymbol
+    );
     const buyPrimarySymbol = buyTicker?.primarySymbol;
     const buyTickerName = buyTicker?.tickerName;
     const buyPrice = parseFloat(buyTicker?.lastPrice);
     const buyTickerPriceChangePercent = buyTicker?.priceChangePercent;
-    const tickerListUp = buyTickerList.filter(
+    const buyTickerListUp = buyTickerList.filter(
       (item) => item.priceChangePercent > 0
     );
 
-    const marketGrowLevel = (tickerListUp.length / tickerList.length) * 100;
+    const marketGrowLevel =
+      (buyTickerListUp.length / buyTickerList.length) * 100;
 
     const buyCondition1 = !currentSymbol && buyTicker;
-    const buyCondition2 = marketGrowLevel > systemParam1;
+    const buyCondition2 = marketGrowLevel < systemParam1;
+    const buyCondition3 = buyTicker.priceChangePercent > 0;
     const isBuySignal = buyCondition1 && buyCondition2;
 
     const tickerToSell = tickerList.find(
@@ -80,7 +86,7 @@ export async function getTradeSignals({
 
     const sellCondition1 = lastCheck?.symbol === currentSymbol;
     const sellCondition2 = sellPrice < lastCheck?.price;
-    const isSellSignal = sellCondition1 && sellCondition2;
+    const isSellSignal = sellCondition1 && sellCondition2 && buyCondition3;
 
     const marketAveragePrice = getMarketAverageOscillator(tickerList);
 
