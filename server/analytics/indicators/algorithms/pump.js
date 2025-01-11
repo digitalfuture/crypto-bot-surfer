@@ -70,7 +70,7 @@ export async function getTradeSignals({
     const buyCondition1 = !currentSymbol && buyTicker;
     const buyCondition2 = marketGrowLevel < systemParam1;
     const buyCondition3 = buyTicker.priceChangePercent > 0;
-    const isBuySignal = buyCondition1 && buyCondition2;
+    const isBuySignal = buyCondition1 && buyCondition2 && buyCondition3;
 
     const tickerToSell = tickerList.find(
       ({ primarySymbol }) => primarySymbol === currentSymbol
@@ -83,7 +83,7 @@ export async function getTradeSignals({
 
     const sellCondition1 = lastCheck?.symbol === currentSymbol;
     const sellCondition2 = sellPrice < lastCheck?.price;
-    const isSellSignal = sellCondition1 && sellCondition2 && buyCondition3;
+    const isSellSignal = sellCondition1 && sellCondition2;
 
     const marketAveragePrice = getMarketGrowLevel(tickerList);
 
