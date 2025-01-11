@@ -2,10 +2,7 @@ import {
   getPrevDayData,
   getTradingTickers,
 } from "../../../api/binance/info.js";
-import {
-  getLastPrice,
-  getMarketAverageOscillator,
-} from "../../../api/binance/info.js";
+import { getLastPrice, getMarketGrowLevel } from "../../../api/binance/info.js";
 
 const primarySymbol = process.env.PRIMARY_SYMBOL;
 const systemParam1 = JSON.parse(process.env.SYSTEM_PARAM_1);
@@ -88,7 +85,7 @@ export async function getTradeSignals({
     const sellCondition2 = sellPrice < lastCheck?.price;
     const isSellSignal = sellCondition1 && sellCondition2 && buyCondition3;
 
-    const marketAveragePrice = getMarketAverageOscillator(tickerList);
+    const marketAveragePrice = getMarketGrowLevel(tickerList);
 
     return {
       sellPrimarySymbol,

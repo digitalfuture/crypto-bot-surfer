@@ -3,7 +3,7 @@ import {
   getTradingTickers,
   getLastPrice,
   getCandlestickData,
-  getMarketAverageOscillator,
+  getMarketGrowLevel,
 } from "../../../api/binance/info.js";
 
 const tickerName = process.env.PRIMARY_SYMBOL + process.env.SECONDARY_SYMBOL;
@@ -150,7 +150,7 @@ export async function getTradeSignals({
       lastCheck.symbol === currentSymbol &&
       currentSignal.isSellSignal;
 
-    const marketAveragePrice = getMarketAverageOscillator(tickerList);
+    const marketAveragePrice = getMarketGrowLevel(tickerList);
 
     return {
       sellPrimarySymbol: tickerToSell?.primarySymbol,

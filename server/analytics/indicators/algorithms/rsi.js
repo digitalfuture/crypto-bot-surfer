@@ -3,7 +3,7 @@ import {
   getTradingTickers,
   getLastPrice,
   getCandlestickData,
-  getMarketAverageOscillator,
+  getMarketGrowLevel,
 } from "../../../api/binance/info.js";
 import { evaluateStrategy } from "../backtest.js";
 
@@ -186,7 +186,7 @@ export async function getTradeSignals({
       lastCheck.symbol === currentSymbol && currentSignal.isSellSignal;
 
     // Calculate the average market price for all tickers
-    const marketAveragePrice = getMarketAverageOscillator(tickerList);
+    const marketAveragePrice = getMarketGrowLevel(tickerList);
 
     // Return the result including the optimal strategy information
     return {
