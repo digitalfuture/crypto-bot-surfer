@@ -63,7 +63,7 @@ export async function getTradingTickers() {
     await delay(delayMs);
 
     const data = await binance.exchangeInfo();
-    console.info("\n");
+    // console.info("\n");
     // console.info("Exchange info:", data);
 
     const tickerList = data.symbols
