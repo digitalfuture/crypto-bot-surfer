@@ -6,7 +6,7 @@ import { getLastPrice, getMarketGrowLevel } from "../../../api/binance/info.js";
 
 const primarySymbol = process.env.PRIMARY_SYMBOL;
 const systemParam1 = JSON.parse(process.env.SYSTEM_PARAM_1);
-const systemParam2 = process.env.SYSTEM_PARAM_1;
+const systemParam2 = process.env.SYSTEM_PARAM_2;
 
 export async function getTradeSignals({
   secondarySymbol,
