@@ -78,11 +78,11 @@ export async function getTradeSignals({
 
     console.log("priceChangePercent:", buyTicker?.priceChangePercent);
     console.log("marketGrowLevel:", marketGrowLevel);
-    console.log("marketGrowLevel:", marketGrowLevel);
     console.log("buyCondition1:", buyCondition1);
     console.log("buyCondition2:", buyCondition2);
     console.log("buyCondition3:", buyCondition3);
     console.log("systemParam1:", systemParam1);
+    console.log("systemParam2:", systemParam2);
     console.log("isBuySignal:", isBuySignal);
 
     const tickerToSell = tickerList.find(
