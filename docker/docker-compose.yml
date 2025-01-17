@@ -27,7 +27,7 @@ services:
       - SYSTEM_PARAM_1=10
       - SYSTEM_PARAM_2=DOWN
       - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=pump-15m-1.csv
+      - REPORT_FILE_NAME=pump-15m-DOWN-10.csv
 
   crypto-bot-surfer-2:
     container_name: crypto-bot-surfer-2
@@ -36,7 +36,7 @@ services:
       - SYSTEM_PARAM_1=20
       - SYSTEM_PARAM_2=DOWN
       - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=pump-15m-2.csv
+      - REPORT_FILE_NAME=pump-15m-DOWN-22.csv
 
   crypto-bot-surfer-3:
     container_name: crypto-bot-surfer-3
@@ -45,7 +45,7 @@ services:
       - SYSTEM_PARAM_1=30
       - SYSTEM_PARAM_2=DOWN
       - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=pump-15m-3.csv
+      - REPORT_FILE_NAME=pump-15m-DOWN-30.csv
 
   crypto-bot-surfer-4:
     container_name: crypto-bot-surfer-4
@@ -54,7 +54,7 @@ services:
       - SYSTEM_PARAM_1=40
       - SYSTEM_PARAM_2=DOWN
       - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=pump-15m-4.csv
+      - REPORT_FILE_NAME=pump-15m-DOWN-40.csv
 
   crypto-bot-surfer-5:
     container_name: crypto-bot-surfer-5
@@ -63,7 +63,7 @@ services:
       - SYSTEM_PARAM_1=50
       - SYSTEM_PARAM_2=DOWN
       - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=pump-15m-5.csv
+      - REPORT_FILE_NAME=pump-15m-DOWN-50.csv
 
   crypto-bot-surfer-6:
     container_name: crypto-bot-surfer-6
@@ -72,7 +72,7 @@ services:
       - SYSTEM_PARAM_1=70
       - SYSTEM_PARAM_2=UP
       - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=pump-15m-6.csv
+      - REPORT_FILE_NAME=pump-15m-UP-70.csv
 
   crypto-bot-surfer-7:
     container_name: crypto-bot-surfer-7
@@ -81,7 +81,7 @@ services:
       - SYSTEM_PARAM_1=80
       - SYSTEM_PARAM_2=UP
       - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=pump-15m-7.csv
+      - REPORT_FILE_NAME=pump-15m-UP-80.csv
 
   crypto-bot-surfer-8:
     container_name: crypto-bot-surfer-8
@@ -90,4 +90,4 @@ services:
       - SYSTEM_PARAM_1=90
       - SYSTEM_PARAM_2=UP
       - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=pump-15m-8.csv
+      - REPORT_FILE_NAME=pump-15m-UP-90.csv
