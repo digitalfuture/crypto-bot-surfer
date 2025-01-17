@@ -71,13 +71,13 @@ export async function getTradeSignals({
     const buyCondition1 = !currentSymbol && buyTicker;
     const buyCondition2 =
       systemParam2 === "UP"
-        ? marketGrowLevel > systemParam1
-        : marketGrowLevel < systemParam1;
-
+        ? systemParam1 > marketGrowLevel
+        : systemParam1 < marketGrowLevel;
     const buyCondition3 = buyTicker?.priceChangePercent > 0;
     const isBuySignal = buyCondition1 && buyCondition2 && buyCondition3;
 
     console.log("priceChangePercent:", buyTicker?.priceChangePercent);
+    console.log("marketGrowLevel:", marketGrowLevel);
     console.log("marketGrowLevel:", marketGrowLevel);
     console.log("buyCondition1:", buyCondition1);
     console.log("buyCondition2:", buyCondition2);
