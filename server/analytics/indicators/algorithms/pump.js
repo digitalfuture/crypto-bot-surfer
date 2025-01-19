@@ -5,8 +5,8 @@ import {
 import { getLastPrice, getMarketGrowLevel } from "../../../api/binance/info.js";
 
 const primarySymbol = process.env.PRIMARY_SYMBOL;
-const systemParam1 = JSON.parse(process.env.SYSTEM_PARAM_1);
-const systemParam2 = process.env.SYSTEM_PARAM_2;
+const marketCrossLevel = JSON.parse(process.env.SYSTEM_PARAM_1);
+const marketCrossDirection = process.env.SYSTEM_PARAM_2;
 
 export async function getTradeSignals({
   secondarySymbol,
@@ -70,9 +70,9 @@ export async function getTradeSignals({
 
     const buyCondition1 = !currentSymbol && buyTicker;
     const buyCondition2 =
-      systemParam2 === "UP"
-        ? marketGrowLevel > systemParam1
-        : marketGrowLevel < systemParam1;
+      marketCrossDirection === "UP"
+        ? marketGrowLevel > marketCrossLevel
+        : marketGrowLevel < marketCrossLevel;
     const buyCondition3 = buyTicker?.priceChangePercent > 0;
     const isBuySignal = buyCondition1 && buyCondition2 && buyCondition3;
 
@@ -81,8 +81,8 @@ export async function getTradeSignals({
     console.log("buyCondition1:", buyCondition1);
     console.log("buyCondition2:", buyCondition2);
     console.log("buyCondition3:", buyCondition3);
-    console.log("systemParam1:", systemParam1);
-    console.log("systemParam2:", systemParam2);
+    console.log("marketCrossLevel:", marketCrossLevel);
+    console.log("marketCrossDirection:", marketCrossDirection);
     console.log("isBuySignal:", isBuySignal);
 
     const tickerToSell = tickerList.find(
