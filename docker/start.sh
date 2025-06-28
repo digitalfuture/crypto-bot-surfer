@@ -1,50 +1,30 @@
 #!/bin/bash
 
-# ANSI color codes
+# ANSI color codes for output formatting
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
-RED='\033[0;31m'
 NC='\033[0m' # No Color
 
-echo -e "${GREEN}🚀 Starting crypto-bot-surfer setup...${NC}"
-
-# Stop and remove existing containers
-echo -e "${YELLOW}🧹 Checking for old containers...${NC}"
+# Remove old containers if any
+echo -e "${YELLOW}🧹 Removing old containers...${NC}"
 containers=$(docker ps -aqf "name=crypto-bot-surfer*")
-
 if [ -n "$containers" ]; then
-  echo -e "${YELLOW}Stopping and removing old containers...${NC}"
   docker rm $containers --force > /dev/null 2>&1
   echo -e "${GREEN}✅ Old containers removed.${NC}"
 else
-  echo -e "${GREEN}No old containers found. Clean environment.${NC}"
+  echo -e "${GREEN}No old containers found.${NC}"
 fi
 
-# Remove dangling images (optional, if you want to rebuild cleanly)
-echo -e "${YELLOW}🧹 Removing dangling images...${NC}"
-docker images -f "dangling=true" -q | xargs --no-run-if-empty docker rmi > /dev/null 2>&1
-echo -e "${GREEN}✅ Dangling images cleaned.${NC}"
+# Start containers one by one with delay to avoid system overload
+for i in {1..8}; do
+  service="crypto-bot-surfer-$i"
+  echo -e "${YELLOW}🚀 Starting container: $service...${NC}"
+  docker compose up -d $service
 
-# Build the new image
-echo -e "${YELLOW}🏗️ Building Docker image...${NC}"
-docker build -t crypto-bot-surfer .
-if [ $? -eq 0 ]; then
-  echo -e "${GREEN}✅ Docker image built successfully.${NC}"
-else
-  echo -e "${RED}❌ Failed to build Docker image.${NC}"
-  exit 1
-fi
+  echo -e "${YELLOW}💤 Waiting 30 seconds before starting next container...${NC}"
+  sleep 30
+done
 
-# Start services
-echo -e "${YELLOW}🐳 Starting containers with docker-compose...${NC}"
-docker compose up -d
-if [ $? -eq 0 ]; then
-  echo -e "${GREEN}✅ All containers started successfully.${NC}"
-else
-  echo -e "${RED}❌ Failed to start containers.${NC}"
-  exit 1
-fi
-
-# Optional: show logs in real-time
-echo -e "\n📊 ${YELLOW}Showing logs (Ctrl+C to exit):${NC}"
+# Attach to logs of all containers in real-time
+echo -e "${YELLOW}📊 Attaching to logs (Ctrl+C to exit)...${NC}"
 docker compose logs -f
