@@ -24,70 +24,62 @@ services:
     container_name: crypto-bot-surfer-1
     <<: *basic-container
     environment:
-      - SYSTEM_PARAM_1=5
-      - SYSTEM_PARAM_2=DOWN
+      - SYSTEM_PARAM_3=0
       - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=pump-15m-DOWN-5.csv
+      - REPORT_FILE_NAME=pump-1m-1.csv
 
   crypto-bot-surfer-2:
     container_name: crypto-bot-surfer-2
     <<: *basic-container
     environment:
-      - SYSTEM_PARAM_1=10
-      - SYSTEM_PARAM_2=DOWN
+      - SYSTEM_PARAM_3=1
       - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=pump-15m-DOWN-10.csv
+      - REPORT_FILE_NAME=pump-1m-2.csv
 
   crypto-bot-surfer-3:
     container_name: crypto-bot-surfer-3
     <<: *basic-container
     environment:
-      - SYSTEM_PARAM_1=15
-      - SYSTEM_PARAM_2=DOWN
+      - SYSTEM_PARAM_3=2
       - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=pump-15m-DOWN-15.csv
+      - REPORT_FILE_NAME=pump-1m-3.csv
 
   crypto-bot-surfer-4:
     container_name: crypto-bot-surfer-4
     <<: *basic-container
     environment:
-      - SYSTEM_PARAM_1=30
-      - SYSTEM_PARAM_2=DOWN
+      - SYSTEM_PARAM_3=3
       - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=pump-15m-DOWN-30.csv
+      - REPORT_FILE_NAME=pump-1m-4.csv
 
   crypto-bot-surfer-5:
     container_name: crypto-bot-surfer-5
     <<: *basic-container
     environment:
-      - SYSTEM_PARAM_1=45
-      - SYSTEM_PARAM_2=DOWN
+      - SYSTEM_PARAM_3=4
       - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=pump-15m-DOWN-45.csv
+      - REPORT_FILE_NAME=pump-1m-5.csv
 
   crypto-bot-surfer-6:
     container_name: crypto-bot-surfer-6
     <<: *basic-container
     environment:
-      - SYSTEM_PARAM_1=60
-      - SYSTEM_PARAM_2=DOWN
+      - SYSTEM_PARAM_3=5
       - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=pump-15m-DOWN-60.csv
+      - REPORT_FILE_NAME=pump-1m-6.csv
 
   crypto-bot-surfer-7:
     container_name: crypto-bot-surfer-7
     <<: *basic-container
     environment:
-      - SYSTEM_PARAM_1=85
-      - SYSTEM_PARAM_2=DOWN
+      - SYSTEM_PARAM_3=6
       - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=pump-15m-DOWN-85.csv
+      - REPORT_FILE_NAME=pump-1m-7.csv
 
   crypto-bot-surfer-8:
     container_name: crypto-bot-surfer-8
     <<: *basic-container
     environment:
-      - SYSTEM_PARAM_1=100
-      - SYSTEM_PARAM_2=DOWN
+      - SYSTEM_PARAM_3=7
       - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=pump-15m-DOWN-100.csv
+      - REPORT_FILE_NAME=pump-1m-8.csv
