@@ -8,4 +8,4 @@ else
   echo "No containers to remove."
 fi
 
-docker compose up
+docker-compose up
