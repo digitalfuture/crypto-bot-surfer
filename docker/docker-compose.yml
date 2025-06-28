@@ -26,7 +26,7 @@ services:
     environment:
       - SYSTEM_PARAM_3=0
       - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=pump-1m-1.csv
+      - REPORT_FILE_NAME=volatility-1m-1.csv
 
   crypto-bot-surfer-2:
     container_name: crypto-bot-surfer-2
@@ -34,7 +34,7 @@ services:
     environment:
       - SYSTEM_PARAM_3=1
       - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=pump-1m-2.csv
+      - REPORT_FILE_NAME=volatility-1m-2.csv
 
   crypto-bot-surfer-3:
     container_name: crypto-bot-surfer-3
@@ -42,7 +42,7 @@ services:
     environment:
       - SYSTEM_PARAM_3=2
       - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=pump-1m-3.csv
+      - REPORT_FILE_NAME=volatility-1m-3.csv
 
   crypto-bot-surfer-4:
     container_name: crypto-bot-surfer-4
@@ -50,7 +50,7 @@ services:
     environment:
       - SYSTEM_PARAM_3=3
       - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=pump-1m-4.csv
+      - REPORT_FILE_NAME=volatility-1m-4.csv
 
   crypto-bot-surfer-5:
     container_name: crypto-bot-surfer-5
@@ -58,7 +58,7 @@ services:
     environment:
       - SYSTEM_PARAM_3=4
       - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=pump-1m-5.csv
+      - REPORT_FILE_NAME=volatility-1m-5.csv
 
   crypto-bot-surfer-6:
     container_name: crypto-bot-surfer-6
@@ -66,7 +66,7 @@ services:
     environment:
       - SYSTEM_PARAM_3=5
       - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=pump-1m-6.csv
+      - REPORT_FILE_NAME=volatility-1m-6.csv
 
   crypto-bot-surfer-7:
     container_name: crypto-bot-surfer-7
@@ -74,7 +74,7 @@ services:
     environment:
       - SYSTEM_PARAM_3=6
       - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=pump-1m-7.csv
+      - REPORT_FILE_NAME=volatility-1m-7.csv
 
   crypto-bot-surfer-8:
     container_name: crypto-bot-surfer-8
@@ -82,4 +82,4 @@ services:
     environment:
       - SYSTEM_PARAM_3=7
       - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=pump-1m-8.csv
+      - REPORT_FILE_NAME=volatility-1m-8.csv
