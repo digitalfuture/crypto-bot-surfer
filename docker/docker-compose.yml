@@ -12,7 +12,7 @@ x-template: &basic-container
     - -c
     - |
       rm -rf crypto-bot-surfer && \
-      git clone --branch signal-trading https://github.com/digitalfuture/crypto-bot-surfer.git && \
+      git clone --branch short https://github.com/digitalfuture/crypto-bot-surfer.git && \
       cd crypto-bot-surfer && \
       npm install && \
       npm run nodemon
@@ -28,58 +28,58 @@ services:
       - REPORT_FILE_DIR=/home/report
       - REPORT_FILE_NAME=volatility-1m-1.csv
 
-  crypto-bot-surfer-2:
-    container_name: crypto-bot-surfer-2
-    <<: *basic-container
-    environment:
-      - SYSTEM_PARAM_3=1
-      - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=volatility-1m-2.csv
+  # crypto-bot-surfer-2:
+  #   container_name: crypto-bot-surfer-2
+  #   <<: *basic-container
+  #   environment:
+  #     - SYSTEM_PARAM_3=1
+  #     - REPORT_FILE_DIR=/home/report
+  #     - REPORT_FILE_NAME=volatility-1m-2.csv
 
-  crypto-bot-surfer-3:
-    container_name: crypto-bot-surfer-3
-    <<: *basic-container
-    environment:
-      - SYSTEM_PARAM_3=2
-      - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=volatility-1m-3.csv
+  # crypto-bot-surfer-3:
+  #   container_name: crypto-bot-surfer-3
+  #   <<: *basic-container
+  #   environment:
+  #     - SYSTEM_PARAM_3=2
+  #     - REPORT_FILE_DIR=/home/report
+  #     - REPORT_FILE_NAME=volatility-1m-3.csv
 
-  crypto-bot-surfer-4:
-    container_name: crypto-bot-surfer-4
-    <<: *basic-container
-    environment:
-      - SYSTEM_PARAM_3=3
-      - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=volatility-1m-4.csv
+  # crypto-bot-surfer-4:
+  #   container_name: crypto-bot-surfer-4
+  #   <<: *basic-container
+  #   environment:
+  #     - SYSTEM_PARAM_3=3
+  #     - REPORT_FILE_DIR=/home/report
+  #     - REPORT_FILE_NAME=volatility-1m-4.csv
 
-  crypto-bot-surfer-5:
-    container_name: crypto-bot-surfer-5
-    <<: *basic-container
-    environment:
-      - SYSTEM_PARAM_3=4
-      - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=volatility-1m-5.csv
+  # crypto-bot-surfer-5:
+  #   container_name: crypto-bot-surfer-5
+  #   <<: *basic-container
+  #   environment:
+  #     - SYSTEM_PARAM_3=4
+  #     - REPORT_FILE_DIR=/home/report
+  #     - REPORT_FILE_NAME=volatility-1m-5.csv
 
-  crypto-bot-surfer-6:
-    container_name: crypto-bot-surfer-6
-    <<: *basic-container
-    environment:
-      - SYSTEM_PARAM_3=5
-      - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=volatility-1m-6.csv
+  # crypto-bot-surfer-6:
+  #   container_name: crypto-bot-surfer-6
+  #   <<: *basic-container
+  #   environment:
+  #     - SYSTEM_PARAM_3=5
+  #     - REPORT_FILE_DIR=/home/report
+  #     - REPORT_FILE_NAME=volatility-1m-6.csv
 
-  crypto-bot-surfer-7:
-    container_name: crypto-bot-surfer-7
-    <<: *basic-container
-    environment:
-      - SYSTEM_PARAM_3=6
-      - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=volatility-1m-7.csv
+  # crypto-bot-surfer-7:
+  #   container_name: crypto-bot-surfer-7
+  #   <<: *basic-container
+  #   environment:
+  #     - SYSTEM_PARAM_3=6
+  #     - REPORT_FILE_DIR=/home/report
+  #     - REPORT_FILE_NAME=volatility-1m-7.csv
 
-  crypto-bot-surfer-8:
-    container_name: crypto-bot-surfer-8
-    <<: *basic-container
-    environment:
-      - SYSTEM_PARAM_3=7
-      - REPORT_FILE_DIR=/home/report
-      - REPORT_FILE_NAME=volatility-1m-8.csv
+  # crypto-bot-surfer-8:
+  #   container_name: crypto-bot-surfer-8
+  #   <<: *basic-container
+  #   environment:
+  #     - SYSTEM_PARAM_3=7
+  #     - REPORT_FILE_DIR=/home/report
+  #     - REPORT_FILE_NAME=volatility-1m-8.csv
