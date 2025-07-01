@@ -17,8 +17,8 @@ const secondarySymbol = process.env.SECONDARY_SYMBOL;
 const interval = process.env.BACKTEST_INTERVAL;
 const periods = parseInt(process.env.BACKTEST_PERIODS, 10);
 
-let baseStopMultiplier = parseFloat(process.env.SYSTEM_PARAM_1);
-let baseTakeMultiplier = parseFloat(process.env.SYSTEM_PARAM_2);
+let stopMultiplier = parseFloat(process.env.SYSTEM_PARAM_1);
+let takeMultiplier = parseFloat(process.env.SYSTEM_PARAM_2);
 let topTokenToBuy = parseInt(process.env.SYSTEM_PARAM_3);
 
 const commissionRate = parseFloat(process.env.TEST_COMISSION_PERCENT) / 100;
@@ -114,16 +114,6 @@ export async function getTradeSignals({ currentSymbol }) {
       }, 0) / candlesticks.length;
 
     if (!hasPreviousCycleData) hasPreviousCycleData = true;
-
-    const recentTrades = tradeHistory.slice(-3);
-    const lossCount = recentTrades.filter((t) => t < 0).length;
-    let stopMultiplier = baseStopMultiplier;
-    let takeMultiplier = baseTakeMultiplier;
-
-    if (lossCount >= 2) {
-      stopMultiplier *= 0.8;
-      takeMultiplier *= 1.2;
-    }
 
     let isBuySignal = false;
     let isSellSignal = false;
