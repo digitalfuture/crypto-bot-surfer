@@ -4,12 +4,10 @@ import fs from "node:fs";
 import { fileURLToPath } from "node:url";
 import { format } from "@fast-csv/format";
 
-////
 const reportFileDir = process.env.REPORT_FILE_DIR;
 const reportFileName = process.env.REPORT_FILE_NAME;
 const comissionPercent = parseFloat(process.env.TEST_COMISSION_PERCENT);
 
-////
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = reportFileDir
   ? path.resolve(reportFileDir)
@@ -18,13 +16,13 @@ const filePath = path.join(__dirname, reportFileName);
 const fileOptions = { flags: "a" };
 
 let profitTotalPercent = 0;
-let lastPrice = 0;
+let lastTradePrice = 0;
+let lastTradeType = null;
+let tradeMode = null; // "LONG" | "SHORT"
 let count = 0;
 
-////
 createTable();
 
-////
 function createTable() {
   const headers = [
     "Count",
@@ -41,7 +39,6 @@ function createTable() {
   ];
 
   execSync(`rm -rf ${filePath}`);
-
   console.log("Report file erased");
 
   const stream = fs.createWriteStream(filePath, fileOptions);
@@ -71,12 +68,40 @@ export function report({
   csvStream.pipe(stream);
 
   count++;
+  const commission = (price * comissionPercent) / 100;
 
-  const comission = (price * comissionPercent) / 100;
+  // Определяем режим стратегии по первой сделке
+  if (!tradeMode && (trade === "BUY" || trade === "SELL")) {
+    tradeMode = trade === "BUY" ? "LONG" : "SHORT";
+    console.log(`\nTrade mode set to: ${tradeMode}\n`);
+  }
 
-  if (trade === "SELL") {
-    profitTotalPercent -= comission;
-    const profitPercent = -comission;
+  if (trade === "SELL" || trade === "BUY") {
+    let profitPercent = 0;
+
+    if (
+      (tradeMode === "LONG" && trade === "SELL" && lastTradeType === "BUY") ||
+      (tradeMode === "SHORT" && trade === "BUY" && lastTradeType === "SELL")
+    ) {
+      const onePercent = lastTradePrice / 100;
+
+      let profit = 0;
+      if (tradeMode === "LONG") {
+        profit = price - lastTradePrice - commission;
+      } else if (tradeMode === "SHORT") {
+        profit = lastTradePrice - price - commission;
+      }
+
+      profitPercent = profit / onePercent;
+      profitTotalPercent += profitPercent;
+    } else {
+      // первая сделка — вход, учитываем только комиссию
+      profitPercent = -commission / (price / 100);
+      profitTotalPercent += profitPercent;
+    }
+
+    lastTradePrice = price;
+    lastTradeType = trade;
 
     csvStream.write({
       Count: count,
@@ -87,34 +112,10 @@ export function report({
       "Price change %": +priceChangePercent,
       Trade: trade,
       "Trade price": +price,
-      Comission: +comission.toFixed(8),
+      Comission: +commission.toFixed(8),
       "Profit %": +profitPercent.toFixed(8),
       "Profit total %": +profitTotalPercent.toFixed(8),
     });
-
-    lastPrice = price;
-  } else if (trade === "BUY") {
-    const onePercent = lastPrice / 100;
-    const profit = price - lastPrice - comission;
-    const profitPercent = profit / onePercent;
-
-    profitTotalPercent += profitPercent;
-
-    csvStream.write({
-      Count: count,
-      Date: date.toISOString(),
-      "BTC / USDT price": btcUsdtPrice,
-      "Market average": +marketAveragePrice.toFixed(8),
-      "Token name": symbol,
-      "Price change %": +priceChangePercent,
-      Trade: trade,
-      "Trade price": +price,
-      Comission: +comission.toFixed(8),
-      "Profit %": +profitPercent.toFixed(8),
-      "Profit total %": +profitTotalPercent.toFixed(8),
-    });
-
-    lastPrice = price;
   } else {
     csvStream.write({
       Count: count,
@@ -126,8 +127,8 @@ export function report({
       Trade: "",
       "Trade price": "",
       Comission: 0,
-      Profit: 0,
-      "Profit total": +profitTotalPercent.toFixed(8),
+      "Profit %": 0,
+      "Profit total %": +profitTotalPercent.toFixed(8),
     });
   }
 
