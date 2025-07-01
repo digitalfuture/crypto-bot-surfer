@@ -185,17 +185,17 @@ async function heartBeatLoop() {
         ? 1
         : await getLastPrice(secondarySymbol + "USDT");
 
-    if (isSellSignal) {
+    if (isBuySignal) {
       console.info("\n");
-      console.info("\n\nCheck", sellTickerName);
-      console.info("Sell condition:", isSellSignal);
+      console.info("\n\nCheck", buyTickerName);
+      console.info("Buy condition:", isBuySignal);
 
-      message += "<b>Sell signal</b>\n\n";
+      message += "<b>Buy signal</b>\n\n";
 
-      const { quantity, status, srcData, result } = await marketSell({
-        primarySymbol: sellPrimarySymbol,
+      const { quantity, status, srcData, result } = await marketBuy({
+        primarySymbol: buyPrimarySymbol,
         secondarySymbol,
-        tickerName: sellTickerName,
+        tickerName: buyTickerName,
       });
 
       if (!result) {
@@ -214,13 +214,13 @@ async function heartBeatLoop() {
       }
 
       // const chart = await prepareChartData({
-      //   primarySymbol: sellPrimarySymbol,
+      //   primarySymbol: buyPrimarySymbol,
       //   secondarySymbol,
       //   interval: "1d",
-      //   priceChangePercent: sellTickerPriceChangePercent,
+      //   priceChangePercent: buyTickerPriceChangePercent,
       // });
 
-      const newPrimarySymbolBalance = await getSymbolBalance(sellPrimarySymbol);
+      const newPrimarySymbolBalance = await getSymbolBalance(buyPrimarySymbol);
       const newSecondarySymbolBalance = await getSymbolBalance(secondarySymbol);
       const primarySymbolUsdtPrice = await getLastPrice(
         sellPrimarySymbol + "USDT"
@@ -242,20 +242,20 @@ async function heartBeatLoop() {
       }, 0);
 
       console.info("New balance:\n");
-      console.info(`${newPrimarySymbolBalance} ${sellPrimarySymbol}`);
+      console.info(`${newPrimarySymbolBalance} ${buyPrimarySymbol}`);
       console.info(`${newSecondarySymbolBalance} ${secondarySymbol}`);
-      console.info(`${sellPrimarySymbol} price: ${primarySymbolUsdtPrice}`);
+      console.info(`${buyPrimarySymbol} price: ${primarySymbolUsdtPrice}`);
       console.info(`${secondarySymbol} price: ${secondarySymbolUsdtPrice}`);
 
       console.info(
         `USDT rate total balance: ${usdtRateTotalBalance.toFixed(2)}`
       );
 
-      message += `<b>${sellPrimarySymbol} price</b>: ${parseFloat(
-        sellPrice
+      message += `<b>${buyPrimarySymbol} price</b>: ${parseFloat(
+        buyPrice
       )} ${secondarySymbol}\n`;
-      message += `<b>Sold</b>: ${quantity} ${sellPrimarySymbol}\n\n`;
-      message += `<b>${sellPrimarySymbol} balance</b>: ${parseFloat(
+      message += `<b>Bought</b>: ${quantity} ${buyPrimarySymbol}\n\n`;
+      message += `<b>${buyPrimarySymbol} balance</b>: ${parseFloat(
         newPrimarySymbolBalance
       )}\n`;
       message += `<b>${secondarySymbol} balance</b>: ${newSecondarySymbolBalance}\n\n`;
@@ -267,22 +267,22 @@ async function heartBeatLoop() {
 
       // await sendImage(chart);
       await sendMessage(message);
-    } else if (isBuySignal) {
+    } else if (isSellSignal) {
       console.info("\n");
-      console.info("\n\nCheck", buyTickerName);
-      console.info("Buy condition:", isBuySignal);
+      console.info("\n\nCheck", sellTickerName);
+      console.info("Sell condition:", isSellSignal);
 
-      message += `<b>Buy signal</b>\n\n`;
+      message += `<b>Sell signal</b>\n\n`;
 
       const primarySymbolUsdtPrice = await getLastPrice(
-        buyPrimarySymbol + "USDT"
+        sellPrimarySymbol + "USDT"
       );
       const secondarySymbolBalance = await getSymbolBalance(secondarySymbol);
 
-      const { quantity, status, srcData, result } = await marketBuy({
-        primarySymbol: buyPrimarySymbol,
+      const { quantity, status, srcData, result } = await marketSell({
+        primarySymbol: sellPrimarySymbol,
         secondarySymbol,
-        tickerName: buyTickerName,
+        tickerName: sellTickerName,
         secondarySymbolBalance,
       });
 
@@ -306,15 +306,15 @@ async function heartBeatLoop() {
       }
 
       // const chart = await prepareChartData({
-      //   primarySymbol: buyPrimarySymbol,
+      //   primarySymbol: sellPrimarySymbol,
       //   secondarySymbol,
       //   interval: "1d",
-      //   priceChangePercent: buyTickerPriceChangePercent,
+      //   priceChangePercent: sellTickerPriceChangePercent,
       // });
 
-      currentSymbols.push(buyPrimarySymbol);
+      currentSymbols.push(sellPrimarySymbol);
 
-      const newPrimarySymbolBalance = await getSymbolBalance(buyPrimarySymbol);
+      const newPrimarySymbolBalance = await getSymbolBalance(sellPrimarySymbol);
       const newSecondarySymbolBalance = await getSymbolBalance(secondarySymbol);
 
       const accountBalances = await getBalances();
@@ -326,26 +326,24 @@ async function heartBeatLoop() {
         return sum;
       }, 0);
 
-      currentSymbol = buyPrimarySymbol;
-      lastTrade = { symbol: buyPrimarySymbol, price: buyPrice };
+      currentSymbol = sellPrimarySymbol;
+      lastTrade = { symbol: sellPrimarySymbol, price: sellPrice };
       lastCheck = lastTrade;
 
       console.info("\n\nNew current symbol:", currentSymbol);
 
       console.info("New balances");
-      console.info(`${newPrimarySymbolBalance} ${buyPrimarySymbol}`);
+      console.info(`${newPrimarySymbolBalance} ${sellPrimarySymbol}`);
       console.info(`${newSecondarySymbolBalance} ${secondarySymbol}`);
-      console.info(`${buyPrimarySymbol} price: ${primarySymbolUsdtPrice}`);
+      console.info(`${sellPrimarySymbol} price: ${primarySymbolUsdtPrice}`);
       console.info(`${secondarySymbol} price: ${secondarySymbolUsdtPrice}`);
 
       console.info(`USDT rate total balance: ${usdtRateTotalBalance}`);
 
-      message += `<b>${buyPrimarySymbol} price</b>: ${parseFloat(
-        buyPrice
+      message += `<b>${sellPrimarySymbol} price</b>: ${parseFloat(
+        sellPrice
       )} ${secondarySymbol}\n`;
-      message += `<b>Bought</b>: ${quantity} ${buyPrimarySymbol}\n\n`;
-      message += `<b>${buyPrimarySymbol} balance</b>: ${parseFloat(
-        newPrimarySymbolBalance
+      message += `<b>Sold
       )}\n`;
       message += `<b>${secondarySymbol} balance</b>: ${parseFloat(
         newSecondarySymbolBalance
@@ -362,7 +360,7 @@ async function heartBeatLoop() {
       // message += "<b>No trade signals</b>";
       // await sendMessage(message);
 
-      lastCheck = { symbol: sellPrimarySymbol, price: sellPrice };
+      lastCheck = { symbol: buyPrimarySymbol, price: buyPrice };
     }
   } catch (error) {
     throw { type: "Heartbeat Loop Error", ...error, errorSrcData: error };
