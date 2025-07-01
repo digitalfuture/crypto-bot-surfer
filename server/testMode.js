@@ -162,9 +162,9 @@ async function heartBeatLoop() {
       lastCheck,
     });
 
-    if (isSellSignal && currentSymbol) {
+    if (isBuySignal && currentSymbol) {
       console.info("\n");
-      console.info("Sell condition:", true);
+      console.info("Buy condition:", true);
 
       currentSymbol = null;
 
@@ -173,72 +173,16 @@ async function heartBeatLoop() {
       lastCheck = { symbol: secondarySymbol, price: 1 };
 
       // const chart = await prepareChartData({
-      //   primarySymbol: sellPrimarySymbol,
-      //   secondarySymbol,
-      //   interval: "1d",
-      //   priceChangePercent: sellTickerPriceChangePercent,
-      // });
-
-      message += `<b>${sellPrimarySymbol} price</b>: ${parseFloat(
-        sellPrice
-      )} ${secondarySymbol}\n`;
-      message += `<b>Sold</b>: 1 ${sellPrimarySymbol}\n`;
-      message += `<b>${sellPrimarySymbol} balance</b>: ${parseFloat(
-        newPrimarySymbolBalance
-      )}`;
-
-      report({
-        date: new Date(),
-        trade: "SELL",
-        symbol: sellPrimarySymbol,
-        price: sellPrice,
-        priceChangePercent: sellTickerPriceChangePercent,
-        btcUsdtPrice,
-        marketAveragePrice,
-      });
-
-      // await sendImage(chart);
-      await sendMessage(message);
-    } else if (isBuySignal && currentSymbol === null) {
-      console.info("\n");
-      console.info("Buy condition:", true);
-
-      const primarySymbolUsdtPrice = await getLastPrice(
-        buyPrimarySymbol + "USDT"
-      );
-
-      // const chart = await prepareChartData({
       //   primarySymbol: buyPrimarySymbol,
       //   secondarySymbol,
       //   interval: "1d",
       //   priceChangePercent: buyTickerPriceChangePercent,
       // });
 
-      const newPrimarySymbolBalance = 1;
-
-      balances = [
-        {
-          symbol: buyPrimarySymbol,
-          available: 1,
-          usdtRate: primarySymbolUsdtPrice,
-        },
-        {
-          symbol: secondarySymbol,
-          available: 0,
-          usdtRate: 1,
-        },
-      ];
-
-      currentSymbol = buyPrimarySymbol;
-      lastTrade = { symbol: buyPrimarySymbol, price: buyPrice };
-      lastCheck = lastTrade;
-
-      console.info("New current symbol:", currentSymbol);
-
       message += `<b>${buyPrimarySymbol} price</b>: ${parseFloat(
         buyPrice
       )} ${secondarySymbol}\n`;
-      message += `<b>Bought</b>: ${newPrimarySymbolBalance} ${buyPrimarySymbol}\n`;
+      message += `<b>Bought</b>: 1 ${buyPrimarySymbol}\n`;
       message += `<b>${buyPrimarySymbol} balance</b>: ${parseFloat(
         newPrimarySymbolBalance
       )}`;
@@ -255,15 +199,71 @@ async function heartBeatLoop() {
 
       // await sendImage(chart);
       await sendMessage(message);
+    } else if (isSellSignal && currentSymbol === null) {
+      console.info("\n");
+      console.info("Sell condition:", true);
+
+      const primarySymbolUsdtPrice = await getLastPrice(
+        sellPrimarySymbol + "USDT"
+      );
+
+      // const chart = await prepareChartData({
+      //   primarySymbol: buyPrimarySymbol,
+      //   secondarySymbol,
+      //   interval: "1d",
+      //   priceChangePercent: buyTickerPriceChangePercent,
+      // });
+
+      const newPrimarySymbolBalance = 1;
+
+      balances = [
+        {
+          symbol: sellPrimarySymbol,
+          available: 1,
+          usdtRate: primarySymbolUsdtPrice,
+        },
+        {
+          symbol: secondarySymbol,
+          available: 0,
+          usdtRate: 1,
+        },
+      ];
+
+      currentSymbol = sellPrimarySymbol;
+      lastTrade = { symbol: sellPrimarySymbol, price: sellPrice };
+      lastCheck = lastTrade;
+
+      console.info("New current symbol:", currentSymbol);
+
+      message += `<b>${sellPrimarySymbol} price</b>: ${parseFloat(
+        sellPrice
+      )} ${secondarySymbol}\n`;
+      message += `<b>Sold/b>: ${newPrimarySymbolBalance} ${sellPrimarySymbol}\n`;
+      message += `<b>${sellPrimarySymbol} balance</b>: ${parseFloat(
+        newPrimarySymbolBalance
+      )}`;
+
+      report({
+        date: new Date(),
+        trade: "SELL",
+        symbol: sellPrimarySymbol,
+        price: sellPrice,
+        priceChangePercent: sellTickerPriceChangePercent,
+        btcUsdtPrice,
+        marketAveragePrice,
+      });
+
+      // await sendImage(chart);
+      await sendMessage(message);
     } else {
-      lastCheck = { symbol: sellPrimarySymbol, price: sellPrice };
+      lastCheck = { symbol: buyPrimarySymbol, price: buyPrice };
 
       report({
         date: new Date(),
         trade: "PASS",
-        symbol: lastCheck.sellPrimarySymbol,
+        symbol: lastCheck.buyPrimarySymbol,
         price: lastCheck.price,
-        priceChangePercent: sellTickerPriceChangePercent,
+        priceChangePercent: buyTickerPriceChangePercent,
         btcUsdtPrice,
         marketAveragePrice,
       });

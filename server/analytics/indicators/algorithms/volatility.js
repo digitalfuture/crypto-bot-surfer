@@ -12,15 +12,15 @@ let takeProfit = null;
 let exitReason = null;
 let tradeHistory = [];
 
-let previousStopLoss = null;
-let flatStopCounter = 0;
-
 const secondarySymbol = process.env.SECONDARY_SYMBOL;
+
 const interval = process.env.BACKTEST_INTERVAL;
 const periods = parseInt(process.env.BACKTEST_PERIODS, 10);
+
 let baseStopMultiplier = parseFloat(process.env.SYSTEM_PARAM_1);
 let baseTakeMultiplier = parseFloat(process.env.SYSTEM_PARAM_2);
 let topTokenToBuy = parseInt(process.env.SYSTEM_PARAM_3);
+
 const commissionRate = parseFloat(process.env.TEST_COMISSION_PERCENT) / 100;
 
 let lastPriceSnapshot = {};
@@ -33,20 +33,23 @@ export async function getTradeSignals({ currentSymbol }) {
     const priceListData = await getPrevDayData();
     const tradingTickers = await getTradingTickers();
 
-    let resolvedTickerList = priceListData
+    const resolvedTickerList = priceListData
       .map((item) => {
         const { symbol: s, lastPrice, volume } = item;
         const parsed = parseFloat(lastPrice);
         const vol = parseFloat(volume);
         const prevEntry = lastPriceSnapshot[s];
         let delta = null;
+
         if (prevEntry && prevEntry.price !== undefined) {
           delta = ((parsed - prevEntry.price) / prevEntry.price) * 100;
         }
+
         lastPriceSnapshot[s] = {
           price: parsed,
           timestamp: now,
         };
+
         return {
           primarySymbol: s.replace(secondarySymbol, ""),
           secondarySymbol,
@@ -65,9 +68,9 @@ export async function getTradeSignals({ currentSymbol }) {
       )
       .filter(
         ({ isCalculatedDelta, volume }) => isCalculatedDelta && volume > 100000
-      );
-    // .sort((a, b) => b.volume - a.volume)
-    // .slice(0, 100);
+      )
+      .sort((a, b) => b.volume - a.volume)
+      .slice(0, 100);
 
     const marketAveragePrice =
       resolvedTickerList.length > 0
@@ -97,7 +100,7 @@ export async function getTradeSignals({ currentSymbol }) {
     }
 
     const symbol = topGainer.tickerName;
-    const topGainerPrice = topGainer.lastPrice;
+    const parsedPrice = topGainer.lastPrice;
 
     const candlesticks = await getCandlestickData({
       tickerName: symbol,
@@ -116,6 +119,7 @@ export async function getTradeSignals({ currentSymbol }) {
     const lossCount = recentTrades.filter((t) => t < 0).length;
     let stopMultiplier = baseStopMultiplier;
     let takeMultiplier = baseTakeMultiplier;
+
     if (lossCount >= 2) {
       stopMultiplier *= 0.8;
       takeMultiplier *= 1.2;
@@ -130,118 +134,95 @@ export async function getTradeSignals({ currentSymbol }) {
     let commissionImpact = 0;
     let sellTickerPriceChangePercent = null;
 
-    let tickerToSell = null;
-    let parsedPrice = topGainerPrice;
-
     if (!currentSymbol && hasPreviousCycleData) {
-      const targetTake = parsedPrice * (1 + volatility * takeMultiplier);
-      profitPotential = (targetTake - parsedPrice) / parsedPrice;
+      const targetTake = parsedPrice * (1 - volatility * takeMultiplier);
+      profitPotential = (parsedPrice - targetTake) / parsedPrice;
       commissionImpact = 2 * commissionRate;
 
       if (profitPotential > commissionImpact * 0.25) {
         entryPrice = parsedPrice;
-        stopLoss = entryPrice * (1 - volatility * stopMultiplier);
-        takeProfit = entryPrice * (1 + volatility * takeMultiplier);
-        isBuySignal = true;
-        buyPrice = entryPrice;
-      }
-    } else if (currentSymbol) {
-      tickerToSell = resolvedTickerList.find(
-        ({ primarySymbol }) => primarySymbol === currentSymbol
-      );
-      if (!tickerToSell) return {};
-
-      parsedPrice = tickerToSell.lastPrice;
-
-      if (parsedPrice > entryPrice) {
-        const peakPrice = parsedPrice;
-        const dynamicFactor = stopMultiplier * volatility * 1.2;
-        const newTrailingStop = peakPrice * (1 - dynamicFactor);
-        stopLoss = Math.max(stopLoss, newTrailingStop);
-
-        const stopMove = stopLoss - (previousStopLoss ?? 0);
-        previousStopLoss = stopLoss;
-
-        const flatThreshold = entryPrice * 0.0003;
-        if (stopMove < flatThreshold) {
-          flatStopCounter++;
-        } else {
-          flatStopCounter = 0;
-        }
-
-        if (flatStopCounter >= 3) {
-          isSellSignal = true;
-          sellPrice = parsedPrice;
-          exitReason = "FLAT";
-        }
-      }
-
-      if (parsedPrice <= stopLoss) {
+        stopLoss = entryPrice * (1 + volatility * stopMultiplier);
+        takeProfit = entryPrice * (1 - volatility * takeMultiplier);
         isSellSignal = true;
-        sellPrice = parsedPrice;
-        exitReason = "SL";
+        sellPrice = entryPrice;
+      }
+    } else if (currentSymbol === topGainer.primarySymbol) {
+      if (parsedPrice < entryPrice) {
+        const dynamicFactor = stopMultiplier * volatility * 1.2;
+        const troughPrice = parsedPrice;
+        const newTrailingStop = troughPrice * (1 + dynamicFactor);
+        stopLoss = Math.min(stopLoss, newTrailingStop);
       }
 
-      if (isSellSignal) {
-        const grossChange = (sellPrice - entryPrice) / entryPrice;
+      if (parsedPrice >= stopLoss) {
+        isBuySignal = true;
+        buyPrice = parsedPrice;
+        exitReason = "SL";
+      } else if (parsedPrice <= takeProfit) {
+        isBuySignal = true;
+        buyPrice = parsedPrice;
+        exitReason = "TP";
+      }
+
+      if (isBuySignal) {
+        const grossChange = (entryPrice - buyPrice) / entryPrice;
         const netChange = grossChange - 2 * commissionRate;
         tradeHistory.push(netChange * 100);
         sellTickerPriceChangePercent = netChange * 100;
-
         entryPrice = null;
         stopLoss = null;
         takeProfit = null;
-        previousStopLoss = null;
-        flatStopCounter = 0;
       }
     }
 
     if (process.env.MODE === "DEVELOPMENT") {
-      const debugSymbol = isBuySignal
-        ? symbol
-        : tickerToSell?.tickerName || currentSymbol || "N/A";
-
-      const activePrice = isBuySignal
-        ? parsedPrice
-        : tickerToSell?.lastPrice || parsedPrice;
-
       console.log("======= TRADE DEBUG =======");
-      console.log("Symbol:", debugSymbol);
+      console.log("Symbol:", symbol);
       console.log("Timestamp:", new Date(now).toISOString());
-      console.log("Current Price:", activePrice);
-      console.log("Volatility:", volatility.toFixed(6));
-      console.log("Price Change %:", topGainer.priceChangePercent?.toFixed(4));
+      console.log("Current Price:", parsedPrice);
+      console.log(
+        "Volatility:",
+        Number.isFinite(volatility) ? volatility.toFixed(6) : "NaN"
+      );
+      console.log(
+        "Price Change %:",
+        topGainer.priceChangePercent !== null
+          ? topGainer.priceChangePercent.toFixed(4)
+          : "null"
+      );
       console.log("Volume:", topGainer.volume);
       console.log("Entry Price:", entryPrice);
       console.log("Stop Loss:", stopLoss);
-      console.log(
-        "Stop check:",
-        `current price ${activePrice} ${activePrice <= stopLoss ? "<=" : ">"} stop ${stopLoss}`
-      );
       console.log("Take Profit:", takeProfit);
       console.log("Buy Signal:", isBuySignal);
       console.log("Sell Signal:", isSellSignal);
       console.log("Exit Reason:", exitReason);
-      console.log("Profit Potential:", profitPotential.toFixed(5));
-      console.log("Commission Impact:", commissionImpact.toFixed(5));
+      console.log(
+        "Profit Potential:",
+        Number.isFinite(profitPotential) ? profitPotential.toFixed(5) : "NaN"
+      );
+      console.log(
+        "Commission Impact:",
+        Number.isFinite(commissionImpact) ? commissionImpact.toFixed(5) : "NaN"
+      );
       console.log("BTC Price:", btcUsdtPrice);
       console.log("Market Avg:", marketAveragePrice);
       console.log("===========================\n");
     }
 
     return {
-      sellPrimarySymbol: isSellSignal ? tickerToSell?.primarySymbol : null,
+      sellPrimarySymbol: isSellSignal ? topGainer.primarySymbol : null,
       buyPrimarySymbol: isBuySignal ? topGainer.primarySymbol : null,
-      sellTickerName: isSellSignal ? tickerToSell?.tickerName : null,
+      sellTickerName: isSellSignal ? topGainer.tickerName : null,
       buyTickerName: isBuySignal ? topGainer.tickerName : null,
-      buyPrice: isBuySignal ? buyPrice : null,
-      sellPrice,
+      buyPrice,
+      sellPrice: isSellSignal ? sellPrice : null,
       buyTickerPriceChangePercent:
         isBuySignal && topGainer.priceChangePercent !== null
           ? topGainer.priceChangePercent
           : 0,
       sellTickerPriceChangePercent:
-        isSellSignal && sellTickerPriceChangePercent !== null
+        isBuySignal && sellTickerPriceChangePercent !== null
           ? sellTickerPriceChangePercent
           : 0,
       isBuySignal,

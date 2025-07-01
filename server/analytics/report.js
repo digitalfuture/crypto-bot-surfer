@@ -74,7 +74,7 @@ export function report({
 
   const comission = (price * comissionPercent) / 100;
 
-  if (trade === "BUY") {
+  if (trade === "SELL") {
     profitTotalPercent -= comission;
     const profitPercent = -comission;
 
@@ -93,7 +93,7 @@ export function report({
     });
 
     lastPrice = price;
-  } else if (trade === "SELL") {
+  } else if (trade === "BUY") {
     const onePercent = lastPrice / 100;
     const profit = price - lastPrice - comission;
     const profitPercent = profit / onePercent;
