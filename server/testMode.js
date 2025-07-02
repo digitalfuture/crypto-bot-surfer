@@ -257,12 +257,13 @@ async function heartBeatLoop() {
       await sendMessage(message);
     } else {
       lastCheck = { symbol: buyPrimarySymbol, price: buyPrice };
+      console.info("lastCheck.symbol:", lastCheck.symbol);
 
       report({
         date: new Date(),
         trade: "PASS",
-        symbol: lastCheck.buyPrimarySymbol,
-        price: lastCheck.price,
+        symbol: buyPrimarySymbol,
+        price: buyPrice,
         priceChangePercent: buyTickerPriceChangePercent,
         btcUsdtPrice,
         marketAveragePrice,

@@ -18,7 +18,6 @@ const fileOptions = { flags: "a" };
 let profitTotalPercent = 0;
 let lastTradePrice = 0;
 let lastTradeType = null;
-let tradeMode = null; // "LONG" | "SHORT"
 let count = 0;
 
 createTable();
@@ -70,32 +69,15 @@ export function report({
   count++;
   const commission = (price * comissionPercent) / 100;
 
-  // Определяем режим стратегии по первой сделке
-  if (!tradeMode && (trade === "BUY" || trade === "SELL")) {
-    tradeMode = trade === "BUY" ? "LONG" : "SHORT";
-    console.log(`\nTrade mode set to: ${tradeMode}\n`);
-  }
-
   if (trade === "SELL" || trade === "BUY") {
     let profitPercent = 0;
 
-    if (
-      (tradeMode === "LONG" && trade === "SELL" && lastTradeType === "BUY") ||
-      (tradeMode === "SHORT" && trade === "BUY" && lastTradeType === "SELL")
-    ) {
+    if (trade === "BUY" && lastTradeType === "SELL") {
       const onePercent = lastTradePrice / 100;
-
-      let profit = 0;
-      if (tradeMode === "LONG") {
-        profit = price - lastTradePrice - commission;
-      } else if (tradeMode === "SHORT") {
-        profit = lastTradePrice - price - commission;
-      }
-
+      const profit = lastTradePrice - price - commission;
       profitPercent = profit / onePercent;
       profitTotalPercent += profitPercent;
     } else {
-      // первая сделка — вход, учитываем только комиссию
       profitPercent = -commission / (price / 100);
       profitTotalPercent += profitPercent;
     }
@@ -117,17 +99,22 @@ export function report({
       "Profit total %": +profitTotalPercent.toFixed(8),
     });
   } else {
+    const onePercent = lastTradePrice / 100;
+    const profit = lastTradePrice - price; // без комиссии
+    const profitPercent = profit / onePercent;
+    profitTotalPercent += symbol ? profitPercent : 0;
+
     csvStream.write({
       Count: count,
       Date: date.toISOString(),
       "BTC / USDT price": btcUsdtPrice,
       "Market average": +marketAveragePrice.toFixed(8),
-      "Token name": "",
+      "Token name": symbol || "",
       "Price change %": +(priceChangePercent || 0),
       Trade: "",
-      "Trade price": "",
+      "Trade price": symbol ? +price : "",
       Comission: 0,
-      "Profit %": 0,
+      "Profit %": symbol ? +profitPercent.toFixed(8) : 0,
       "Profit total %": +profitTotalPercent.toFixed(8),
     });
   }
