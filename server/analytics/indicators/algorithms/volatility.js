@@ -67,7 +67,7 @@ export async function getTradeSignals({ currentSymbol }) {
       .filter(({ isCalculatedDelta }) => isCalculatedDelta)
       .sort((a, b) => b.volume - a.volume);
 
-    const marketAveragePrice =
+    const marketOscillatorPrice =
       resolvedTickerList.length > 0
         ? getMarketGrowLevel(resolvedTickerList)
         : 0;
@@ -89,7 +89,7 @@ export async function getTradeSignals({ currentSymbol }) {
         isBuySignal: false,
         isSellSignal: false,
         btcUsdtPrice,
-        marketAveragePrice,
+        marketOscillatorPrice,
         exitReason: null,
       };
     }
@@ -151,7 +151,7 @@ export async function getTradeSignals({ currentSymbol }) {
           isBuySignal: false,
           isSellSignal: false,
           btcUsdtPrice,
-          marketAveragePrice,
+          marketOscillatorPrice,
           exitReason: "NO_TICKER",
         };
       }
@@ -182,10 +182,6 @@ export async function getTradeSignals({ currentSymbol }) {
       }
     }
 
-    console.log("stock prices");
-    console.log("sellPrice:", sellPrice);
-    console.log("buyPrice:", parsedPrice);
-
     if (process.env.MODE === "DEVELOPMENT") {
       const debugSymbol = currentSymbol || symbol;
       const debugTicker = resolvedTickerList.find(
@@ -214,7 +210,7 @@ export async function getTradeSignals({ currentSymbol }) {
       console.log("Profit Potential:", profitPotential?.toFixed(5));
       console.log("Commission Impact:", commissionImpact?.toFixed(5));
       console.log("BTC Price:", btcUsdtPrice);
-      console.log("Market Avg:", marketAveragePrice);
+      console.log("Market Oscillator:", marketOscillatorPrice);
       console.log("===========================\n");
     }
 
@@ -230,7 +226,7 @@ export async function getTradeSignals({ currentSymbol }) {
       isBuySignal,
       isSellSignal,
       btcUsdtPrice,
-      marketAveragePrice,
+      marketOscillatorPrice,
       exitReason,
     };
   } catch (error) {

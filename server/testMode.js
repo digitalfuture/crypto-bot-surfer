@@ -149,7 +149,7 @@ async function heartBeatLoop() {
       isSellSignal,
       isBuySignal,
       btcUsdtPrice,
-      marketAveragePrice,
+      Price,
     } = await getSignals({
       secondarySymbol,
       currentSymbol,
@@ -194,7 +194,7 @@ async function heartBeatLoop() {
         price: buyPrice,
         priceChangePercent: buyTickerPriceChangePercent,
         btcUsdtPrice,
-        marketAveragePrice,
+        Price,
       });
 
       // await sendImage(chart);
@@ -250,7 +250,7 @@ async function heartBeatLoop() {
         price: sellPrice,
         priceChangePercent: sellTickerPriceChangePercent,
         btcUsdtPrice,
-        marketAveragePrice,
+        Price,
       });
 
       // await sendImage(chart);
@@ -266,7 +266,7 @@ async function heartBeatLoop() {
         price: buyPrice,
         priceChangePercent: buyTickerPriceChangePercent,
         btcUsdtPrice,
-        marketAveragePrice,
+        Price,
       });
     }
 

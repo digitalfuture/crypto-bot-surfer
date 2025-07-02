@@ -27,7 +27,7 @@ function createTable() {
     "Count",
     "Date",
     "BTC / USDT price",
-    "Market average",
+    "Market oscillator",
     "Token name",
     "Price change %",
     "Trade",
@@ -56,7 +56,7 @@ export function report({
   price,
   priceChangePercent,
   btcUsdtPrice,
-  marketAveragePrice,
+  Price,
 }) {
   const stream = fs.createWriteStream(filePath, fileOptions);
   const csvStream = format({
@@ -89,7 +89,7 @@ export function report({
       Count: count,
       Date: date.toISOString(),
       "BTC / USDT price": btcUsdtPrice,
-      "Market average": +marketAveragePrice.toFixed(8),
+      "Market oscillator": +Price.toFixed(8),
       "Token name": symbol,
       "Price change %": +priceChangePercent,
       Trade: trade,
@@ -108,7 +108,7 @@ export function report({
       Count: count,
       Date: date.toISOString(),
       "BTC / USDT price": btcUsdtPrice,
-      "Market average": +marketAveragePrice.toFixed(8),
+      "Market oscillator": +Price.toFixed(8),
       "Token name": symbol || "",
       "Price change %": +(priceChangePercent || 0),
       Trade: symbol ? "HOLD" : "",

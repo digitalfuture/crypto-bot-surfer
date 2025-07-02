@@ -6,6 +6,8 @@ const useTelegram = JSON.parse(process.env.USE_TELEGRAM);
 
 const bot = new Telegraf(token);
 
+console.log(bot);
+
 try {
   if (useTelegram) {
     await bot.launch();
@@ -15,7 +17,7 @@ try {
 }
 
 export async function sendMessage(message) {
-  if (!useTelegram) return
+  if (!useTelegram) return;
 
   try {
     await bot.telegram.sendMessage(channelId, message, { parse_mode: "HTML" });
@@ -25,7 +27,7 @@ export async function sendMessage(message) {
 }
 
 export async function sendImage(image) {
-  if (!useTelegram) return
+  if (!useTelegram) return;
 
   try {
     await bot.telegram.sendPhoto(channelId, {
