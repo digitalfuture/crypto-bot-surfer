@@ -100,7 +100,7 @@ export function report({
     });
   } else {
     const onePercent = lastTradePrice / 100;
-    const profit = lastTradePrice - price; // без комиссии
+    const profit = lastTradePrice - price;
     const profitPercent = profit / onePercent;
     profitTotalPercent += symbol ? profitPercent : 0;
 
