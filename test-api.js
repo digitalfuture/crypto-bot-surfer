@@ -1,32 +1,19 @@
 // const delayMs = JSON.parse(process.env.DELAY);
 
 // import { getExchangeInfo } from "./server/api/binance/info.js";
-import { getLastPrice } from "./server/api/binance/info.js";
+import { getFuturesList } from "./server/api/binance/info.js";
 // import getPrevDayData from "./server/api/binance/info.js";
 // import getTradingTickers from "./server/api/binance/info.js";
-import Binance from "node-binance-api";
 import util from "node:util";
-
-export const binance = new Binance().options({
-  APIKEY: process.env.BINANCE_APIKEY,
-  APISECRET: process.env.BINANCE_APISECRET,
-  test: true,
-  recWindow: 60000,
-  verbose: true,
-  useServerTime: true,
-  family: 0,
-});
 
 test();
 
 async function test() {
   try {
-    // await getInfo("BNBUSDT");
-    // testGetPrevDayData();
-    // marketBuy("MITHUSDT", 20);
-    const price = await getLastPrice("BTCUSDT");
-    console.log(price);
+    const data = await getFuturesList();
+    console.log("data:", data.slice(0, 10));
   } catch (error) {
+    console.log("error:", error);
     const { statusCode, statusMessage, body, type, errorSrcData } = error;
 
     if (statusCode) {

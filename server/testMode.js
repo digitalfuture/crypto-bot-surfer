@@ -261,7 +261,7 @@ async function heartBeatLoop() {
 
       report({
         date: new Date(),
-        trade: "PASS",
+        trade: "HOLD",
         symbol: buyPrimarySymbol,
         price: buyPrice,
         priceChangePercent: buyTickerPriceChangePercent,

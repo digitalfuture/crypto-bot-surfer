@@ -170,20 +170,15 @@ export async function getCandlestickData({
   try {
     await delay(delayMs);
 
-    const candlesticks = await binance.candlesticks(
-      tickerName,
-      interval,
-      false,
-      {
-        limit: periods,
-        endTime,
-      }
-    );
+    const candlesticks = await binance.candlesticks(tickerName, interval, {
+      limit: periods,
+      endTime,
+    });
 
     const result = candlesticks.map(
-      ([time, open, high, low, close, volume]) => {
+      ({ openTime, open, high, low, close, volume }) => {
         return [
-          time,
+          openTime,
           parseFloat(open),
           parseFloat(high),
           parseFloat(low),
@@ -249,4 +244,58 @@ export function getMarketGrowLevel(tickerList) {
   ).length;
 
   return (tickerListUp / tickerList.length) * 100;
+}
+
+// Futures
+export async function getFuturesList() {
+  try {
+    const exchangeInfo = await binance.futuresExchangeInfo();
+    const futures = exchangeInfo.symbols
+      .filter(({ contractType }) => contractType === "PERPETUAL")
+      .filter(({ status }) => status === "TRADING");
+
+    return futures;
+  } catch (error) {
+    throw { type: "Get Futures List Data", ...error, errorSrcData: error };
+  }
+}
+
+export async function getPrevDayDataFutures(tickerName) {
+  // prevDayDataFutures
+  //
+  // [
+  //   {
+  //     symbol: "BTCUSDT",
+  //     priceChange: "-94.99999800",
+  //     priceChangePercent: "-95.960",
+  //     weightedAvgPrice: "0.29628482",
+  //     lastPrice: "4.00000200",
+  //     lastQty: "200.00000000",
+  //     openPrice: "99.00000000",
+  //     highPrice: "100.00000000",
+  //     lowPrice: "0.10000000",
+  //     volume: "8913.30000000",
+  //     quoteVolume: "15.30000000",
+  //     openTime: 1499783499040,
+  //     closeTime: 1499869899040,
+  //     firstId: 28385, // First tradeId
+  //     lastId: 28460, // Last tradeId
+  //     count: 76, // Trade count
+  //   },
+  //    ...
+  // ];
+
+  try {
+    await delay(delayMs);
+
+    if (tickerName) {
+      const data = await binance.prevDay(tickerName);
+      return [data];
+    } else {
+      const data = await binance.prevDay(false);
+      return data;
+    }
+  } catch (error) {
+    throw { type: "Get Prev Day Data", ...error, errorSrcData: error };
+  }
 }

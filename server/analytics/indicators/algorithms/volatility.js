@@ -1,9 +1,10 @@
 import {
   getLastPrice,
   getCandlestickData,
-  getPrevDayData,
   getTradingTickers,
   getMarketGrowLevel,
+  // getPrevDayData,
+  getPrevDayDataFutures,
 } from "../../../api/binance/info.js";
 
 let sellPrice = null;
@@ -16,7 +17,7 @@ const interval = process.env.BACKTEST_INTERVAL;
 const periods = parseInt(process.env.BACKTEST_PERIODS, 10);
 let stopMultiplier = parseFloat(process.env.SYSTEM_PARAM_1);
 let takeMultiplier = parseFloat(process.env.SYSTEM_PARAM_2);
-let topTokenToBuy = parseInt(process.env.SYSTEM_PARAM_3);
+let topIndex = parseInt(process.env.SYSTEM_PARAM_3);
 const commissionRate = parseFloat(process.env.TEST_COMISSION_PERCENT) / 100;
 
 let lastPriceSnapshot = {};
@@ -26,10 +27,11 @@ export async function getTradeSignals({ currentSymbol }) {
   try {
     const now = Date.now();
     const btcUsdtPrice = await getLastPrice("BTCUSDT");
-    const priceListData = await getPrevDayData();
+    // const priceListData = await getPrevDayData();
     const tradingTickers = await getTradingTickers();
+    const priceListDataFutures = await getPrevDayDataFutures();
 
-    const resolvedTickerList = priceListData
+    const resolvedTickerList = priceListDataFutures
       .map((item) => {
         const { symbol: s, lastPrice, volume } = item;
         const parsed = parseFloat(lastPrice);
@@ -72,9 +74,7 @@ export async function getTradeSignals({ currentSymbol }) {
 
     const topGainer = resolvedTickerList
       .slice(0, 100)
-      .sort((a, b) => b.priceChangePercent - a.priceChangePercent)[
-      topTokenToBuy
-    ];
+      .sort((a, b) => b.priceChangePercent - a.priceChangePercent)[topIndex];
 
     if (!topGainer) {
       return {
@@ -176,12 +176,15 @@ export async function getTradeSignals({ currentSymbol }) {
       }
 
       if (isBuySignal) {
-        // Обнуляем значения после завершения сделки
         sellPrice = null;
         stopLoss = null;
         takeProfit = null;
       }
     }
+
+    console.log("stock prices");
+    console.log("sellPrice:", sellPrice);
+    console.log("buyPrice:", parsedPrice);
 
     if (process.env.MODE === "DEVELOPMENT") {
       const debugSymbol = currentSymbol || symbol;
@@ -192,7 +195,10 @@ export async function getTradeSignals({ currentSymbol }) {
       console.log("======= TRADE DEBUG =======");
       console.log("Symbol:", debugSymbol);
       console.log("Timestamp:", new Date(now).toISOString());
-      console.log("Current Price:", isSellSignal ? sellPrice : parsedPrice);
+      console.log(
+        "Current Price:",
+        "" + (isSellSignal ? sellPrice : parsedPrice)
+      );
       console.log("Volatility:", volatility?.toFixed(6));
       console.log(
         "Price Change %:",
@@ -217,7 +223,7 @@ export async function getTradeSignals({ currentSymbol }) {
       buyPrimarySymbol: currentSymbol || symbol,
       sellTickerName: isSellSignal ? topGainer.tickerName : null,
       buyTickerName: isBuySignal ? topGainer.tickerName : null,
-      buyPrice: parsedPrice || null,
+      buyPrice: parsedPrice,
       sellPrice,
       buyTickerPriceChangePercent: tickerPriceChangePercent || 0,
       sellTickerPriceChangePercent: tickerPriceChangePercent || 0,

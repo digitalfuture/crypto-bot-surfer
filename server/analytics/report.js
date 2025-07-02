@@ -111,7 +111,7 @@ export function report({
       "Market average": +marketAveragePrice.toFixed(8),
       "Token name": symbol || "",
       "Price change %": +(priceChangePercent || 0),
-      Trade: "",
+      Trade: symbol ? "HOLD" : "",
       "Trade price": symbol ? +price : "",
       Comission: 0,
       "Profit %": symbol ? +profitPercent.toFixed(8) : 0,
