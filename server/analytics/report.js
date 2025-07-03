@@ -56,7 +56,7 @@ export function report({
   price,
   priceChangePercent,
   btcUsdtPrice,
-  Price,
+  marketOscillatorLevel,
 }) {
   const stream = fs.createWriteStream(filePath, fileOptions);
   const csvStream = format({
@@ -88,12 +88,12 @@ export function report({
     csvStream.write({
       Count: count,
       Date: date.toISOString(),
-      "BTC / USDT price": btcUsdtPrice,
-      "Market oscillator": +Price.toFixed(8),
+      "BTC / USDT price": +btcUsdtPrice.toFixed(8),
+      "Market oscillator": +marketOscillatorLevel.toFixed(8),
       "Token name": symbol,
-      "Price change %": +priceChangePercent,
+      "Price change %": +priceChangePercent.toFixed(8),
       Trade: trade,
-      "Trade price": +price,
+      "Trade price": +price.toFixed(8),
       Comission: +commission.toFixed(8),
       "Profit %": +profitPercent.toFixed(8),
       "Profit total %": +profitTotalPercent.toFixed(8),
@@ -107,12 +107,12 @@ export function report({
     csvStream.write({
       Count: count,
       Date: date.toISOString(),
-      "BTC / USDT price": btcUsdtPrice,
-      "Market oscillator": +Price.toFixed(8),
+      "BTC / USDT price": +btcUsdtPrice.toFixed(8),
+      "Market oscillator": +marketOscillatorLevel.toFixed(8),
       "Token name": symbol || "",
       "Price change %": +(priceChangePercent || 0),
       Trade: symbol ? "HOLD" : "",
-      "Trade price": symbol ? +price : "",
+      "Trade price": symbol ? +price.toFixed(8) : "",
       Comission: 0,
       "Profit %": symbol ? +profitPercent.toFixed(8) : 0,
       "Profit total %": +profitTotalPercent.toFixed(8),

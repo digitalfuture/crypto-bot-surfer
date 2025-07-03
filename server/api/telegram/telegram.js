@@ -1,28 +1,20 @@
-import { Telegraf } from "telegraf";
+import { Telegram } from "telegraf";
 
 const token = process.env.TELEGRAM_ACCESS_TOKEN;
 const channelId = process.env.TELEGRAM_CHANNEL_ID;
 const useTelegram = JSON.parse(process.env.USE_TELEGRAM);
 
-const bot = new Telegraf(token);
-
-console.log(bot);
-
-try {
-  if (useTelegram) {
-    await bot.launch();
-  }
-} catch (error) {
-  throw { type: "Bot Launch Error", ...error, errorSrcData: error };
-}
+const telegram = new Telegram(token);
 
 export async function sendMessage(message) {
   if (!useTelegram) return;
 
   try {
-    await bot.telegram.sendMessage(channelId, message, { parse_mode: "HTML" });
+    await telegram.sendMessage(channelId, message, {
+      parse_mode: "HTML",
+    });
   } catch (error) {
-    throw { type: "Sent Message Error", ...error, errorSrcData: error };
+    throw { type: "Telegram Send Error", ...error };
   }
 }
 
@@ -30,15 +22,10 @@ export async function sendImage(image) {
   if (!useTelegram) return;
 
   try {
-    await bot.telegram.sendPhoto(channelId, {
+    await telegram.sendPhoto(channelId, {
       source: image,
     });
   } catch (error) {
-    throw { type: "Send Image Error", ...error, errorSrcData: error };
+    throw { type: "Telegram Image Error", ...error };
   }
-}
-
-if (useTelegram) {
-  process.once("SIGINT", () => bot.stop("SIGINT"));
-  process.once("SIGTERM", () => bot.stop("SIGTERM"));
 }

@@ -149,7 +149,7 @@ async function heartBeatLoop() {
       isSellSignal,
       isBuySignal,
       btcUsdtPrice,
-      Price,
+      marketOscillatorLevel,
     } = await getSignals({
       secondarySymbol,
       currentSymbol,
@@ -180,7 +180,7 @@ async function heartBeatLoop() {
       // });
 
       message += `<b>${buyPrimarySymbol} price</b>: ${parseFloat(
-        buyPrice
+        "" + buyPrice
       )} ${secondarySymbol}\n`;
       message += `<b>Bought</b>: 1 ${buyPrimarySymbol}\n`;
       message += `<b>${buyPrimarySymbol} balance</b>: ${parseFloat(
@@ -194,7 +194,7 @@ async function heartBeatLoop() {
         price: buyPrice,
         priceChangePercent: buyTickerPriceChangePercent,
         btcUsdtPrice,
-        Price,
+        marketOscillatorLevel,
       });
 
       // await sendImage(chart);
@@ -236,9 +236,9 @@ async function heartBeatLoop() {
       console.info("New current symbol:", currentSymbol);
 
       message += `<b>${sellPrimarySymbol} price</b>: ${parseFloat(
-        sellPrice
+        "" + sellPrice
       )} ${secondarySymbol}\n`;
-      message += `<b>Sold/b>: ${newPrimarySymbolBalance} ${sellPrimarySymbol}\n`;
+      message += `<b>Sold</b>: ${newPrimarySymbolBalance} ${sellPrimarySymbol}\n`;
       message += `<b>${sellPrimarySymbol} balance</b>: ${parseFloat(
         newPrimarySymbolBalance
       )}`;
@@ -250,7 +250,7 @@ async function heartBeatLoop() {
         price: sellPrice,
         priceChangePercent: sellTickerPriceChangePercent,
         btcUsdtPrice,
-        Price,
+        marketOscillatorLevel,
       });
 
       // await sendImage(chart);
@@ -266,7 +266,7 @@ async function heartBeatLoop() {
         price: buyPrice,
         priceChangePercent: buyTickerPriceChangePercent,
         btcUsdtPrice,
-        Price,
+        marketOscillatorLevel,
       });
     }
 
