@@ -1,3 +1,5 @@
+// realMode.js
+
 import { sendMessage /* sendImage */ } from "./api/telegram/telegram.js";
 import { marketBuy, marketSell } from "./api/binance/trading.js";
 // import { prepareChartData } from "./analytics/charts.js";

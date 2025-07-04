@@ -1,3 +1,5 @@
+// testMode.js
+
 import { sendMessage } from "./api/telegram/telegram.js";
 // import { sendImage } from "./api/telegram/telegram.js";
 // import { prepareChartData } from "./analytics/charts.js";

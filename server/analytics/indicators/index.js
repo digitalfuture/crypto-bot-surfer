@@ -1,3 +1,5 @@
+// index.js
+
 import * as volatility from "./algorithms/volatility.js";
 
 const indicatorName = process.env.INDICATOR;

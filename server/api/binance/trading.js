@@ -1,3 +1,5 @@
+// trending.js
+
 import binance from "./connection.js";
 import { delay } from "../../helpers/functions.js";
 
@@ -104,9 +106,8 @@ export async function getOrderQuantity({
 
     const primarySymbolBalance = await getSymbolBalance(primarySymbol);
     const secondarySymbolBalance = await getSymbolBalance(secondarySymbol);
-    const { minOrderQuantity, minOrderValue, stepSize } = await getExchangeInfo(
-      tickerName
-    );
+    const { minOrderQuantity, minOrderValue, stepSize } =
+      await getExchangeInfo(tickerName);
 
     const price = await getLastPrice(tickerName);
     console.info("price:", price);

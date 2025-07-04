@@ -1,3 +1,5 @@
+// chart.js
+
 import { ChartJSNodeCanvas } from "chartjs-node-canvas";
 import { getCandlestickData } from "../api/binance/info.js";
 import { formatDate } from "../helpers/functions.js";

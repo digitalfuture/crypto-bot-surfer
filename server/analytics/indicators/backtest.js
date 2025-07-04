@@ -1,3 +1,5 @@
+// backtest.js
+
 export function evaluateStrategy(signals, candlestickData) {
   let totalProfit = 0;
   let totalLoss = 0;

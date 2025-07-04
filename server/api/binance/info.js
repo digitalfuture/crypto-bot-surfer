@@ -1,3 +1,5 @@
+// info.js
+
 import binance from "./connection.js";
 import { delay } from "../../helpers/functions.js";
 

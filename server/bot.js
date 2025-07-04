@@ -1,3 +1,5 @@
+// bot.js
+
 import startRealMode from "./realMode.js";
 import startTestMode from "./testMode.js";
 

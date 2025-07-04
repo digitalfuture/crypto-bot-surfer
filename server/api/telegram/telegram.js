@@ -1,3 +1,5 @@
+// telegram.js
+
 import { Telegram } from "telegraf";
 
 const token = process.env.TELEGRAM_ACCESS_TOKEN;
