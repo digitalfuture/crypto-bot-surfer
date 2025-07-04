@@ -29,7 +29,6 @@ export async function getTradeSignals({ currentSymbol }) {
   try {
     const now = Date.now();
     const btcUsdtPrice = await getLastPrice("BTCUSDT");
-    // const priceListData = await getPrevDayData();
     const tradingTickers = await getTradingTickers();
     const priceListDataFutures = await getPrevDayDataFutures();
 
@@ -116,11 +115,10 @@ export async function getTradeSignals({ currentSymbol }) {
     let profitPotential = 0;
     let commissionImpact = 0;
     let tickerPriceChangePercent = 0;
-    let symbol;
     let parsedPrice;
 
     if (!currentSymbol && hasPreviousCycleData) {
-      symbol = topGainer.tickerName;
+      // Открываем новый шорт по topGainer
       parsedPrice = topGainer.lastPrice;
 
       tickerPriceChangePercent = topGainer.priceChangePercent;
@@ -136,6 +134,8 @@ export async function getTradeSignals({ currentSymbol }) {
         isSellSignal = true;
       }
     } else if (currentSymbol) {
+      // Мы уже в шорте по currentSymbol, мониторим закрытие
+
       const currentTicker = resolvedTickerList.find(
         ({ tickerName }) => tickerName === currentSymbol
       );
@@ -159,7 +159,6 @@ export async function getTradeSignals({ currentSymbol }) {
       }
 
       tickerPriceChangePercent = currentTicker.priceChangePercent;
-      symbol = currentTicker.symbol;
       parsedPrice = currentTicker.lastPrice;
 
       if (parsedPrice < sellPrice) {
@@ -185,7 +184,7 @@ export async function getTradeSignals({ currentSymbol }) {
     }
 
     if (process.env.MODE === "DEVELOPMENT") {
-      const debugSymbol = currentSymbol || symbol;
+      const debugSymbol = currentSymbol || topGainer.tickerName;
       const debugTicker = resolvedTickerList.find(
         (t) => t.tickerName === debugSymbol
       );
@@ -194,7 +193,7 @@ export async function getTradeSignals({ currentSymbol }) {
       console.log("Symbol:", debugSymbol);
       console.log("Timestamp:", new Date(now).toISOString());
       console.log(
-        "Current Price:",
+        "Current Price: ",
         "" + (isSellSignal ? sellPrice : parsedPrice)
       );
       console.log("Volatility:", volatility?.toFixed(6));
@@ -217,10 +216,10 @@ export async function getTradeSignals({ currentSymbol }) {
     }
 
     return {
-      sellPrimarySymbol: isSellSignal ? symbol : null,
-      buyPrimarySymbol: currentSymbol || symbol,
+      sellPrimarySymbol: isSellSignal ? topGainer.primarySymbol : null,
+      buyPrimarySymbol: currentSymbol || null,
       sellTickerName: isSellSignal ? topGainer.tickerName : null,
-      buyTickerName: isBuySignal ? topGainer.tickerName : null,
+      buyTickerName: isBuySignal ? currentSymbol : null,
       buyPrice: parsedPrice,
       sellPrice,
       buyTickerPriceChangePercent: tickerPriceChangePercent || 0,
