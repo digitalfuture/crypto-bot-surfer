@@ -5,7 +5,6 @@ import {
   getCandlestickData,
   getTradingTickers,
   getMarketGrowLevel,
-  // getPrevDayData,
   getPrevDayDataFutures,
 } from "../../../api/binance/info.js";
 
@@ -14,7 +13,7 @@ let stopLoss = null;
 let takeProfit = null;
 let exitReason = null;
 
-const secondarySymbol = process.env.SECONDARY_SYMBOL;
+const secondarySymbol = process.env.SECONDARY_SYMBOL; // e.g. "USDT"
 const interval = process.env.BACKTEST_INTERVAL;
 const periods = parseInt(process.env.BACKTEST_PERIODS, 10);
 let stopMultiplier = parseFloat(process.env.SYSTEM_PARAM_1);
@@ -25,47 +24,53 @@ const commissionRate = parseFloat(process.env.TEST_COMISSION_PERCENT) / 100;
 let lastPriceSnapshot = {};
 let hasPreviousCycleData = false;
 
-export async function getTradeSignals({ currentSymbol }) {
+export async function getTradeSignals({ currentPrimarySymbol }) {
   try {
     const now = Date.now();
     const btcUsdtPrice = await getLastPrice("BTCUSDT");
     const tradingTickers = await getTradingTickers();
     const priceListDataFutures = await getPrevDayDataFutures();
 
+    // Map tickers with delta price calculation and filter needed symbols
     const resolvedTickerList = priceListDataFutures
       .map((item) => {
-        const { symbol: s, lastPrice, volume } = item;
-        const parsed = parseFloat(lastPrice);
+        const { symbol: tickerName, lastPrice, volume } = item;
+        const parsedPrice = parseFloat(lastPrice);
         const vol = parseFloat(volume);
-        const prevEntry = lastPriceSnapshot[s];
+        const prevEntry = lastPriceSnapshot[tickerName];
         let delta = null;
 
         if (prevEntry && prevEntry.price !== undefined) {
-          delta = ((parsed - prevEntry.price) / prevEntry.price) * 100;
+          delta = ((parsedPrice - prevEntry.price) / prevEntry.price) * 100;
         }
 
-        lastPriceSnapshot[s] = {
-          price: parsed,
+        lastPriceSnapshot[tickerName] = {
+          price: parsedPrice,
           timestamp: now,
         };
 
+        // Extract primarySymbol by removing secondarySymbol suffix
+        const primarySymbol = tickerName.replace(secondarySymbol, "");
+
         return {
-          primarySymbol: s.replace(secondarySymbol, ""),
+          primarySymbol,
           secondarySymbol,
-          tickerName: s,
+          tickerName,
           priceChangePercent: delta,
           isCalculatedDelta: delta !== null,
-          lastPrice: parsed,
+          lastPrice: parsedPrice,
           volume: vol,
         };
       })
+      // Filters:
       .filter(({ tickerName }) => tickerName.endsWith(secondarySymbol))
       .filter(({ primarySymbol }) => !primarySymbol.endsWith("DOWN"))
       .filter(({ primarySymbol }) => !primarySymbol.endsWith("UP"))
-      .filter(({ primarySymbol }) =>
+      .filter(({ primarySymbol, secondarySymbol }) =>
         tradingTickers.includes(primarySymbol + secondarySymbol)
       )
       .filter(({ isCalculatedDelta }) => isCalculatedDelta)
+      // Sort by volume descending
       .sort((a, b) => b.volume - a.volume);
 
     const marketOscillatorLevel =
@@ -73,6 +78,7 @@ export async function getTradeSignals({ currentSymbol }) {
         ? getMarketGrowLevel(resolvedTickerList)
         : 0;
 
+    // Pick top gainer by priceChangePercent from top 100 by volume
     const topGainer = resolvedTickerList
       .slice(0, 100)
       .sort((a, b) => b.priceChangePercent - a.priceChangePercent)[topIndex];
@@ -101,6 +107,7 @@ export async function getTradeSignals({ currentSymbol }) {
       periods,
     });
 
+    // Calculate average volatility
     const volatility =
       candlesticks.reduce((acc, [, , high, low, close]) => {
         return acc + Math.abs((high - low) / close);
@@ -115,12 +122,13 @@ export async function getTradeSignals({ currentSymbol }) {
     let profitPotential = 0;
     let commissionImpact = 0;
     let tickerPriceChangePercent = 0;
+    let symbol;
     let parsedPrice;
 
-    if (!currentSymbol && hasPreviousCycleData) {
-      // Открываем новый шорт по topGainer
+    if (!currentPrimarySymbol && hasPreviousCycleData) {
+      // No active position - signal to open short on topGainer
+      symbol = topGainer.primarySymbol;
       parsedPrice = topGainer.lastPrice;
-
       tickerPriceChangePercent = topGainer.priceChangePercent;
 
       const targetTake = parsedPrice * (1 - volatility * takeMultiplier);
@@ -133,11 +141,10 @@ export async function getTradeSignals({ currentSymbol }) {
         takeProfit = sellPrice * (1 - volatility * takeMultiplier);
         isSellSignal = true;
       }
-    } else if (currentSymbol) {
-      // Мы уже в шорте по currentSymbol, мониторим закрытие
-
+    } else if (currentPrimarySymbol) {
+      // Active short position on currentPrimarySymbol, check exit conditions
       const currentTicker = resolvedTickerList.find(
-        ({ tickerName }) => tickerName === currentSymbol
+        ({ primarySymbol }) => primarySymbol === currentPrimarySymbol
       );
 
       if (!currentTicker) {
@@ -159,8 +166,10 @@ export async function getTradeSignals({ currentSymbol }) {
       }
 
       tickerPriceChangePercent = currentTicker.priceChangePercent;
+      symbol = currentTicker.primarySymbol;
       parsedPrice = currentTicker.lastPrice;
 
+      // Adjust trailing stop if price decreases further
       if (parsedPrice < sellPrice) {
         const dynamicFactor = stopMultiplier * volatility * 1.2;
         const troughPrice = parsedPrice;
@@ -168,6 +177,7 @@ export async function getTradeSignals({ currentSymbol }) {
         stopLoss = Math.min(stopLoss, newTrailingStop);
       }
 
+      // Check stop loss or take profit hit
       if (parsedPrice >= stopLoss) {
         isBuySignal = true;
         exitReason = "SL";
@@ -183,17 +193,19 @@ export async function getTradeSignals({ currentSymbol }) {
       }
     }
 
+    // Debug logs for development mode
     if (process.env.MODE === "DEVELOPMENT") {
-      const debugSymbol = currentSymbol || topGainer.tickerName;
+      const debugSymbol = currentPrimarySymbol || symbol;
+      // Find full ticker info by primarySymbol or tickerName
       const debugTicker = resolvedTickerList.find(
-        (t) => t.tickerName === debugSymbol
+        (t) => t.primarySymbol === debugSymbol || t.tickerName === debugSymbol
       );
 
       console.log("======= TRADE DEBUG =======");
       console.log("Symbol:", debugSymbol);
       console.log("Timestamp:", new Date(now).toISOString());
       console.log(
-        "Current Price: ",
+        "Current Price:",
         "" + (isSellSignal ? sellPrice : parsedPrice)
       );
       console.log("Volatility:", volatility?.toFixed(6));
@@ -216,10 +228,14 @@ export async function getTradeSignals({ currentSymbol }) {
     }
 
     return {
-      sellPrimarySymbol: isSellSignal ? topGainer.primarySymbol : null,
-      buyPrimarySymbol: currentSymbol || null,
+      sellPrimarySymbol: isSellSignal ? symbol : null,
+      buyPrimarySymbol: currentPrimarySymbol || symbol,
       sellTickerName: isSellSignal ? topGainer.tickerName : null,
-      buyTickerName: isBuySignal ? currentSymbol : null,
+      buyTickerName: isBuySignal
+        ? resolvedTickerList.find(
+            (t) => t.primarySymbol === currentPrimarySymbol
+          )?.tickerName || null
+        : null,
       buyPrice: parsedPrice,
       sellPrice,
       buyTickerPriceChangePercent: tickerPriceChangePercent || 0,
