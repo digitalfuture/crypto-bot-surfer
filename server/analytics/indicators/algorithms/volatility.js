@@ -1,108 +1,89 @@
 // volatility.js
 
 import {
-  getLastPrice,
   getCandlestickData,
   getTradingTickers,
-  getMarketGrowLevel,
   getPrevDayDataFutures,
 } from "../../../api/binance/info.js";
-
-let sellPrice = null;
-let stopLoss = null;
-let takeProfit = null;
-let exitReason = null;
 
 const secondarySymbol = process.env.SECONDARY_SYMBOL; // e.g. "USDT"
 const interval = process.env.BACKTEST_INTERVAL;
 const periods = parseInt(process.env.BACKTEST_PERIODS, 10);
 let stopMultiplier = parseFloat(process.env.SYSTEM_PARAM_1);
 let takeMultiplier = parseFloat(process.env.SYSTEM_PARAM_2);
-let topIndex = parseInt(process.env.SYSTEM_PARAM_3);
-const commissionRate = parseFloat(process.env.TEST_COMISSION_PERCENT) / 100;
+let topGainerIndex = parseInt(process.env.SYSTEM_PARAM_3);
 
 let lastPriceSnapshot = {};
-let hasPreviousCycleData = false;
+let stopLoss = null;
+let takeProfit = null;
+let symbol = null;
+let price = null;
+let shortPrice = null;
+let signal = null;
+let priceChangePercent = 0;
+let exitReason = null;
 
-export async function getTradeSignals({ currentPrimarySymbol }) {
+export async function getTradeSignals() {
   try {
     const now = Date.now();
-    const btcUsdtPrice = await getLastPrice("BTCUSDT");
     const tradingTickers = await getTradingTickers();
-    const priceListDataFutures = await getPrevDayDataFutures();
+    const prevDayDataFFutures = await getPrevDayDataFutures();
 
     // Map tickers with delta price calculation and filter needed symbols
-    const resolvedTickerList = priceListDataFutures
+    const resolvedTickerList = prevDayDataFFutures
       .map((item) => {
-        const { symbol: tickerName, lastPrice, volume } = item;
-        const parsedPrice = parseFloat(lastPrice);
+        const { symbol, lastPrice, volume } = item;
+        const price = parseFloat(lastPrice);
         const vol = parseFloat(volume);
-        const prevEntry = lastPriceSnapshot[tickerName];
+
+        const prevEntry = lastPriceSnapshot[symbol];
         let delta = null;
 
         if (prevEntry && prevEntry.price !== undefined) {
-          delta = ((parsedPrice - prevEntry.price) / prevEntry.price) * 100;
+          delta = ((price - prevEntry.price) / prevEntry.price) * 100;
         }
 
-        lastPriceSnapshot[tickerName] = {
-          price: parsedPrice,
+        lastPriceSnapshot[symbol] = {
+          price: price,
           timestamp: now,
         };
 
         // Extract primarySymbol by removing secondarySymbol suffix
-        const primarySymbol = tickerName.replace(secondarySymbol, "");
+        const primarySymbol = symbol.replace(secondarySymbol, "");
 
         return {
           primarySymbol,
           secondarySymbol,
-          tickerName,
+          symbol,
           priceChangePercent: delta,
           isCalculatedDelta: delta !== null,
-          lastPrice: parsedPrice,
+          lastPrice: price,
           volume: vol,
         };
       })
       // Filters:
-      .filter(({ tickerName }) => tickerName.endsWith(secondarySymbol))
-      .filter(({ primarySymbol }) => !primarySymbol.endsWith("DOWN"))
-      .filter(({ primarySymbol }) => !primarySymbol.endsWith("UP"))
+      .filter(({ symbol }) => symbol.endsWith(secondarySymbol))
       .filter(({ primarySymbol, secondarySymbol }) =>
         tradingTickers.includes(primarySymbol + secondarySymbol)
       )
-      .filter(({ isCalculatedDelta }) => isCalculatedDelta)
-      // Sort by volume descending
-      .sort((a, b) => b.volume - a.volume);
+      .filter(({ isCalculatedDelta }) => isCalculatedDelta);
 
-    const marketOscillatorLevel =
-      resolvedTickerList.length > 0
-        ? getMarketGrowLevel(resolvedTickerList)
-        : 0;
-
-    // Pick top gainer by priceChangePercent from top 100 by volume
-    const topGainer = resolvedTickerList
-      .slice(0, 100)
-      .sort((a, b) => b.priceChangePercent - a.priceChangePercent)[topIndex];
-
-    if (!topGainer) {
+    if (resolvedTickerList.length === 0) {
       return {
-        sellPrimarySymbol: null,
-        buyPrimarySymbol: null,
-        sellTickerName: null,
-        buyTickerName: null,
-        buyPrice: null,
-        sellPrice: null,
-        buyTickerPriceChangePercent: 0,
-        sellTickerPriceChangePercent: 0,
-        isBuySignal: false,
-        isSellSignal: false,
-        btcUsdtPrice,
-        marketOscillatorLevel,
-        exitReason: null,
+        symbol: null,
+        price: null,
+        priceChangePercent,
+        signal: null,
       };
     }
 
+    // Pick top gainer by priceChangePercent from top 100 by volume
+    const topGainer = resolvedTickerList.sort(
+      (a, b) => b.priceChangePercent - a.priceChangePercent
+    )[topGainerIndex];
+
     const candlesticks = await getCandlestickData({
-      tickerName: topGainer.tickerName,
+      symbol: topGainer.symbol,
       interval,
       periods,
     });
@@ -113,138 +94,71 @@ export async function getTradeSignals({ currentPrimarySymbol }) {
         return acc + Math.abs((high - low) / close);
       }, 0) / candlesticks.length;
 
-    if (!hasPreviousCycleData) hasPreviousCycleData = true;
-
-    let isBuySignal = false;
-    let isSellSignal = false;
-
-    exitReason = null;
-    let profitPotential = 0;
-    let commissionImpact = 0;
-    let tickerPriceChangePercent = 0;
-    let symbol;
-    let parsedPrice;
-
-    if (!currentPrimarySymbol && hasPreviousCycleData) {
+    if (!symbol && lastPriceSnapshot) {
       // No active position - signal to open short on topGainer
-      symbol = topGainer.primarySymbol;
-      parsedPrice = topGainer.lastPrice;
-      tickerPriceChangePercent = topGainer.priceChangePercent;
+      symbol = topGainer.symbol;
+      price = topGainer.lastPrice;
+      priceChangePercent = topGainer.priceChangePercent;
 
-      const targetTake = parsedPrice * (1 - volatility * takeMultiplier);
-      profitPotential = (parsedPrice - targetTake) / parsedPrice;
-      commissionImpact = 2 * commissionRate;
-
-      if (profitPotential > commissionImpact * 0.25) {
-        sellPrice = parsedPrice;
-        stopLoss = sellPrice * (1 + volatility * stopMultiplier);
-        takeProfit = sellPrice * (1 - volatility * takeMultiplier);
-        isSellSignal = true;
-      }
-    } else if (currentPrimarySymbol) {
-      // Active short position on currentPrimarySymbol, check exit conditions
+      stopLoss = price * (1 + volatility * stopMultiplier);
+      takeProfit = price * (1 - volatility * takeMultiplier);
+      signal = "SELL";
+      shortPrice = price;
+    } else if (symbol) {
+      // Active short position on symbol, check exit conditions
       const currentTicker = resolvedTickerList.find(
-        ({ primarySymbol }) => primarySymbol === currentPrimarySymbol
+        (ticker) => ticker.symbol === symbol
       );
 
-      if (!currentTicker) {
-        return {
-          sellPrimarySymbol: null,
-          buyPrimarySymbol: null,
-          sellTickerName: null,
-          buyTickerName: null,
-          buyPrice: null,
-          sellPrice: null,
-          buyTickerPriceChangePercent: 0,
-          sellTickerPriceChangePercent: 0,
-          isBuySignal: false,
-          isSellSignal: false,
-          btcUsdtPrice,
-          marketOscillatorLevel,
-          exitReason: "NO_TICKER",
-        };
-      }
-
-      tickerPriceChangePercent = currentTicker.priceChangePercent;
-      symbol = currentTicker.primarySymbol;
-      parsedPrice = currentTicker.lastPrice;
+      priceChangePercent = currentTicker.priceChangePercent;
+      symbol = currentTicker.symbol;
+      price = currentTicker.lastPrice;
 
       // Adjust trailing stop if price decreases further
-      if (parsedPrice < sellPrice) {
+      if (price < shortPrice) {
         const dynamicFactor = stopMultiplier * volatility * 1.2;
-        const troughPrice = parsedPrice;
+        const troughPrice = price;
         const newTrailingStop = troughPrice * (1 + dynamicFactor);
         stopLoss = Math.min(stopLoss, newTrailingStop);
       }
 
       // Check stop loss or take profit hit
-      if (parsedPrice >= stopLoss) {
-        isBuySignal = true;
+      if (price >= stopLoss) {
+        signal = "BUY";
         exitReason = "SL";
-      } else if (parsedPrice <= takeProfit) {
-        isBuySignal = true;
+      } else if (price <= takeProfit) {
+        signal = "BUY";
         exitReason = "TP";
       }
 
-      if (isBuySignal) {
-        sellPrice = null;
+      if (signal === "BUY") {
         stopLoss = null;
         takeProfit = null;
+        shortPrice = null;
+        symbol = null;
+      } else {
+        signal = null;
       }
     }
 
     // Debug logs for development mode
     if (process.env.MODE === "DEVELOPMENT") {
-      const debugSymbol = currentPrimarySymbol || symbol;
-      // Find full ticker info by primarySymbol or tickerName
-      const debugTicker = resolvedTickerList.find(
-        (t) => t.primarySymbol === debugSymbol || t.tickerName === debugSymbol
-      );
-
-      console.log("======= TRADE DEBUG =======");
-      console.log("Symbol:", debugSymbol);
-      console.log("Timestamp:", new Date(now).toISOString());
-      console.log(
-        "Current Price:",
-        "" + (isSellSignal ? sellPrice : parsedPrice)
-      );
-      console.log("Volatility:", volatility?.toFixed(6));
-      console.log(
-        "Price Change %:",
-        debugTicker?.priceChangePercent?.toFixed(4)
-      );
-      console.log("Volume:", debugTicker?.volume ?? "N/A");
-      console.log("Entry Price:", sellPrice);
-      console.log("Stop Loss:", stopLoss);
-      console.log("Take Profit:", takeProfit);
-      console.log("Buy Signal:", isBuySignal);
-      console.log("Sell Signal:", isSellSignal);
-      console.log("Exit Reason:", exitReason);
-      console.log("Profit Potential:", profitPotential?.toFixed(5));
-      console.log("Commission Impact:", commissionImpact?.toFixed(5));
-      console.log("BTC Price:", btcUsdtPrice);
-      console.log("Market Oscillator:", marketOscillatorLevel);
+      console.log("===========================");
+      console.log("symbol:", symbol);
+      console.log("price:", price);
+      console.log("stopLoss:", stopLoss);
+      console.log("takeProfit:", takeProfit);
+      console.log("priceChangePercent:", priceChangePercent);
+      console.log("signal:", signal);
+      console.log("exitReason:", exitReason);
       console.log("===========================\n");
     }
 
     return {
-      sellPrimarySymbol: isSellSignal ? symbol : null,
-      buyPrimarySymbol: currentPrimarySymbol || symbol,
-      sellTickerName: isSellSignal ? topGainer.tickerName : null,
-      buyTickerName: isBuySignal
-        ? resolvedTickerList.find(
-            (t) => t.primarySymbol === currentPrimarySymbol
-          )?.tickerName || null
-        : null,
-      buyPrice: parsedPrice,
-      sellPrice,
-      buyTickerPriceChangePercent: tickerPriceChangePercent || 0,
-      sellTickerPriceChangePercent: tickerPriceChangePercent || 0,
-      isBuySignal,
-      isSellSignal,
-      btcUsdtPrice,
-      marketOscillatorLevel,
-      exitReason,
+      symbol,
+      price,
+      priceChangePercent,
+      signal,
     };
   } catch (error) {
     throw { type: "Volatility Strategy Error", ...error };

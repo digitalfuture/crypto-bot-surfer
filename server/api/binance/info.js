@@ -164,7 +164,7 @@ export async function getTradingHistory(tickerName) {
 }
 
 export async function getCandlestickData({
-  tickerName,
+  symbol,
   interval,
   periods,
   endTime = Date.now(),
@@ -172,7 +172,7 @@ export async function getCandlestickData({
   try {
     await delay(delayMs);
 
-    const candlesticks = await binance.candlesticks(tickerName, interval, {
+    const candlesticks = await binance.candlesticks(symbol, interval, {
       limit: periods,
       endTime,
     });

@@ -28,8 +28,6 @@ function createTable() {
   const headers = [
     "Count",
     "Date",
-    "BTC / USDT price",
-    "Market oscillator",
     "Token name",
     "Price change %",
     "Trade",
@@ -54,11 +52,9 @@ function createTable() {
 export function report({
   date,
   trade,
-  symbol,
+  primarySymbol,
   price,
   priceChangePercent,
-  btcUsdtPrice,
-  marketOscillatorLevel,
 }) {
   const stream = fs.createWriteStream(filePath, fileOptions);
   const csvStream = format({
@@ -90,34 +86,30 @@ export function report({
     csvStream.write({
       Count: count,
       Date: date.toISOString(),
-      "BTC / USDT price": +btcUsdtPrice.toFixed(8),
-      "Market oscillator": +marketOscillatorLevel.toFixed(8),
-      "Token name": symbol,
-      "Price change %": +priceChangePercent.toFixed(8),
+      "Token name": primarySymbol,
+      "Price change %": priceChangePercent.toFixed(8),
       Trade: trade,
-      "Trade price": +price.toFixed(8),
-      Comission: +commission.toFixed(8),
-      "Profit %": +profitPercent.toFixed(8),
+      "Trade price": price.toFixed(8),
+      Comission: commission.toFixed(8),
+      "Profit %": profitPercent.toFixed(8),
       "Profit total %": +profitTotalPercent.toFixed(8),
     });
   } else {
     const onePercent = lastTradePrice / 100;
     const profit = lastTradePrice - price;
     const profitPercent = profit / onePercent;
-    profitTotalPercent += symbol ? profitPercent : 0;
+    profitTotalPercent += primarySymbol ? profitPercent : 0;
 
     csvStream.write({
       Count: count,
       Date: date.toISOString(),
-      "BTC / USDT price": +btcUsdtPrice.toFixed(8),
-      "Market oscillator": +marketOscillatorLevel.toFixed(8),
-      "Token name": symbol || "",
-      "Price change %": +(priceChangePercent || 0),
-      Trade: symbol ? "HOLD" : "",
-      "Trade price": symbol ? +price.toFixed(8) : "",
+      "Token name": primarySymbol || "",
+      "Price change %": priceChangePercent.toFixed(8),
+      Trade: primarySymbol ? "HOLD" : "",
+      "Trade price": primarySymbol ? price.toFixed(8) : "",
       Comission: 0,
-      "Profit %": symbol ? +profitPercent.toFixed(8) : 0,
-      "Profit total %": +profitTotalPercent.toFixed(8),
+      "Profit %": primarySymbol ? profitPercent.toFixed(8) : 0,
+      "Profit total %": profitTotalPercent.toFixed(8),
     });
   }
 
