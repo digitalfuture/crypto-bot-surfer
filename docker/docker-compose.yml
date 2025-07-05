@@ -15,11 +15,19 @@ x-template: &basic-container
       git clone --branch new https://github.com/digitalfuture/crypto-bot-surfer.git && \
       cd crypto-bot-surfer && \
       npm install && \
-      npm run nodemon
+      if [ "$TEST_MODE" = "false" ]; then \
+        echo "Installing pm2..." && \
+        npm install -g pm2 pm2-logrotate && \
+        echo "Starting in PRODUCTION mode with pm2..." && \
+        npm run build && \
+        pm2 start dist/index.js --name crypto-bot && \
+        pm2 logs --lines 1000 --nostream; \
+      else \
+        echo "Starting in TEST mode with nodemon..." && \
+        npm run nodemon; \
+      fi
 
 services:
-  # # # # # # # # # # # # # # # # # # # # # # # # # # #
-
   crypto-bot-surfer-1:
     container_name: crypto-bot-surfer-1
     <<: *basic-container
