@@ -5,16 +5,14 @@ import { delay } from "../../helpers/functions.js";
 
 const delayMs = JSON.parse(process.env.DELAY);
 
-export async function getExchangeInfo(tickerName) {
+export async function getExchangeInfo(symbol) {
   try {
     await delay(delayMs);
 
     const data = await binance.exchangeInfo();
     // console.info("\nExchangeInfo:", data);
 
-    const tickerInfo = data.symbols.find(
-      (ticker) => ticker.symbol === tickerName
-    );
+    const tickerInfo = data.symbols.find((ticker) => ticker.symbol === symbol);
     const limits = {};
 
     for (let obj of data.symbols) {
@@ -41,7 +39,7 @@ export async function getExchangeInfo(tickerName) {
       limits[obj.symbol] = filters;
     }
 
-    const tickerLimits = limits[tickerName];
+    const tickerLimits = limits[symbol];
     const minOrderQuantity = parseFloat(tickerLimits.minQty);
     const minOrderValue = parseFloat(tickerLimits.minNotional);
     const stepSize = tickerLimits.stepSize;
@@ -81,12 +79,12 @@ export async function getTradingTickers() {
   }
 }
 
-export async function getLastPrice(tickerName) {
+export async function getLastPrice(symbol) {
   try {
     await delay(delayMs);
 
     const priceList = await binance.prices();
-    const tickerPrice = parseFloat(priceList[tickerName]);
+    const tickerPrice = parseFloat(priceList[symbol]);
 
     return tickerPrice;
   } catch (error) {
@@ -94,7 +92,7 @@ export async function getLastPrice(tickerName) {
   }
 }
 
-export async function getPrevDayData(tickerName) {
+export async function getPrevDayData(symbol) {
   // prevDayData
   //
   // [{
@@ -126,8 +124,8 @@ export async function getPrevDayData(tickerName) {
   try {
     await delay(delayMs);
 
-    if (tickerName) {
-      const data = await binance.prevDay(tickerName);
+    if (symbol) {
+      const data = await binance.prevDay(symbol);
       return [data];
     } else {
       const data = await binance.prevDay(false);
@@ -153,11 +151,11 @@ export async function getSymbolBalance(symbolName) {
   }
 }
 
-export async function getTradingHistory(tickerName) {
+export async function getTradingHistory(symbol) {
   try {
     await delay(delayMs);
 
-    return await binance.trades(tickerName);
+    return await binance.trades(symbol);
   } catch (error) {
     throw { type: "Get Trading History Error", ...error, errorSrcData: error };
   }
@@ -194,7 +192,7 @@ export async function getCandlestickData({
     // const [time, open, high, low, close, volume] = lastTick
 
     // console.info(
-    //   `${tickerName} OHLCV data loaded for last ${periods} ${interval} intervals`
+    //   `${symbol} OHLCV data loaded for last ${periods} ${interval} intervals`
     // )
     // console.info(`Time: ${new Date(time).toString()}`)
     // console.info(`Open: ${open}`)

@@ -12,6 +12,7 @@ import {
 } from "./api/binance/trading.js";
 import util from "node:util";
 
+const onlyCleanBalance = process.env.ONLY_CLEAN_BALANCE === "true";
 const secondarySymbol = process.env.SECONDARY_SYMBOL;
 const appMode = process.env.MODE;
 const interval = process.env.HEARTBEAT_INTERVAL;
@@ -51,12 +52,19 @@ async function startLoop() {
     console.info("-----------------------------------------------------");
 
     await closeAllClosablePositions();
-    await tradeBySignal(); // Trade disabled for now
-    await printAccountEquity();
+
+    if (onlyCleanBalance) {
+      console.info(
+        "ONLY_CLEAN_BALANCE is true. Stopping bot after clearing balance."
+      );
+      console.info("Bot stopped.");
+      break;
+    }
+
+    await tradeBySignal();
 
     console.info("\n-----------------------------------------------------");
     console.info("Loop end:", loopCount);
-
     if (appMode === "DEVELOPMENT") console.timeEnd("Loop Time");
     console.info("-----------------------------------------------------\n");
 
@@ -78,7 +86,7 @@ async function tradeBySignal() {
   const quantity = await calculateTradeQuantity(fullSymbol, price);
 
   console.info(
-    `${signal} signal for ${fullSymbol} at price ${price}, quantity ${quantity}`
+    `Signal detected: ${signal} ${fullSymbol} at price ${price}, suggested quantity ${quantity}`
   );
 
   await createMarketOrderFutures({
@@ -88,15 +96,30 @@ async function tradeBySignal() {
     type: "MARKET",
   });
 
-  console.info(`Opened new ${signal} position on ${fullSymbol}`);
+  console.info(`Trade skipped for ${signal} on ${fullSymbol}`);
 }
 
 async function closeAllClosablePositions() {
   const positions = await getFuturesPositionsFutures();
 
-  for (const position of positions) {
+  const openPositions = positions.filter(
+    (position) => parseFloat(position.positionAmt) !== 0
+  );
+
+  if (openPositions.length === 0) {
+    console.info("No open positions");
+    return;
+  }
+
+  console.info("Open positions:");
+  for (const pos of openPositions) {
+    console.info(
+      `${pos.symbol}: amount ${pos.positionAmt}, entryPrice ${pos.entryPrice}, markPrice ${pos.markPrice}, unrealized PnL ${pos.unRealizedProfit}`
+    );
+  }
+
+  for (const position of openPositions) {
     const positionAmt = parseFloat(position.positionAmt);
-    if (positionAmt === 0) continue;
 
     const closable = await isPositionClosable(position);
     if (!closable) {
@@ -147,35 +170,6 @@ async function calculateTradeQuantity(symbol, lastPrice) {
   const availableForTrade = quoteAmount * (1 - commissionReserve);
 
   return parseFloat((availableForTrade / price).toFixed(8));
-}
-
-async function printAccountEquity() {
-  const balances = await getAccountBalancesFutures();
-  const positions = await getFuturesPositionsFutures();
-
-  let totalEquity = 0;
-
-  for (const balance of balances) {
-    const available = parseFloat(balance.available);
-    if (available === 0) continue;
-
-    if (balance.symbol === secondarySymbol) {
-      totalEquity += available;
-    } else {
-      try {
-        const price = await getLastPrice(`${balance.symbol}${secondarySymbol}`);
-        totalEquity += available * price;
-      } catch {
-        console.info(`Price for ${balance.symbol}${secondarySymbol} not found`);
-      }
-    }
-  }
-
-  for (const pos of positions) {
-    totalEquity += parseFloat(pos.unRealizedProfit || 0);
-  }
-
-  console.info(`Total equity: ${totalEquity.toFixed(2)} ${secondarySymbol}`);
 }
 
 function handleError(error) {
