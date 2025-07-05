@@ -232,22 +232,6 @@ export async function getAccountBalances() {
   }
 }
 
-export function getMarketAverage(tickerList, btcUsdtPrice) {
-  return tickerList.reduce((sum, { lastPrice }, idx, arr) => {
-    return idx === arr.length - 1
-      ? (sum + parseFloat(lastPrice) - btcUsdtPrice) / arr.length
-      : sum + parseFloat(lastPrice);
-  }, 0);
-}
-
-export function getMarketGrowLevel(tickerList) {
-  const tickerListUp = tickerList.filter(
-    ({ priceChangePercent }) => priceChangePercent > 0
-  ).length;
-
-  return (tickerListUp / tickerList.length) * 100;
-}
-
 // Futures
 export async function getFuturesList() {
   try {
@@ -299,5 +283,28 @@ export async function getPrevDayDataFutures(tickerName) {
     }
   } catch (error) {
     throw { type: "Get Prev Day Data", ...error, errorSrcData: error };
+  }
+}
+
+export async function getAccountBalancesFutures() {
+  // [
+  //   { symbol: 'USDT', available: 99.3547 },
+  //   { symbol: 'BTC', available: 0.0001 },
+  //   ...
+  // ]
+
+  try {
+    await delay(delayMs);
+
+    const accountInfo = await binance.futuresAccount();
+
+    const result = accountInfo.assets.map(({ asset, availableBalance }) => ({
+      symbol: asset,
+      available: parseFloat(availableBalance),
+    }));
+
+    return result;
+  } catch (error) {
+    throw { type: "Get Account Balances Error", ...error, errorSrcData: error };
   }
 }
