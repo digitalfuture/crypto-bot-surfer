@@ -247,8 +247,6 @@ export async function getFuturesList() {
 }
 
 export async function getPrevDayDataFutures(tickerName) {
-  // prevDayDataFutures
-  //
   // [
   //   {
   //     symbol: "BTCUSDT",
@@ -267,8 +265,7 @@ export async function getPrevDayDataFutures(tickerName) {
   //     firstId: 28385, // First tradeId
   //     lastId: 28460, // Last tradeId
   //     count: 76, // Trade count
-  //   },
-  //    ...
+  //   }
   // ];
 
   try {

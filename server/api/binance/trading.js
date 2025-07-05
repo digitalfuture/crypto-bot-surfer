@@ -170,3 +170,52 @@ export async function getOrderQuantity({
     throw { type: "Get Order Quantity Error", ...error, errorSrcData: error };
   }
 }
+
+// Futures
+export async function createMarketOrderFutures({ symbol, side, quantity }) {
+  // Example response:
+  // {
+  //    symbol: 'BTCUSDT',
+  //    side: 'SELL',
+  //    price: 0,                     // Always 0 for market orders
+  //    avgFillPrice: 107500,
+  //    quantity: 0.001,
+  //    commission: 0.0003,
+  //    orderId: 123456789,
+  //    s   tatus: 'FILLED',
+  //    rawResponse: {...}
+  // }
+
+  try {
+    await delay(delayMs);
+
+    const orderResponse = await binance.futuresOrder({
+      symbol,
+      side,
+      type: "MARKET",
+      quantity,
+      newOrderRespType: "RESULT",
+    });
+
+    const fill = orderResponse?.avgFillPrice || orderResponse?.price || 0;
+    const commission = orderResponse?.cumQuote || 0;
+
+    return {
+      symbol,
+      side,
+      price: 0,
+      avgFillPrice: parseFloat(fill),
+      quantity: parseFloat(quantity),
+      commission: parseFloat(commission),
+      orderId: orderResponse.orderId,
+      status: orderResponse.status,
+      rawResponse: orderResponse,
+    };
+  } catch (error) {
+    throw {
+      type: "Create Futures Market Order Error",
+      ...error,
+      errorSrcData: error,
+    };
+  }
+}

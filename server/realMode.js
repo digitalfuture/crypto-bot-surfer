@@ -2,11 +2,8 @@
 
 import { delay, getHeartbeatInterval } from "./helpers/functions.js";
 import { getSignals } from "./analytics/indicators/index.js";
-import {
-  getFuturesAccountBalances,
-  createMarketOrder,
-  getLastPrice,
-} from "./api/binance/trade.js";
+import { getAccountBalancesFutures, getLastPrice } from "./api/binance/info.js";
+import { createMarketOrderFutures } from "./api/binance/trading.js";
 import util from "node:util";
 
 const secondarySymbol = process.env.SECONDARY_SYMBOL;
@@ -39,7 +36,7 @@ async function startServer() {
     console.info("Heartbeat interval:", interval);
     console.info("Trade mode active");
 
-    const balances = await getFuturesAccountBalances();
+    const balances = await getAccountBalancesFutures();
     console.info("Initial futures balances:", balances);
   } catch (error) {
     throw { type: "Start Server Error", ...error, errorSrcData: error };
@@ -89,7 +86,7 @@ async function heartBeatLoop() {
       `${signal} signal detected for ${fullSymbol} at price ${price}, quantity ${quantity}`
     );
 
-    await createMarketOrder({
+    await createMarketOrderFutures({
       symbol: fullSymbol,
       side: isSellSignal ? "SELL" : "BUY",
       quantity,
@@ -97,7 +94,7 @@ async function heartBeatLoop() {
     });
 
     console.info("Checking account balances after trade...");
-    const balances = await getFuturesAccountBalances();
+    const balances = await getAccountBalancesFutures();
     console.info("Futures balances:", balances);
   } catch (error) {
     throw { type: "Heartbeat Loop Error", ...error, errorSrcData: error };
@@ -122,7 +119,7 @@ async function calculateTradeQuantity(symbol, lastKnownPrice) {
       quoteAmount = tradeValue;
     } else {
       // Percentage from total futures balance in quote currency
-      const balances = await getFuturesAccountBalances();
+      const balances = await getAccountBalancesFutures();
       const quoteBalance =
         balances.find((b) => b.symbol === secondarySymbol)?.available || 0;
 
