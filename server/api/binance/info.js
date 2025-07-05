@@ -284,10 +284,10 @@ export async function getPrevDayDataFutures(symbol) {
 }
 
 export async function getAccountBalancesFutures() {
+  // Example response:
   // [
   //   { symbol: 'USDT', available: 99.3547 },
   //   { symbol: 'BTC', available: 0.0001 },
-  //   ...
   // ]
 
   try {
@@ -295,10 +295,13 @@ export async function getAccountBalancesFutures() {
 
     const accountInfo = await binance.futuresAccount();
 
-    const result = accountInfo.assets.map(({ asset, availableBalance }) => ({
-      symbol: asset,
-      available: parseFloat(availableBalance),
-    }));
+    // Extract only assets with a positive available balance
+    const result = accountInfo.assets
+      .map(({ asset, availableBalance }) => ({
+        symbol: asset,
+        available: parseFloat(availableBalance),
+      }))
+      .filter(({ available }) => available > 0); // Filter out zero balances
 
     return result;
   } catch (error) {
@@ -384,5 +387,50 @@ export async function getSymbolMinTradeFutures(symbol) {
     };
   } catch (error) {
     throw { type: "Get Symbol Min Trade Futures", ...error };
+  }
+}
+
+export async function getFuturesPositionsFutures() {
+  //  [
+  //    {
+  //      "symbol": "BTCUSDT",
+  //      "positionAmt": "0.001",
+  //      "entryPrice": "25000.00",
+  //      "markPrice": "26000.00",
+  //      "unRealizedProfit": "1.00",
+  //      "liquidationPrice": "20000.00",
+  //      "leverage": "10",
+  //      "marginType": "isolated",
+  //      "isolatedMargin": "5.00",
+  //      "positionSide": "BOTH",
+  //      "updateTime": 1234567890123
+  //    },
+  //    {
+  //      "symbol": "ETHUSDT",
+  //      "positionAmt": "-0.5",
+  //      "entryPrice": "1800.00",
+  //      "markPrice": "1700.00",
+  //      "unRealizedProfit": "-50.00",
+  //      "liquidationPrice": "2000.00",
+  //      "leverage": "5",
+  //      "marginType": "cross",
+  //      "isolatedMargin": "0.00",
+  //      "positionSide": "BOTH",
+  //      "updateTime": 1234567890123
+  //    }
+  //  ]
+
+  try {
+    // Request open futures positions for the account
+    const data = await binance.futuresPositionRisk();
+
+    // Return the raw data directly
+    return data;
+  } catch (error) {
+    throw {
+      type: "Get Futures Positions",
+      ...error,
+      errorSrcData: error,
+    };
   }
 }

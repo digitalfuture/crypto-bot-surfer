@@ -219,3 +219,49 @@ export async function createMarketOrderFutures({ symbol, side, quantity }) {
     };
   }
 }
+
+export async function closeMarketOrderFutures({ symbol, side, quantity }) {
+  // Place a market order to close an existing futures position
+  //
+  // Example request params:
+  // {
+  //   symbol: "BTCUSDT",
+  //   side: "SELL",
+  //   quantity: 0.001,
+  //   type: "MARKET",
+  //   reduceOnly: true
+  // }
+  //
+  // Example response from Binance API futuresOrder():
+  // {
+  //   "orderId": 123456789,
+  //   "symbol": "BTCUSDT",
+  //   "status": "FILLED",
+  //   "clientOrderId": "myOrderId123",
+  //   "price": "0",
+  //   "avgPrice": "26000.00",
+  //   "origQty": "0.001",
+  //   "executedQty": "0.001",
+  //   "cumQuote": "26.00",
+  //   "timeInForce": "GTC",
+  //   "type": "MARKET",
+  //   "side": "SELL",
+  //   "updateTime": 1234567890123
+  // }
+
+  try {
+    // Send a market order with reduceOnly=true to close the position
+    const result = await binance.futuresOrder({
+      symbol,
+      side,
+      quantity,
+      type: "MARKET",
+      reduceOnly: true,
+    });
+
+    // Return the order result from Binance
+    return result;
+  } catch (error) {
+    throw { type: "Close Futures Order", ...error, errorSrcData: error };
+  }
+}

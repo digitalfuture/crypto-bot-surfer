@@ -1,10 +1,8 @@
-// realMode.js
-
 import { delay, getHeartbeatInterval } from "./helpers/functions.js";
 import { getSignals } from "./analytics/indicators/index.js";
 import {
   getAccountBalancesFutures,
-  getFuturesPositions,
+  getFuturesPositionsFutures,
   getSymbolMinTradeFutures,
   getLastPrice,
 } from "./api/binance/info.js";
@@ -53,10 +51,12 @@ async function startLoop() {
     console.info("-----------------------------------------------------");
 
     await closeAllClosablePositions();
-    await tradeBySignal();
+    await tradeBySignal(); // Trade disabled for now
+    await printAccountEquity();
 
     console.info("\n-----------------------------------------------------");
     console.info("Loop end:", loopCount);
+
     if (appMode === "DEVELOPMENT") console.timeEnd("Loop Time");
     console.info("-----------------------------------------------------\n");
 
@@ -89,11 +89,10 @@ async function tradeBySignal() {
   });
 
   console.info(`Opened new ${signal} position on ${fullSymbol}`);
-  await printAccountEquity();
 }
 
 async function closeAllClosablePositions() {
-  const positions = await getFuturesPositions();
+  const positions = await getFuturesPositionsFutures();
 
   for (const position of positions) {
     const positionAmt = parseFloat(position.positionAmt);
@@ -152,10 +151,25 @@ async function calculateTradeQuantity(symbol, lastPrice) {
 
 async function printAccountEquity() {
   const balances = await getAccountBalancesFutures();
-  const positions = await getFuturesPositions();
+  const positions = await getFuturesPositionsFutures();
 
-  let totalEquity =
-    balances.find((b) => b.symbol === secondarySymbol)?.available || 0;
+  let totalEquity = 0;
+
+  for (const balance of balances) {
+    const available = parseFloat(balance.available);
+    if (available === 0) continue;
+
+    if (balance.symbol === secondarySymbol) {
+      totalEquity += available;
+    } else {
+      try {
+        const price = await getLastPrice(`${balance.symbol}${secondarySymbol}`);
+        totalEquity += available * price;
+      } catch {
+        console.info(`Price for ${balance.symbol}${secondarySymbol} not found`);
+      }
+    }
+  }
 
   for (const pos of positions) {
     totalEquity += parseFloat(pos.unRealizedProfit || 0);
