@@ -135,7 +135,6 @@ export async function getTradeSignals() {
         stopLoss = null;
         takeProfit = null;
         shortPrice = null;
-        symbol = null;
       } else {
         signal = null;
       }
@@ -154,12 +153,16 @@ export async function getTradeSignals() {
       console.log("===========================\n");
     }
 
-    return {
+    const result = {
       symbol,
       price,
       priceChangePercent,
       signal,
     };
+
+    if (signal === "BUY") symbol = null;
+
+    return result;
   } catch (error) {
     throw { type: "Volatility Strategy Error", ...error };
   }
