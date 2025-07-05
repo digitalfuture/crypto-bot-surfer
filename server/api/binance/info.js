@@ -426,9 +426,70 @@ export async function getFuturesPositionsFutures() {
     return data;
   } catch (error) {
     throw {
-      type: "Get Futures Positions",
+      type: "Get Futures Positions Futures",
       ...error,
       errorSrcData: error,
     };
+  }
+}
+
+export async function getCandlestickDataFutures({
+  symbol,
+  interval,
+  periods,
+  endTime = Date.now(),
+}) {
+  try {
+    await delay(delayMs);
+
+    console.log(
+      "Fetching candlestick data for:",
+      symbol,
+      interval,
+      periods,
+      endTime
+    );
+
+    const candlesticks = await binance.futuresCandlesticks(symbol, interval, {
+      limit: periods,
+      endTime,
+    });
+
+    const result = candlesticks.map(
+      ({ openTime, open, high, low, close, volume }) => {
+        return [
+          openTime,
+          parseFloat(open),
+          parseFloat(high),
+          parseFloat(low),
+          parseFloat(close),
+          parseFloat(volume),
+        ];
+      }
+    );
+
+    return result;
+  } catch (error) {
+    throw {
+      type: "Get Candlestick Data Futures",
+      ...error,
+      errorSrcData: error,
+    };
+  }
+}
+
+export async function getTradingTickersFutures() {
+  try {
+    await delay(delayMs);
+
+    const data = await binance.futuresExchangeInfo();
+
+    const tickerList = data.symbols
+      .filter((ticker) => ticker.status === "TRADING")
+      .map((ticker) => ticker.symbol);
+
+    return tickerList;
+  } catch (error) {
+    throw { type: "Get Exchange Info Futures", ...error, errorSrcData: error };
   }
 }

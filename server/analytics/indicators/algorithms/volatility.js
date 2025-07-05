@@ -1,8 +1,8 @@
 // volatility.js
 
 import {
-  getCandlestickData,
-  getTradingTickers,
+  getCandlestickDataFutures,
+  getTradingTickersFutures,
   getPrevDayDataFutures,
 } from "../../../api/binance/info.js";
 
@@ -26,7 +26,7 @@ let exitReason = null;
 export async function getTradeSignals() {
   try {
     const now = Date.now();
-    const tradingTickers = await getTradingTickers();
+    const tradingTickersFutures = await getTradingTickersFutures();
     const prevDayDataFFutures = await getPrevDayDataFutures();
 
     // Map tickers with delta price calculation and filter needed symbols
@@ -64,7 +64,7 @@ export async function getTradeSignals() {
       // Filters:
       .filter(({ symbol }) => symbol.endsWith(secondarySymbol))
       .filter(({ primarySymbol, secondarySymbol }) =>
-        tradingTickers.includes(primarySymbol + secondarySymbol)
+        tradingTickersFutures.includes(primarySymbol + secondarySymbol)
       )
       .filter(({ isCalculatedDelta }) => isCalculatedDelta);
 
@@ -84,7 +84,7 @@ export async function getTradeSignals() {
       .slice(0, 100) // Top 100 by volume
       .sort((a, b) => b.priceChangePercent - a.priceChangePercent)[topIndex];
 
-    const candlesticks = await getCandlestickData({
+    const candlesticks = await getCandlestickDataFutures({
       symbol: topGainer.symbol,
       interval,
       periods,
