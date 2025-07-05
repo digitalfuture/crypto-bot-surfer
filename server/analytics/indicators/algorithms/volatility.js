@@ -66,7 +66,9 @@ export async function getTradeSignals() {
       .filter(({ primarySymbol, secondarySymbol }) =>
         tradingTickers.includes(primarySymbol + secondarySymbol)
       )
-      .filter(({ isCalculatedDelta }) => isCalculatedDelta);
+      .filter(({ isCalculatedDelta }) => isCalculatedDelta)
+      .sort((a, b) => b.volume - a.volume)
+      .slice(0, 100); // Top 100 by volume
 
     if (resolvedTickerList.length === 0) {
       return {
