@@ -11,7 +11,7 @@ const interval = process.env.BACKTEST_INTERVAL;
 const periods = parseInt(process.env.BACKTEST_PERIODS, 10);
 let stopMultiplier = parseFloat(process.env.SYSTEM_PARAM_1);
 let takeMultiplier = parseFloat(process.env.SYSTEM_PARAM_2);
-let topGainerIndex = parseInt(process.env.SYSTEM_PARAM_3);
+let topIndex = parseInt(process.env.SYSTEM_PARAM_3);
 
 let lastPriceSnapshot = {};
 let stopLoss = null;
@@ -66,9 +66,7 @@ export async function getTradeSignals() {
       .filter(({ primarySymbol, secondarySymbol }) =>
         tradingTickers.includes(primarySymbol + secondarySymbol)
       )
-      .filter(({ isCalculatedDelta }) => isCalculatedDelta)
-      .sort((a, b) => b.volume - a.volume)
-      .slice(0, 100); // Top 100 by volume
+      .filter(({ isCalculatedDelta }) => isCalculatedDelta);
 
     if (resolvedTickerList.length === 0) {
       return {
@@ -80,9 +78,11 @@ export async function getTradeSignals() {
     }
 
     // Pick top gainer by priceChangePercent from top 100 by volume
-    const topGainer = resolvedTickerList.sort(
-      (a, b) => b.priceChangePercent - a.priceChangePercent
-    )[topGainerIndex];
+    const topGainer = resolvedTickerList
+      .filter(({ volume }) => volume > 1000)
+      .sort((a, b) => b.volume - a.volume)
+      .slice(0, 100) // Top 100 by volume
+      .sort((a, b) => b.priceChangePercent - a.priceChangePercent)[topIndex];
 
     const candlesticks = await getCandlestickData({
       symbol: topGainer.symbol,
