@@ -246,7 +246,7 @@ export async function getFuturesList() {
   }
 }
 
-export async function getPrevDayDataFutures(tickerName) {
+export async function getPrevDayDataFutures(symbol) {
   // [
   //   {
   //     symbol: "BTCUSDT",
@@ -271,8 +271,8 @@ export async function getPrevDayDataFutures(tickerName) {
   try {
     await delay(delayMs);
 
-    if (tickerName) {
-      const data = await binance.prevDay(tickerName);
+    if (symbol) {
+      const data = await binance.prevDay(symbol);
       return [data];
     } else {
       const data = await binance.prevDay(false);
@@ -303,5 +303,86 @@ export async function getAccountBalancesFutures() {
     return result;
   } catch (error) {
     throw { type: "Get Account Balances Error", ...error, errorSrcData: error };
+  }
+}
+
+export async function getExchangeInfoFutures(symbol) {
+  // [
+  //   {
+  //       "symbol": "BTCUSDT",
+  //       "price": "6000.01",
+  //       "time": 1589437530011
+  //   }
+  // ]
+
+  try {
+    // Delay to avoid hitting API rate limits
+    await delay(delayMs);
+
+    // Fetch futures exchange info from Binance API
+    const data = await binance.futuresExchangeInfo();
+
+    const limits = {};
+
+    // Parse filters for each symbol in the exchange info
+    for (const obj of data.symbols) {
+      let filters = { status: obj.status };
+
+      for (const filter of obj.filters) {
+        if (filter.filterType === "MIN_NOTIONAL") {
+          filters.minNotional = filter.minNotional;
+        } else if (filter.filterType === "PRICE_FILTER") {
+          filters.minPrice = filter.minPrice;
+          filters.maxPrice = filter.maxPrice;
+          filters.tickSize = filter.tickSize;
+        } else if (filter.filterType === "LOT_SIZE") {
+          filters.stepSize = filter.stepSize;
+          filters.minQty = filter.minQty;
+          filters.maxQty = filter.maxQty;
+        }
+      }
+
+      filters.orderTypes = obj.orderTypes;
+      filters.icebergAllowed = obj.icebergAllowed;
+
+      limits[obj.symbol] = filters;
+    }
+
+    const tickerLimits = limits[symbol];
+
+    if (!tickerLimits) {
+      throw new Error(`Symbol limits not found for ${symbol}`);
+    }
+
+    // Parse necessary parameters as floats
+    const minOrderQuantity = parseFloat(tickerLimits.minQty);
+    const minOrderValue = parseFloat(tickerLimits.minNotional);
+    const stepSize = parseFloat(tickerLimits.stepSize);
+
+    // Find ticker info for additional metadata
+    const tickerInfo = data.symbols.find((ticker) => ticker.symbol === symbol);
+
+    return {
+      minOrderQuantity,
+      minOrderValue,
+      stepSize,
+      tickerInfo,
+    };
+  } catch (error) {
+    throw { type: "Get Exchange Info", ...error, errorSrcData: error };
+  }
+}
+
+export async function getSymbolMinTradeFutures(symbol) {
+  try {
+    const info = await getExchangeInfoFutures(symbol);
+
+    return {
+      stepSize: parseFloat(info.stepSize),
+      minQty: parseFloat(info.minOrderQuantity),
+      minNotional: parseFloat(info.minOrderValue),
+    };
+  } catch (error) {
+    throw { type: "Get Symbol Min Trade Futures", ...error };
   }
 }
