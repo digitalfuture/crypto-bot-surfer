@@ -382,19 +382,15 @@ export async function getSymbolMinTradeFutures(symbol) {
       );
     }
 
-    if (!notionalFilter) {
-      throw new Error(`No NOTIONAL filter found for ${symbol}`);
-    }
-
     const stepSize = parseFloat(
       marketLotSizeFilter?.stepSize || lotSizeFilter.stepSize
     );
     const minQty = parseFloat(
       marketLotSizeFilter?.minQty || lotSizeFilter.minQty
     );
-    const minNotional = parseFloat(
-      notionalFilter.minNotional ?? notionalFilter.notional
-    );
+    const minNotional = notionalFilter
+      ? parseFloat(notionalFilter.minNotional ?? notionalFilter.notional)
+      : 0; // <-- если NOTIONAL нет, ставим 0
 
     return {
       stepSize,
@@ -404,7 +400,7 @@ export async function getSymbolMinTradeFutures(symbol) {
   } catch (error) {
     throw {
       type: "Get Symbol Min Trade Futures",
-      ...error,
+      message: error.message,
       errorSrcData: error,
     };
   }
