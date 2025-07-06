@@ -1,7 +1,7 @@
 // testMode.js
 
 import { delay, getHeartbeatInterval } from "./helpers/functions.js";
-import { getSignals } from "./analytics/indicators/index.js";
+import { getTradeSignals } from "./analytics/volatility.js"; // changed from getSignals
 import { report } from "./analytics/report.js";
 import util from "node:util";
 
@@ -13,6 +13,8 @@ const interval = process.env.HEARTBEAT_INTERVAL;
 const heartbeatInterval = getHeartbeatInterval(interval);
 
 let loopCount = 1;
+// Store current open position symbol here; null means no open position
+let currentPositionSymbol = null;
 
 export default async function start() {
   console.log("\nTEST mode is active");
@@ -106,11 +108,23 @@ async function startLoop() {
 
 async function heartBeatLoop() {
   try {
-    const { symbol, price, priceChangePercent, signal } = await getSignals();
+    // Pass current open position symbol to getTradeSignals to maintain state
+    const { symbol, price, priceChangePercent, signal, exitReason } =
+      await getTradeSignals(currentPositionSymbol);
 
+    // Update currentPositionSymbol based on signals
+    if (signal === "SELL") {
+      // Opening short position, store symbol
+      currentPositionSymbol = symbol;
+    } else if (signal === "BUY") {
+      // Closing position, clear symbol
+      currentPositionSymbol = null;
+    }
+    // Else signal null: keep currentPositionSymbol as is (holding position or no action)
+
+    const primarySymbol = symbol?.replace(secondarySymbol, "") || null;
     const isBuySignal = signal === "BUY";
     const isSellSignal = signal === "SELL";
-    const primarySymbol = symbol?.split(secondarySymbol)[0] || null;
 
     if (isBuySignal) {
       report({
@@ -119,6 +133,7 @@ async function heartBeatLoop() {
         primarySymbol,
         price,
         priceChangePercent,
+        exitReason,
       });
     } else if (isSellSignal) {
       report({

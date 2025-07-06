@@ -14,16 +14,8 @@ let takeMultiplier = parseFloat(process.env.SYSTEM_PARAM_2);
 let topIndex = parseInt(process.env.SYSTEM_PARAM_3);
 
 let lastPriceSnapshot = {};
-let stopLoss = null;
-let takeProfit = null;
-let symbol = null;
-let price = null;
-let shortPrice = null;
-let signal = null;
-let priceChangePercent = 0;
-let exitReason = null;
 
-export async function getTradeSignals() {
+export async function getTradeSignals(symbol = null) {
   try {
     const now = Date.now();
     const tradingTickersFutures = await getTradingTickersFutures();
@@ -32,29 +24,29 @@ export async function getTradeSignals() {
     // Map tickers with delta price calculation and filter needed symbols
     const resolvedTickerList = prevDayData
       .map((item) => {
-        const { symbol, lastPrice, volume } = item;
+        const { symbol: itemSymbol, lastPrice, volume } = item;
         const price = parseFloat(lastPrice);
         const vol = parseFloat(volume);
 
-        const prevEntry = lastPriceSnapshot[symbol];
+        const prevEntry = lastPriceSnapshot[itemSymbol];
         let delta = null;
 
         if (prevEntry && prevEntry.price !== undefined) {
           delta = ((price - prevEntry.price) / prevEntry.price) * 100;
         }
 
-        lastPriceSnapshot[symbol] = {
+        lastPriceSnapshot[itemSymbol] = {
           price: price,
           timestamp: now,
         };
 
         // Extract primarySymbol by removing secondarySymbol suffix
-        const primarySymbol = symbol.replace(secondarySymbol, "");
+        const primarySymbol = itemSymbol.replace(secondarySymbol, "");
 
         return {
           primarySymbol,
           secondarySymbol,
-          symbol,
+          symbol: itemSymbol,
           priceChangePercent: delta,
           isCalculatedDelta: delta !== null,
           lastPrice: price,
@@ -72,7 +64,7 @@ export async function getTradeSignals() {
       return {
         symbol: null,
         price: null,
-        priceChangePercent,
+        priceChangePercent: 0,
         signal: null,
       };
     }
@@ -96,9 +88,16 @@ export async function getTradeSignals() {
         return acc + Math.abs((high - low) / close);
       }, 0) / candlesticks.length;
 
-    if (!symbol && lastPriceSnapshot) {
+    let stopLoss = null;
+    let takeProfit = null;
+    let priceChangePercent = 0;
+    let price = null;
+    let shortPrice = null;
+    let signal = null;
+    let exitReason = null;
+
+    if (!symbol) {
       // No active position - signal to open short on topGainer
-      symbol = topGainer.symbol;
       price = topGainer.lastPrice;
       priceChangePercent = topGainer.priceChangePercent;
 
@@ -106,39 +105,45 @@ export async function getTradeSignals() {
       takeProfit = price * (1 - volatility * takeMultiplier);
       signal = "SELL";
       shortPrice = price;
-    } else if (symbol) {
+      symbol = topGainer.symbol;
+    } else {
       // Active short position on symbol, check exit conditions
       const currentTicker = resolvedTickerList.find(
         (ticker) => ticker.symbol === symbol
       );
 
-      priceChangePercent = currentTicker.priceChangePercent;
-      symbol = currentTicker.symbol;
-      price = currentTicker.lastPrice;
-
-      // Adjust trailing stop if price decreases further
-      if (price < shortPrice) {
-        const dynamicFactor = stopMultiplier * volatility * 1.2;
-        const troughPrice = price;
-        const newTrailingStop = troughPrice * (1 + dynamicFactor);
-        stopLoss = Math.min(stopLoss, newTrailingStop);
-      }
-
-      // Check stop loss or take profit hit
-      if (price >= stopLoss) {
+      if (!currentTicker) {
+        // Position symbol not found, close position
         signal = "BUY";
-        exitReason = "SL";
-      } else if (price <= takeProfit) {
-        signal = "BUY";
-        exitReason = "TP";
-      }
-
-      if (signal === "BUY") {
-        stopLoss = null;
-        takeProfit = null;
-        shortPrice = null;
+        exitReason = "POSITION_NOT_FOUND";
       } else {
-        signal = null;
+        priceChangePercent = currentTicker.priceChangePercent;
+        price = currentTicker.lastPrice;
+
+        // Adjust trailing stop if price decreases further
+        if (price < shortPrice || shortPrice === null) {
+          const dynamicFactor = stopMultiplier * volatility * 1.2;
+          const troughPrice = price;
+          const newTrailingStop = troughPrice * (1 + dynamicFactor);
+          stopLoss =
+            stopLoss !== null
+              ? Math.min(stopLoss, newTrailingStop)
+              : newTrailingStop;
+          shortPrice = troughPrice;
+        }
+
+        // Check stop loss or take profit hit
+        if (price >= stopLoss) {
+          signal = "BUY";
+          exitReason = "SL";
+        } else if (price <= takeProfit) {
+          signal = "BUY";
+          exitReason = "TP";
+        }
+
+        if (signal !== "BUY") {
+          signal = null; // Hold position
+        }
       }
     }
 
@@ -155,16 +160,15 @@ export async function getTradeSignals() {
       console.log("===========================\n");
     }
 
-    const result = {
+    return {
       symbol,
       price,
       priceChangePercent,
       signal,
+      exitReason,
+      stopLoss,
+      takeProfit,
     };
-
-    if (signal === "BUY") symbol = null;
-
-    return result;
   } catch (error) {
     throw { type: "Volatility Strategy Error", ...error };
   }

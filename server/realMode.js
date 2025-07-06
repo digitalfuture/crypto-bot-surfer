@@ -1,5 +1,5 @@
 import { delay, getHeartbeatInterval } from "./helpers/functions.js";
-import { getSignals } from "./analytics/indicators/index.js";
+import { getTradeSignals } from "./analytics/volatility.js"; // changed to volatility strategy which supports position state
 import {
   getAccountBalancesFutures,
   getFuturesPositionsFutures,
@@ -25,6 +25,9 @@ const tradeValue = parseFloat(process.env.TRADE_VALUE || "0");
 const commissionReserve = 0.002;
 
 let loopCount = 1;
+
+// Store current open position symbol to track active trade
+let currentPositionSymbol = null;
 
 export default async function start() {
   console.log("\nTRADE mode is active");
@@ -80,12 +83,11 @@ async function startLoop() {
 }
 
 async function tradeBySignal() {
-  const {
-    symbol,
-    price: price,
-    priceChangePercent,
-    signal,
-  } = await getSignals();
+  // Pass current open position symbol to getTradeSignals to maintain position state
+  const { symbol, price, priceChangePercent, signal } = await getTradeSignals(
+    currentPositionSymbol
+  );
+
   if (!symbol || !signal) {
     console.info("No signal detected");
     return;
@@ -143,6 +145,15 @@ async function tradeBySignal() {
     price: executedPrice,
     priceChangePercent,
   });
+
+  // Update currentPositionSymbol based on trade result
+  if (signal === "SELL") {
+    // Position opened
+    currentPositionSymbol = fullSymbol;
+  } else if (signal === "BUY") {
+    // Position closed
+    currentPositionSymbol = null;
+  }
 }
 
 async function closeAllClosablePositions() {
