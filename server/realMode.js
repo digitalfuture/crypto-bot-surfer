@@ -98,6 +98,13 @@ async function tradeBySignal() {
   const quantity = await calculateTradeQuantity(fullSymbol, price);
   const notional = quantity * price;
 
+  if (quantity <= 0) {
+    console.info(
+      `Calculated quantity is 0 or too small for ${fullSymbol}, skipping trade.`
+    );
+    return;
+  }
+
   console.info(
     `Signal: ${signal} ${fullSymbol} at price ${price}, suggested quantity ${quantity} (~${notional.toFixed(2)} USDT)`
   );
@@ -230,17 +237,35 @@ async function closeAllClosablePositions() {
 async function calculateTradeQuantity(symbol, lastPrice) {
   const price = lastPrice || (await getLastPriceFutures(symbol));
   const balances = await getAccountBalancesFutures();
+
+  // Make sure secondarySymbol is set correctly — for example 'USDT'
   const quoteBalance =
     balances.find((b) => b.symbol === secondarySymbol)?.available || 0;
 
   let quoteAmount = useFixedTradeValue
     ? tradeValue
     : (quoteBalance * tradeValue) / 100;
+
   const availableForTrade = quoteAmount * (1 - commissionReserve);
 
-  const { stepSize } = await getSymbolMinTradeFutures(symbol);
+  const { stepSize, minQty } = await getSymbolMinTradeFutures(symbol);
   const rawQty = availableForTrade / price;
+
+  // Floor quantity to step size
   const quantity = Math.floor(rawQty / stepSize) * stepSize;
+
+  // Log all relevant data for debugging
+  console.log({
+    symbol,
+    price,
+    quoteBalance,
+    quoteAmount,
+    availableForTrade,
+    rawQty,
+    stepSize,
+    minQty,
+    quantity,
+  });
 
   return parseFloat(quantity.toFixed(8));
 }
