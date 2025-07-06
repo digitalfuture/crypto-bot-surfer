@@ -222,28 +222,25 @@ export async function createMarketOrderFutures({ symbol, side, quantity }) {
   }
 }
 
-export async function closeMarketOrderFutures({ symbol, amount }) {
+export async function closeMarketOrderFutures({ symbol, side, quantity }) {
   try {
-    if (!amount || amount === 0) {
-      throw new Error(`Amount for symbol ${symbol} is zero or undefined`);
-    }
-
-    const side = amount > 0 ? "SELL" : "BUY";
-    const quantity = Math.abs(amount);
-
     console.info(
       `Closing market order: symbol=${symbol}, side=${side}, quantity=${quantity}`
     );
 
     const params = {
-      symbol,
-      side,
       type: "MARKET",
-      quantity,
       reduceOnly: true,
+      closePosition: true,
     };
 
-    const result = await binance.futuresOrder(params);
+    const result = await binance.futuresOrder(
+      side,
+      symbol,
+      quantity,
+      null,
+      params
+    );
 
     console.info(`Close order response:`, result);
 
