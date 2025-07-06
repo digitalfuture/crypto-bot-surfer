@@ -255,26 +255,34 @@ export async function closeMarketOrderFutures({ symbol, side, quantity }) {
 
 export async function setMarginTypeAndLeverage(symbol) {
   try {
-    await delay(delayMs);
-    try {
-      await binance.futuresMarginType(symbol, "ISOLATED");
-      console.info(`Margin type set to ISOLATED for ${symbol}`);
-    } catch (error) {
-      if (error.body && error.body.includes("No need to change margin type")) {
-        console.info(`Margin type already ISOLATED for ${symbol}`);
-      } else {
-        throw error;
-      }
+    // Проверяем есть ли открытая позиция
+    const positions = await binance.futuresPositionRisk();
+    const position = positions.find((p) => p.symbol === symbol);
+
+    const positionAmt = parseFloat(position?.positionAmt || 0);
+    if (positionAmt !== 0) {
+      console.info(
+        `Skip setting margin type for ${symbol}, open position detected: ${positionAmt}`
+      );
+      return;
     }
 
-    await delay(delayMs);
+    // Меняем маржу
+    await binance.futuresMarginType(symbol, "ISOLATED");
+    console.info(`Set ISOLATED margin for ${symbol}`);
+
+    // Ставим плечо
     await binance.futuresLeverage(symbol, 1);
-    console.info(`Leverage set to 1 for ${symbol}`);
+    console.info(`Set leverage 1x for ${symbol}`);
   } catch (error) {
-    throw {
-      type: `Set Margin Type/Leverage Error for ${symbol}`,
-      ...error,
-      errorSrcData: error,
-    };
+    if (error.body && error.body.includes("No need to change margin type")) {
+      console.info(`Margin type for ${symbol} already ISOLATED`);
+    } else {
+      throw {
+        type: `Error setting margin for ${symbol}:`,
+        ...error,
+        errorSrcData: error,
+      };
+    }
   }
 }
