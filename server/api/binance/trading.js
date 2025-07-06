@@ -228,14 +228,19 @@ export async function closeMarketOrderFutures({ symbol, side, quantity }) {
       `Closing market order: symbol=${symbol}, side=${side}, quantity=${quantity}`
     );
 
-    const result = await binance.futuresOrder({
-      symbol,
-      side,
+    const params = {
       type: "MARKET",
-      quantity,
       reduceOnly: true,
       closePosition: true,
-    });
+    };
+
+    const result = await binance.futuresOrder(
+      side,
+      symbol,
+      quantity,
+      null,
+      params
+    );
 
     console.info(`Close order response:`, result);
 
