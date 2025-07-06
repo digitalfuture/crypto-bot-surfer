@@ -229,24 +229,28 @@ export async function closeMarketOrderFutures({ symbol, side, quantity }) {
     );
 
     const result = await binance.futuresOrder(
-      side, // string: "BUY" or "SELL"
-      symbol, // string: "BTCUSDT"
-      String(quantity), // quantity must be a string
-      null, // price: null for market order
+      "MARKET",
+      side,
+      symbol,
+      undefined, // no quantity when closePosition is true
+      undefined,
       {
-        type: "MARKET",
-        reduceOnly: true, // make sure it reduces the position
+        reduceOnly: true,
+        closePosition: true,
+        positionSide: "BOTH",
       }
     );
 
-    console.info(`Successfully closed position for ${symbol}:`, result);
+    console.info(`Close order response:`, result);
+    if (result.status !== "FILLED") {
+      console.warn(
+        `Warning: Close order status is ${result.status}, position may not be closed immediately.`
+      );
+    }
     return result;
   } catch (error) {
     console.error(`Error closing position for ${symbol}:`, error);
-    return {
-      type: "Close Futures Order",
-      errorSrcData: error,
-    };
+    throw { type: "Close Futures Order", ...error, errorSrcData: error };
   }
 }
 
