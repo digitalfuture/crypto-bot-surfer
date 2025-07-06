@@ -10,7 +10,6 @@ import {
 import {
   createMarketOrderFutures,
   closeMarketOrderFutures,
-  setMarginTypeAndLeverage,
 } from "./api/binance/trading.js";
 import util from "node:util";
 import { report } from "./analytics/report.js";
@@ -102,8 +101,6 @@ async function tradeBySignal() {
   console.info(
     `Signal: ${signal} ${fullSymbol} at price ${price}, suggested quantity ${quantity} (~${notional.toFixed(2)} USDT)`
   );
-
-  await setMarginTypeAndLeverage(fullSymbol);
 
   const usdtBalance = await getFuturesAccountUSDTBalance();
   if (notional > usdtBalance) {

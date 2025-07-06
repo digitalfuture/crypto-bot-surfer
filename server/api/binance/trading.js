@@ -253,34 +253,3 @@ export async function closeMarketOrderFutures({ symbol, side, quantity }) {
     throw { type: "Close Futures Order", ...error, errorSrcData: error };
   }
 }
-
-export async function setMarginTypeAndLeverage(symbol) {
-  try {
-    const positions = await binance.futuresPositionRisk();
-    const position = positions.find((p) => p.symbol === symbol);
-
-    const positionAmt = parseFloat(position?.positionAmt || 0);
-    if (positionAmt !== 0) {
-      console.info(
-        `Skip setting margin type for ${symbol}, open position detected: ${positionAmt}`
-      );
-      return;
-    }
-
-    await binance.futuresMarginType(symbol, "ISOLATED");
-    console.info(`Set ISOLATED margin for ${symbol}`);
-
-    await binance.futuresLeverage(symbol, 1);
-    console.info(`Set leverage 1x for ${symbol}`);
-  } catch (error) {
-    if (error.body && error.body.includes("No need to change margin type")) {
-      console.info(`Margin type for ${symbol} already ISOLATED`);
-    } else {
-      throw {
-        type: `Error setting margin for ${symbol}:`,
-        ...error,
-        errorSrcData: error,
-      };
-    }
-  }
-}
