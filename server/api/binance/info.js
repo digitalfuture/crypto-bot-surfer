@@ -391,7 +391,11 @@ export async function getSymbolMinTradeFutures(symbol) {
     };
   } catch (error) {
     console.error(`Error in getSymbolMinTradeFutures(${symbol}):`, error);
-    throw { type: "Get Symbol Min Trade Futures", ...error };
+    throw {
+      type: "Get Symbol Min Trade Futures",
+      ...error,
+      errorSrcData: error,
+    };
   }
 }
 
