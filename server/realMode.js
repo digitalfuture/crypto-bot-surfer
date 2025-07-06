@@ -1,5 +1,5 @@
 import { delay, getHeartbeatInterval } from "./helpers/functions.js";
-import { getTradeSignals } from "./analytics/volatility.js"; // changed to volatility strategy which supports position state
+import { getSignals } from "./analytics/indicators/index.js";
 import {
   getAccountBalancesFutures,
   getFuturesPositionsFutures,
@@ -84,7 +84,7 @@ async function startLoop() {
 
 async function tradeBySignal() {
   // Pass current open position symbol to getTradeSignals to maintain position state
-  const { symbol, price, priceChangePercent, signal } = await getTradeSignals(
+  const { symbol, price, priceChangePercent, signal } = await getSignals(
     currentPositionSymbol
   );
 

@@ -1,7 +1,7 @@
 // testMode.js
 
 import { delay, getHeartbeatInterval } from "./helpers/functions.js";
-import { getTradeSignals } from "./analytics/volatility.js"; // changed from getSignals
+import { getSignals } from "./analytics/indicators/index.js";
 import { report } from "./analytics/report.js";
 import util from "node:util";
 
@@ -110,7 +110,7 @@ async function heartBeatLoop() {
   try {
     // Pass current open position symbol to getTradeSignals to maintain state
     const { symbol, price, priceChangePercent, signal, exitReason } =
-      await getTradeSignals(currentPositionSymbol);
+      await getSignals(currentPositionSymbol);
 
     // Update currentPositionSymbol based on signals
     if (signal === "SELL") {
