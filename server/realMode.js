@@ -13,6 +13,7 @@ import {
   setMarginTypeAndLeverage,
 } from "./api/binance/trading.js";
 import util from "node:util";
+import { report } from "./analytics/report.js";
 
 const onlyCleanBalance = process.env.ONLY_CLEAN_BALANCE === "true";
 const secondarySymbol = process.env.SECONDARY_SYMBOL;
@@ -50,7 +51,9 @@ export default async function start() {
 
 async function startServer() {
   console.info(`${secondarySymbol} Bot started`);
+
   if (appMode === "PRODUCTION") console.info = () => {};
+
   console.info("Heartbeat interval:", interval);
   console.info("Trade mode active");
 
@@ -78,7 +81,12 @@ async function startLoop() {
 }
 
 async function tradeBySignal() {
-  const { symbol, price, signal } = await getSignals();
+  const {
+    symbol,
+    price: price,
+    priceChangePercent,
+    signal,
+  } = await getSignals();
   if (!symbol || !signal) {
     console.info("No signal detected");
     return;
@@ -86,12 +94,13 @@ async function tradeBySignal() {
 
   const fullSymbol = symbol;
   const isSellSignal = signal === "SELL";
+  const side = isSellSignal ? "SELL" : "BUY";
 
   const quantity = await calculateTradeQuantity(fullSymbol, price);
   const notional = quantity * price;
 
   console.info(
-    `Signal detected: ${signal} ${fullSymbol} at price ${price}, suggested quantity ${quantity} (~${notional.toFixed(2)} USDT)`
+    `Signal: ${signal} ${fullSymbol} at price ${price}, suggested quantity ${quantity} (~${notional.toFixed(2)} USDT)`
   );
 
   await setMarginTypeAndLeverage(fullSymbol);
@@ -104,13 +113,32 @@ async function tradeBySignal() {
     return;
   }
 
-  await createMarketOrderFutures({
-    symbol: fullSymbol,
-    side: isSellSignal ? "SELL" : "BUY",
-    quantity,
-  });
+  let order;
+  try {
+    order = await createMarketOrderFutures({
+      symbol: fullSymbol,
+      side,
+      quantity,
+    });
+  } catch (err) {
+    console.error(`Error creating ${side} order for ${fullSymbol}:`, err);
+    return;
+  }
 
-  console.info(`Trade executed for ${signal} on ${fullSymbol}`);
+  console.info(
+    `Trade executed for ${signal} on ${fullSymbol}, order response:`,
+    order
+  );
+
+  const executedPrice = parseFloat(order.avgPrice || order.price || price);
+
+  report({
+    date: new Date(),
+    trade: side,
+    primarySymbol: fullSymbol,
+    price: executedPrice,
+    priceChangePercent,
+  });
 }
 
 async function closeAllClosablePositions() {
