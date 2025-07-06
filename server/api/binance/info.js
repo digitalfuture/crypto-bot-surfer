@@ -281,32 +281,6 @@ export async function getPrevDayDataFutures(symbol) {
   }
 }
 
-export async function getAccountBalancesFutures() {
-  // Example response:
-  // [
-  //   { symbol: 'USDT', available: 99.3547 },
-  //   { symbol: 'BTC', available: 0.0001 },
-  // ]
-
-  try {
-    await delay(delayMs);
-
-    const accountInfo = await binance.futuresAccount();
-
-    // Extract only assets with a positive available balance
-    const result = accountInfo.assets
-      .map(({ asset, availableBalance }) => ({
-        symbol: asset,
-        available: parseFloat(availableBalance),
-      }))
-      .filter(({ available }) => available > 0); // Filter out zero balances
-
-    return result;
-  } catch (error) {
-    throw { type: "Get Account Balances Error", ...error, errorSrcData: error };
-  }
-}
-
 export async function getExchangeInfoFutures(symbol) {
   // [
   //   {
@@ -374,16 +348,49 @@ export async function getExchangeInfoFutures(symbol) {
   }
 }
 
+let cachedExchangeInfo = null;
+
+async function getExchangeInfoCached() {
+  if (!cachedExchangeInfo) {
+    cachedExchangeInfo = await binance.futuresExchangeInfo();
+  }
+  return cachedExchangeInfo;
+}
+
 export async function getSymbolMinTradeFutures(symbol) {
   try {
-    const info = await getExchangeInfoFutures(symbol);
+    const exchangeInfo = await getExchangeInfoCached();
+
+    const symbolInfo = exchangeInfo.symbols.find((s) => s.symbol === symbol);
+    if (!symbolInfo) throw new Error(`Symbol ${symbol} not found`);
+
+    const lotSizeFilter = symbolInfo.filters.find(
+      (f) => f.filterType === "LOT_SIZE"
+    );
+    const marketLotSizeFilter = symbolInfo.filters.find(
+      (f) => f.filterType === "MARKET_LOT_SIZE"
+    );
+    const notionalFilter = symbolInfo.filters.find(
+      (f) => f.filterType === "NOTIONAL"
+    );
+
+    const stepSize = parseFloat(
+      lotSizeFilter?.stepSize || marketLotSizeFilter?.stepSize || "1"
+    );
+    const minQty = parseFloat(
+      marketLotSizeFilter?.minQty || lotSizeFilter?.minQty || "1"
+    );
+    const minNotional = parseFloat(
+      notionalFilter?.notional || notionalFilter?.minNotional || "5"
+    );
 
     return {
-      stepSize: parseFloat(info.stepSize),
-      minQty: parseFloat(info.minOrderQuantity),
-      minNotional: parseFloat(info.minOrderValue),
+      stepSize,
+      minQty,
+      minNotional,
     };
   } catch (error) {
+    console.error(`Error in getSymbolMinTradeFutures(${symbol}):`, error);
     throw { type: "Get Symbol Min Trade Futures", ...error };
   }
 }
@@ -491,5 +498,67 @@ export async function getTradingTickersFutures() {
     return tickerList;
   } catch (error) {
     throw { type: "Get Exchange Info Futures", ...error, errorSrcData: error };
+  }
+}
+
+export async function getLastPriceFutures(symbol) {
+  try {
+    await delay(delayMs);
+
+    const priceList = await binance.futuresPrices();
+    const tickerPrice = parseFloat(priceList[symbol]);
+
+    return tickerPrice;
+  } catch (error) {
+    throw { type: "Get Last Price", ...error, errorSrcData: error };
+  }
+}
+
+export async function getFuturesAccountUSDTBalance() {
+  try {
+    const accountInfo = await binance.futuresAccount();
+
+    const walletBalance = parseFloat(accountInfo.totalWalletBalance || 0);
+    const unrealizedProfit = parseFloat(accountInfo.totalUnrealizedProfit || 0);
+
+    const totalBalance = walletBalance + unrealizedProfit;
+
+    return {
+      walletBalance,
+      unrealizedProfit,
+      totalBalance,
+    };
+  } catch (error) {
+    throw {
+      type: "Get Total Futures Balance",
+      ...error,
+      errorSrcData: error,
+    };
+  }
+}
+
+export async function getAccountBalancesFutures() {
+  // Example response:
+  // [
+  //   { symbol: 'USDT', available: 99.3547 },
+  //   { symbol: 'BTC', available: 0.0001 },
+  // ]
+
+  try {
+    await delay(delayMs);
+
+    const accountInfo = await binance.futuresAccount();
+
+    // Extract only assets with a positive available balance
+    const result = accountInfo.assets
+      .map(({ asset, availableBalance }) => ({
+        symbol: asset,
+        available: parseFloat(availableBalance),
+      }))
+      .filter(({ available }) => available > 0); // Filter out zero balances
+
+    return result;
+  } catch (error) {
+    throw { type: "Get Account Balances Error", ...error, errorSrcData: error };
   }
 }

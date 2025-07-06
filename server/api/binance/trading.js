@@ -172,9 +172,22 @@ export async function getOrderQuantity({
 }
 
 // Futures
+
 export async function createMarketOrderFutures({ symbol, side, quantity }) {
   try {
     await delay(delayMs);
+
+    // Set leverage = 1 for this symbol before placing order
+    try {
+      await binance.futuresLeverage(symbol, 1);
+      console.log(`Leverage set to 1 for ${symbol}`);
+    } catch (error) {
+      console.warn(
+        `Failed to set leverage for ${symbol}:`,
+        error.body || error.message
+      );
+      // Не прерываем выполнение, просто логируем
+    }
 
     const orderResponse = await binance.futuresOrder(
       "MARKET", // type
@@ -211,47 +224,57 @@ export async function createMarketOrderFutures({ symbol, side, quantity }) {
 }
 
 export async function closeMarketOrderFutures({ symbol, side, quantity }) {
-  // Place a market order to close an existing futures position
-  //
-  // Example request params:
-  // {
-  //   symbol: "BTCUSDT",
-  //   side: "SELL",
-  //   quantity: 0.001,
-  //   type: "MARKET",
-  //   reduceOnly: true
-  // }
-  //
-  // Example response from Binance API futuresOrder():
-  // {
-  //   "orderId": 123456789,
-  //   "symbol": "BTCUSDT",
-  //   "status": "FILLED",
-  //   "clientOrderId": "myOrderId123",
-  //   "price": "0",
-  //   "avgPrice": "26000.00",
-  //   "origQty": "0.001",
-  //   "executedQty": "0.001",
-  //   "cumQuote": "26.00",
-  //   "timeInForce": "GTC",
-  //   "type": "MARKET",
-  //   "side": "SELL",
-  //   "updateTime": 1234567890123
-  // }
-
   try {
-    // Send a market order with reduceOnly=true to close the position
+    console.info(
+      `Closing market order: symbol=${symbol}, side=${side}, quantity=${quantity}`
+    );
+
     const result = await binance.futuresOrder({
       symbol,
       side,
-      quantity,
       type: "MARKET",
+      quantity,
       reduceOnly: true,
+      closePosition: true,
     });
 
-    // Return the order result from Binance
+    console.info(`Close order response:`, result);
+
+    if (result.status !== "FILLED") {
+      console.warn(
+        `Warning: Close order status is ${result.status}, position might not be closed immediately.`
+      );
+    }
+
     return result;
   } catch (error) {
+    console.error(`Error closing position for ${symbol}:`, error);
     throw { type: "Close Futures Order", ...error, errorSrcData: error };
+  }
+}
+
+export async function setMarginTypeAndLeverage(symbol) {
+  try {
+    await delay(delayMs);
+    try {
+      await binance.futuresMarginType(symbol, "ISOLATED");
+      console.info(`Margin type set to ISOLATED for ${symbol}`);
+    } catch (error) {
+      if (error.body && error.body.includes("No need to change margin type")) {
+        console.info(`Margin type already ISOLATED for ${symbol}`);
+      } else {
+        throw error;
+      }
+    }
+
+    await delay(delayMs);
+    await binance.futuresLeverage(symbol, 1);
+    console.info(`Leverage set to 1 for ${symbol}`);
+  } catch (error) {
+    throw {
+      type: `Set Margin Type/Leverage Error for ${symbol}`,
+      ...error,
+      errorSrcData: error,
+    };
   }
 }

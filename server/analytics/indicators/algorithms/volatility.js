@@ -1,7 +1,7 @@
 // volatility.js
 
 import {
-  getCandlestickDataFutures,
+  getCandlestickData,
   getTradingTickersFutures,
   getPrevDayDataFutures,
 } from "../../../api/binance/info.js";
@@ -84,7 +84,7 @@ export async function getTradeSignals() {
       .slice(0, 100) // Top 100 by volume
       .sort((a, b) => b.priceChangePercent - a.priceChangePercent)[topIndex];
 
-    const candlesticks = await getCandlestickDataFutures({
+    const candlesticks = await getCandlestickData({
       symbol: topGainer.symbol,
       interval,
       periods,
