@@ -222,11 +222,9 @@ export async function createMarketOrderFutures({ symbol, side, quantity }) {
   }
 }
 
-export async function closeMarketOrderFutures({ symbol, side, quantity }) {
+export async function closeMarketOrderFutures({ symbol, side }) {
   try {
-    console.info(
-      `Closing market order: symbol=${symbol}, side=${side}, quantity=${quantity}`
-    );
+    console.info(`Closing market order: symbol=${symbol}, side=${side}`);
 
     const params = {
       type: "MARKET",
@@ -237,7 +235,7 @@ export async function closeMarketOrderFutures({ symbol, side, quantity }) {
     const result = await binance.futuresOrder(
       side,
       symbol,
-      quantity,
+      null, // quantity is null when using closePosition
       null,
       params
     );
