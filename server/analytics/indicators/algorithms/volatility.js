@@ -3,7 +3,7 @@
 import {
   getCandlestickData,
   getTradingTickersFutures,
-  getPrevDayDataFutures,
+  getPrevDayData,
 } from "../../../api/binance/info.js";
 
 const secondarySymbol = process.env.SECONDARY_SYMBOL; // e.g. "USDT"
@@ -27,10 +27,10 @@ export async function getTradeSignals() {
   try {
     const now = Date.now();
     const tradingTickersFutures = await getTradingTickersFutures();
-    const prevDayDataFFutures = await getPrevDayDataFutures();
+    const prevDayData = await getPrevDayData();
 
     // Map tickers with delta price calculation and filter needed symbols
-    const resolvedTickerList = prevDayDataFFutures
+    const resolvedTickerList = prevDayData
       .map((item) => {
         const { symbol, lastPrice, volume } = item;
         const price = parseFloat(lastPrice);
