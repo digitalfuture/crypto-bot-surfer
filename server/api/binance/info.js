@@ -362,7 +362,9 @@ export async function getSymbolMinTradeFutures(symbol) {
     const exchangeInfo = await getExchangeInfoCached();
 
     const symbolInfo = exchangeInfo.symbols.find((s) => s.symbol === symbol);
-    if (!symbolInfo) throw new Error(`Symbol ${symbol} not found`);
+    if (!symbolInfo) {
+      throw new Error(`Symbol ${symbol} not found in exchange info`);
+    }
 
     const lotSizeFilter = symbolInfo.filters.find(
       (f) => f.filterType === "LOT_SIZE"
@@ -374,14 +376,24 @@ export async function getSymbolMinTradeFutures(symbol) {
       (f) => f.filterType === "NOTIONAL"
     );
 
+    if (!lotSizeFilter && !marketLotSizeFilter) {
+      throw new Error(
+        `No LOT_SIZE or MARKET_LOT_SIZE filter found for ${symbol}`
+      );
+    }
+
+    if (!notionalFilter) {
+      throw new Error(`No NOTIONAL filter found for ${symbol}`);
+    }
+
     const stepSize = parseFloat(
-      lotSizeFilter?.stepSize || marketLotSizeFilter?.stepSize || "1"
+      marketLotSizeFilter?.stepSize || lotSizeFilter.stepSize
     );
     const minQty = parseFloat(
-      marketLotSizeFilter?.minQty || lotSizeFilter?.minQty || "1"
+      marketLotSizeFilter?.minQty || lotSizeFilter.minQty
     );
     const minNotional = parseFloat(
-      notionalFilter?.notional || notionalFilter?.minNotional || "5"
+      notionalFilter.minNotional ?? notionalFilter.notional
     );
 
     return {
@@ -390,7 +402,6 @@ export async function getSymbolMinTradeFutures(symbol) {
       minNotional,
     };
   } catch (error) {
-    console.error(`Error in getSymbolMinTradeFutures(${symbol}):`, error);
     throw {
       type: "Get Symbol Min Trade Futures",
       ...error,

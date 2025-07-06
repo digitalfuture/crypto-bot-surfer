@@ -172,7 +172,6 @@ export async function getOrderQuantity({
 }
 
 // Futures
-
 export async function createMarketOrderFutures({ symbol, side, quantity }) {
   try {
     await delay(delayMs);
@@ -255,7 +254,6 @@ export async function closeMarketOrderFutures({ symbol, side, quantity }) {
 
 export async function setMarginTypeAndLeverage(symbol) {
   try {
-    // Проверяем есть ли открытая позиция
     const positions = await binance.futuresPositionRisk();
     const position = positions.find((p) => p.symbol === symbol);
 
@@ -267,11 +265,9 @@ export async function setMarginTypeAndLeverage(symbol) {
       return;
     }
 
-    // Меняем маржу
     await binance.futuresMarginType(symbol, "ISOLATED");
     console.info(`Set ISOLATED margin for ${symbol}`);
 
-    // Ставим плечо
     await binance.futuresLeverage(symbol, 1);
     console.info(`Set leverage 1x for ${symbol}`);
   } catch (error) {
