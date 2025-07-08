@@ -222,32 +222,53 @@ export async function createMarketOrderFutures({ symbol, side, quantity }) {
   }
 }
 
-export async function closeMarketOrderFutures({ symbol, side, quantity }) {
+export async function closeMarketOrderFutures({
+  symbol,
+  side,
+  positionSide,
+  quantity,
+}) {
   try {
     console.info(
-      `Closing market order: symbol=${symbol}, side=${side}, quantity=${quantity}`
+      `Closing market order: symbol=${symbol}, side=${side}, positionSide=${positionSide}, quantity=${quantity}`
     );
 
-    const result = await binance.futuresOrder(
-      "MARKET",
-      side,
-      symbol,
-      undefined, // no quantity when closePosition is true
-      undefined,
-      {
+    let options = {};
+
+    if (positionSide && positionSide !== "BOTH") {
+      // Hedge mode - передаем reduceOnly и closePosition, quantity НЕ нужен
+      options = {
         reduceOnly: true,
         closePosition: true,
-        positionSide: "BOTH",
-      }
-    );
+        positionSide,
+      };
 
-    console.info(`Close order response:`, result);
-    if (result.status !== "FILLED") {
-      console.warn(
-        `Warning: Close order status is ${result.status}, position may not be closed immediately.`
+      // quantity можно не передавать, т.к. closePosition=true
+      return await binance.futuresOrder(
+        "MARKET",
+        side,
+        symbol,
+        undefined,
+        undefined,
+        options
+      );
+    } else {
+      // One-way mode - нужно обязательно передать quantity, НЕ передаем reduceOnly и closePosition
+      if (!quantity || quantity <= 0) {
+        throw new Error(
+          "Quantity must be specified and greater than zero for closing order in One-way mode"
+        );
+      }
+
+      return await binance.futuresOrder(
+        "MARKET",
+        side,
+        symbol,
+        quantity,
+        undefined,
+        options
       );
     }
-    return result;
   } catch (error) {
     console.error(`Error closing position for ${symbol}:`, error);
     throw { type: "Close Futures Order", ...error, errorSrcData: error };

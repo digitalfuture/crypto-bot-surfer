@@ -88,8 +88,29 @@ async function tradeBySignal() {
     currentPositionSymbol
   );
 
-  if (!symbol || !signal) {
-    console.info("No signal detected");
+  // If no symbol and no signal, write report with trade = null but keep currentPositionSymbol as primarySymbol
+  if (!symbol && !signal) {
+    report({
+      date: new Date(),
+      trade: currentPositionSymbol ? null : null, // trade is null when no signal and no position
+      primarySymbol: currentPositionSymbol || null, // use currentPositionSymbol if exists
+      price: null,
+      priceChangePercent: 0,
+    });
+    console.info("No signal detected and no position open");
+    return;
+  }
+
+  // If symbol or signal exists but no signal, just report HOLD (optional)
+  if (!signal) {
+    report({
+      date: new Date(),
+      trade: null,
+      primarySymbol: symbol || null,
+      price: price || null,
+      priceChangePercent: priceChangePercent || 0,
+    });
+    console.info(`No trade signal, holding position on ${symbol}`);
     return;
   }
 
@@ -234,6 +255,7 @@ async function closeAllClosablePositions() {
           symbol: position.symbol,
           side: closeSide,
           quantity: Math.abs(positionAmt),
+          positionSide: position.positionSide || "BOTH",
         });
         console.info(`${position.symbol} closed, response:`, result);
       } catch (error) {
