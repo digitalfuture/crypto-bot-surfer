@@ -1,3 +1,5 @@
+// realMode.js
+
 import { delay, getHeartbeatInterval } from "./helpers/functions.js";
 import { getSignals } from "./analytics/indicators/index.js";
 import {
@@ -26,8 +28,13 @@ const commissionReserve = 0.002;
 
 let loopCount = 1;
 
-// Store current open position symbol to track active trade
-let currentPositionSymbol = null;
+// Store full position state: symbol, stopLoss, takeProfit, shortPrice
+let positionState = {
+  symbol: null,
+  stopLoss: null,
+  takeProfit: null,
+  shortPrice: null,
+};
 
 export default async function start() {
   console.log("\nTRADE mode is active");
@@ -83,17 +90,35 @@ async function startLoop() {
 }
 
 async function tradeBySignal() {
-  // Pass current open position symbol to getTradeSignals to maintain position state
-  const { symbol, price, priceChangePercent, signal } = await getSignals(
-    currentPositionSymbol
-  );
+  const {
+    symbol,
+    price,
+    priceChangePercent,
+    signal,
+    stopLoss,
+    takeProfit,
+    shortPrice,
+  } = await getSignals(positionState);
 
-  // If no symbol and no signal, write report with trade = null but keep currentPositionSymbol as primarySymbol
+  // Update position state
+  if (signal === "SELL") {
+    positionState = { symbol, stopLoss, takeProfit, shortPrice };
+  } else if (signal === "BUY") {
+    positionState = {
+      symbol: null,
+      stopLoss: null,
+      takeProfit: null,
+      shortPrice: null,
+    };
+  } else {
+    positionState = { symbol, stopLoss, takeProfit, shortPrice };
+  }
+
   if (!symbol && !signal) {
     report({
       date: new Date(),
-      trade: currentPositionSymbol ? null : null, // trade is null when no signal and no position
-      primarySymbol: currentPositionSymbol || null, // use currentPositionSymbol if exists
+      trade: positionState.symbol ? null : null,
+      primarySymbol: positionState.symbol || null,
       price: null,
       priceChangePercent: 0,
     });
@@ -101,7 +126,6 @@ async function tradeBySignal() {
     return;
   }
 
-  // If symbol or signal exists but no signal, just report HOLD (optional)
   if (!signal) {
     report({
       date: new Date(),
@@ -166,15 +190,6 @@ async function tradeBySignal() {
     price: executedPrice,
     priceChangePercent,
   });
-
-  // Update currentPositionSymbol based on trade result
-  if (signal === "SELL") {
-    // Position opened
-    currentPositionSymbol = fullSymbol;
-  } else if (signal === "BUY") {
-    // Position closed
-    currentPositionSymbol = null;
-  }
 }
 
 async function closeAllClosablePositions() {

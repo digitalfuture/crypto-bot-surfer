@@ -6,7 +6,7 @@ import {
   getPrevDayData,
 } from "../../../api/binance/info.js";
 
-const secondarySymbol = process.env.SECONDARY_SYMBOL; // e.g. "USDT"
+const secondarySymbol = process.env.SECONDARY_SYMBOL;
 const interval = process.env.BACKTEST_INTERVAL;
 const periods = parseInt(process.env.BACKTEST_PERIODS, 10);
 let stopMultiplier = parseFloat(process.env.SYSTEM_PARAM_1);
@@ -15,13 +15,19 @@ let topIndex = parseInt(process.env.SYSTEM_PARAM_3);
 
 let lastPriceSnapshot = {};
 
-export async function getTradeSignals(symbol = null) {
+export async function getTradeSignals(state = {}) {
   try {
     const now = Date.now();
     const tradingTickersFutures = await getTradingTickersFutures();
     const prevDayData = await getPrevDayData();
 
-    // Map tickers with delta price calculation and filter needed symbols
+    let {
+      symbol = null,
+      stopLoss = null,
+      takeProfit = null,
+      shortPrice = null,
+    } = state;
+
     const resolvedTickerList = prevDayData
       .map((item) => {
         const { symbol: itemSymbol, lastPrice, volume } = item;
@@ -40,7 +46,6 @@ export async function getTradeSignals(symbol = null) {
           timestamp: now,
         };
 
-        // Extract primarySymbol by removing secondarySymbol suffix
         const primarySymbol = itemSymbol.replace(secondarySymbol, "");
 
         return {
@@ -53,7 +58,6 @@ export async function getTradeSignals(symbol = null) {
           volume: vol,
         };
       })
-      // Filters:
       .filter(({ symbol }) => symbol.endsWith(secondarySymbol))
       .filter(({ primarySymbol, secondarySymbol }) =>
         tradingTickersFutures.includes(primarySymbol + secondarySymbol)
@@ -66,14 +70,16 @@ export async function getTradeSignals(symbol = null) {
         price: null,
         priceChangePercent: 0,
         signal: null,
+        stopLoss: null,
+        takeProfit: null,
+        shortPrice: null,
       };
     }
 
-    // Pick top gainer by priceChangePercent from top 100 by volume
     const topGainer = resolvedTickerList
       .filter(({ volume }) => volume > 1000)
       .sort((a, b) => b.volume - a.volume)
-      .slice(0, 100) // Top 100 by volume
+      .slice(0, 100)
       .sort((a, b) => b.priceChangePercent - a.priceChangePercent)[topIndex];
 
     const candlesticks = await getCandlestickData({
@@ -82,22 +88,17 @@ export async function getTradeSignals(symbol = null) {
       periods,
     });
 
-    // Calculate average volatility
     const volatility =
       candlesticks.reduce((acc, [, , high, low, close]) => {
         return acc + Math.abs((high - low) / close);
       }, 0) / candlesticks.length;
 
-    let stopLoss = null;
-    let takeProfit = null;
     let priceChangePercent = 0;
     let price = null;
-    let shortPrice = null;
     let signal = null;
     let exitReason = null;
 
     if (!symbol) {
-      // No active position - signal to open short on topGainer
       price = topGainer.lastPrice;
       priceChangePercent = topGainer.priceChangePercent;
 
@@ -107,20 +108,17 @@ export async function getTradeSignals(symbol = null) {
       shortPrice = price;
       symbol = topGainer.symbol;
     } else {
-      // Active short position on symbol, check exit conditions
       const currentTicker = resolvedTickerList.find(
         (ticker) => ticker.symbol === symbol
       );
 
       if (!currentTicker) {
-        // Position symbol not found, close position
         signal = "BUY";
         exitReason = "POSITION_NOT_FOUND";
       } else {
         priceChangePercent = currentTicker.priceChangePercent;
         price = currentTicker.lastPrice;
 
-        // Adjust trailing stop if price decreases further
         if (price < shortPrice || shortPrice === null) {
           const dynamicFactor = stopMultiplier * volatility * 1.2;
           const troughPrice = price;
@@ -132,7 +130,6 @@ export async function getTradeSignals(symbol = null) {
           shortPrice = troughPrice;
         }
 
-        // Check stop loss or take profit hit
         if (price >= stopLoss) {
           signal = "BUY";
           exitReason = "SL";
@@ -142,12 +139,11 @@ export async function getTradeSignals(symbol = null) {
         }
 
         if (signal !== "BUY") {
-          signal = null; // Hold position
+          signal = null;
         }
       }
     }
 
-    // Debug logs for development mode
     if (process.env.MODE === "DEVELOPMENT") {
       console.log("===========================");
       console.log("symbol:", symbol);
@@ -165,9 +161,9 @@ export async function getTradeSignals(symbol = null) {
       price,
       priceChangePercent,
       signal,
-      exitReason,
       stopLoss,
       takeProfit,
+      shortPrice,
     };
   } catch (error) {
     throw { type: "Volatility Strategy Error", ...error };

@@ -13,8 +13,14 @@ const interval = process.env.HEARTBEAT_INTERVAL;
 const heartbeatInterval = getHeartbeatInterval(interval);
 
 let loopCount = 1;
-// Store current open position symbol here; null means no open position
-let currentPositionSymbol = null;
+
+// Store current position state: symbol, stopLoss, takeProfit, shortPrice
+let positionState = {
+  symbol: null,
+  stopLoss: null,
+  takeProfit: null,
+  shortPrice: null,
+};
 
 export default async function start() {
   console.log("\nTEST mode is active");
@@ -65,7 +71,6 @@ async function startServer() {
   try {
     console.info(`${secondarySymbol} Bot started`);
 
-    // Disable console output for PRODUCTION mode
     if (appMode === "PRODUCTION") console.info = () => {};
 
     console.info("Heartbeat interval:", interval);
@@ -108,19 +113,29 @@ async function startLoop() {
 
 async function heartBeatLoop() {
   try {
-    // Pass current open position symbol to getTradeSignals to maintain state
-    const { symbol, price, priceChangePercent, signal, exitReason } =
-      await getSignals(currentPositionSymbol);
+    const {
+      symbol,
+      price,
+      priceChangePercent,
+      signal,
+      exitReason,
+      stopLoss,
+      takeProfit,
+      shortPrice,
+    } = await getSignals(positionState);
 
-    // Update currentPositionSymbol based on signals
     if (signal === "SELL") {
-      // Opening short position, store symbol
-      currentPositionSymbol = symbol;
+      positionState = { symbol, stopLoss, takeProfit, shortPrice };
     } else if (signal === "BUY") {
-      // Closing position, clear symbol
-      currentPositionSymbol = null;
+      positionState = {
+        symbol: null,
+        stopLoss: null,
+        takeProfit: null,
+        shortPrice: null,
+      };
+    } else {
+      positionState = { symbol, stopLoss, takeProfit, shortPrice };
     }
-    // Else signal null: keep currentPositionSymbol as is (holding position or no action)
 
     const primarySymbol = symbol?.replace(secondarySymbol, "") || null;
     const isBuySignal = signal === "BUY";
