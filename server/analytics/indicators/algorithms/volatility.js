@@ -77,7 +77,6 @@ export async function getTradeSignals(state = {}) {
     }
 
     const topGainer = resolvedTickerList
-      .filter(({ volume }) => volume > 1000)
       .sort((a, b) => b.volume - a.volume)
       .slice(0, 100)
       .sort((a, b) => b.priceChangePercent - a.priceChangePercent)[topIndex];
