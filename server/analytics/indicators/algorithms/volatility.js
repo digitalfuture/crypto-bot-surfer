@@ -1,9 +1,9 @@
 // volatility.js
 
 import {
-  getCandlestickData,
+  getCandlestickDataFutures,
   getTradingTickersFutures,
-  getPrevDayData,
+  getPrevDayDataFutures,
 } from "../../../api/binance/info.js";
 
 const secondarySymbol = process.env.SECONDARY_SYMBOL;
@@ -19,7 +19,7 @@ export async function getTradeSignals(state = {}) {
   try {
     const now = Date.now();
     const tradingTickersFutures = await getTradingTickersFutures();
-    const prevDayData = await getPrevDayData();
+    const prevDayDataFutures = await getPrevDayDataFutures();
 
     let {
       symbol = null,
@@ -28,7 +28,7 @@ export async function getTradeSignals(state = {}) {
       shortPrice = null,
     } = state;
 
-    const resolvedTickerList = prevDayData
+    const resolvedTickerList = prevDayDataFutures
       .map((item) => {
         const { symbol: itemSymbol, lastPrice, volume } = item;
         const price = parseFloat(lastPrice);
@@ -62,7 +62,13 @@ export async function getTradeSignals(state = {}) {
       .filter(({ primarySymbol, secondarySymbol }) =>
         tradingTickersFutures.includes(primarySymbol + secondarySymbol)
       )
+      .filter(({ volume }) => volume >= 5_000_000)
       .filter(({ isCalculatedDelta }) => isCalculatedDelta);
+
+    console.log(
+      "Number of futures with volume > 5 000 000 USDT:",
+      resolvedTickerList.length
+    );
 
     if (resolvedTickerList.length === 0) {
       return {
@@ -81,7 +87,7 @@ export async function getTradeSignals(state = {}) {
       .slice(0, 100)
       .sort((a, b) => b.priceChangePercent - a.priceChangePercent)[topIndex];
 
-    const candlesticks = await getCandlestickData({
+    const candlesticks = await getCandlestickDataFutures({
       symbol: topGainer.symbol,
       interval,
       periods,
