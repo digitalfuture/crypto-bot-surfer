@@ -460,14 +460,6 @@ export async function getCandlestickDataFutures({
   try {
     await delay(delayMs);
 
-    console.log(
-      "Fetching candlestick data for:",
-      symbol,
-      interval,
-      periods,
-      endTime
-    );
-
     const candlesticks = await binance.futuresCandlesticks(symbol, interval, {
       limit: periods,
       endTime,

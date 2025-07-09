@@ -150,7 +150,7 @@ export async function getTradeSignals(state = {}) {
     }
 
     if (process.env.MODE === "DEVELOPMENT") {
-      console.log("===========================");
+      console.log("\n===========================");
       console.log("symbol:", symbol);
       console.log("price:", price);
       console.log("stopLoss:", stopLoss);
