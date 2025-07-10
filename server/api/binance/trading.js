@@ -222,28 +222,26 @@ export async function createMarketOrderFutures({ symbol, side, quantity }) {
   }
 }
 
-export async function closeMarketOrderFutures({ symbol, positionSide }) {
+export async function closeMarketOrderFutures({ symbol }) {
   try {
-    console.info(
-      `Closing full short position: symbol=${symbol}, positionSide=${positionSide}`
-    );
+    console.info(`Closing full position for symbol=${symbol}`);
 
-    // When closing full short position, do not send side, quantity, or reduceOnly.
-    // Use closePosition: true to close entire position.
+    // Use closePosition: true to close entire position automatically.
+    // Do not specify side, quantity or reduceOnly.
     const options = {
-      closePosition: true, // key to close entire position
+      closePosition: true,
     };
 
     return await binance.futuresOrder(
       "MARKET",
-      undefined, // do not specify side, Binance determines automatically
+      undefined, // side is not specified
       symbol,
-      undefined, // no quantity needed
-      undefined,
+      undefined, // quantity not specified
+      undefined, // price not specified
       options
     );
   } catch (error) {
-    console.error(`Error closing full short position for ${symbol}:`, error);
+    console.error(`Error closing position for ${symbol}:`, error);
     throw { type: "Close Futures Order", ...error, errorSrcData: error };
   }
 }
