@@ -229,14 +229,13 @@ export async function closeMarketOrderFutures({ symbol, positionSide }) {
     );
 
     const options = {
-      reduceOnly: true,
-      closePosition: true,
+      closePosition: true, // Close entire position
       positionSide,
     };
 
     return await binance.futuresOrder(
       "MARKET",
-      "BUY", // Always closing a short position
+      "BUY", // Always BUY to close a short
       symbol,
       undefined, // quantity is not required when closePosition is true
       undefined,
