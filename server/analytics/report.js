@@ -101,10 +101,9 @@ export function report({
       "Profit total %": +profitTotalPercent.toFixed(8),
     });
   } else if (trade === "PASS") {
-    // Save the price so future HOLD calculations will not divide by zero
-    if (!lastTradePrice && price) {
-      lastTradePrice = price;
-    }
+    // Update lastTradePrice so future HOLD calculates correctly from this price
+    lastTradePrice = price;
+    lastTradeType = "PASS";
 
     csvStream.write({
       Count: count,
