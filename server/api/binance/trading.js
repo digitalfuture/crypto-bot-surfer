@@ -234,7 +234,7 @@ export async function closeMarketOrderFutures({
     );
 
     const options = {
-      reduceOnly: true, // всегда ставим, чтобы закрыть любую позицию
+      reduceOnly: true,
     };
 
     return await binance.futuresOrder(
