@@ -88,7 +88,6 @@ async function startLoop() {
     loopCount++;
   }
 }
-
 async function tradeBySignal() {
   const {
     symbol,
@@ -100,21 +99,11 @@ async function tradeBySignal() {
     shortPrice,
   } = await getSignals(positionState);
 
-  // Update position state before making any trade attempts
-  if (signal === "SELL") {
-    positionState = { symbol, stopLoss, takeProfit, shortPrice };
-  } else if (signal === "BUY") {
-    positionState = {
-      symbol: null,
-      stopLoss: null,
-      takeProfit: null,
-      shortPrice: null,
-    };
-  } else {
-    positionState = { symbol, stopLoss, takeProfit, shortPrice };
-  }
+  const fullSymbol = symbol;
+  const isSellSignal = signal === "SELL";
+  const side = isSellSignal ? "SELL" : "BUY";
 
-  // If there is no signal and no open position, report as HOLD
+  // No signal and no position — report and exit
   if (!signal && !symbol) {
     report({
       date: new Date(),
@@ -124,10 +113,16 @@ async function tradeBySignal() {
       priceChangePercent: 0,
     });
     console.info("No signal detected and no position open");
+    positionState = {
+      symbol: null,
+      stopLoss: null,
+      takeProfit: null,
+      shortPrice: null,
+    };
     return;
   }
 
-  // If no trade signal but a symbol exists, report HOLD for that symbol
+  // No signal but there is a position — report HOLD
   if (!signal) {
     report({
       date: new Date(),
@@ -140,15 +135,11 @@ async function tradeBySignal() {
     return;
   }
 
-  const fullSymbol = symbol;
-  const isSellSignal = signal === "SELL";
-  const side = isSellSignal ? "SELL" : "BUY";
-
-  // Calculate the trade quantity
+  // Calculate trade quantity
   const quantity = await calculateTradeQuantity(fullSymbol, price);
   const notional = quantity * price;
 
-  // If quantity is too small, report PASS
+  // If quantity too small — report PASS and clear position
   if (quantity <= 0) {
     console.info(
       `Calculated quantity is 0 or too small for ${fullSymbol}, skipping trade.`
@@ -160,14 +151,17 @@ async function tradeBySignal() {
       price: price || null,
       priceChangePercent: priceChangePercent || 0,
     });
+    // Clear position because trade failed
+    positionState = {
+      symbol: null,
+      stopLoss: null,
+      takeProfit: null,
+      shortPrice: null,
+    };
     return;
   }
 
-  console.info(
-    `Signal: ${signal} ${fullSymbol} at price ${price}, suggested quantity ${quantity} (~${notional.toFixed(2)} USDT)`
-  );
-
-  // Check available balance
+  // Check balance
   const usdtBalance = await getFuturesAccountUSDTBalance();
   if (notional > usdtBalance) {
     console.info(
@@ -180,10 +174,17 @@ async function tradeBySignal() {
       price: price || null,
       priceChangePercent: priceChangePercent || 0,
     });
+    // Clear position because trade failed
+    positionState = {
+      symbol: null,
+      stopLoss: null,
+      takeProfit: null,
+      shortPrice: null,
+    };
     return;
   }
 
-  // Try to place a market order
+  // Try to place an order
   let order;
   try {
     order = await createMarketOrderFutures({
@@ -200,6 +201,13 @@ async function tradeBySignal() {
       price: price || null,
       priceChangePercent: priceChangePercent || 0,
     });
+    // Clear position because trade failed
+    positionState = {
+      symbol: null,
+      stopLoss: null,
+      takeProfit: null,
+      shortPrice: null,
+    };
     return;
   }
 
@@ -208,10 +216,22 @@ async function tradeBySignal() {
     order
   );
 
-  // Get executed price from order response or use original price
+  // Get executed price
   const executedPrice = parseFloat(order.avgPrice || order.price || price);
 
-  // Report the successful trade
+  // Update position state after successful trade
+  if (side === "SELL") {
+    positionState = { symbol, stopLoss, takeProfit, shortPrice };
+  } else if (side === "BUY") {
+    positionState = {
+      symbol: null,
+      stopLoss: null,
+      takeProfit: null,
+      shortPrice: null,
+    };
+  }
+
+  // Report trade
   report({
     date: new Date(),
     trade: side,
