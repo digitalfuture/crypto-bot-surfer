@@ -23,8 +23,8 @@ const interval = process.env.HEARTBEAT_INTERVAL;
 const heartbeatInterval = getHeartbeatInterval(interval);
 
 const useFixedTradeValue = process.env.USE_FIXED_TRADE_VALUE === "true";
-const tradeValue = parseFloat(process.env.TRADE_VALUE || "0");
-const commissionPercent = parseFloat(process.env.COMISSION_PERCENT) / 100;
+const tradeValue = parseFloat(process.env.TRADE_VALUE);
+const commissionPercent = parseFloat(process.env.COMMISSION_PERCENT);
 
 let loopCount = 1;
 
