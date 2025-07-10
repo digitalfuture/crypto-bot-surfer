@@ -56,7 +56,15 @@ export function report({
   price,
   priceChangePercent,
 }) {
-  const stream = fs.createWriteStream(filePath, fileOptions);
+  console.log("Report data:", {
+    date,
+    trade,
+    primarySymbol,
+    price,
+    priceChangePercent,
+  });
+
+  const stream = fs.createWriteStream(filePath, fileOptions); 
   const csvStream = format({
     headers: false,
     includeEndRowDelimiter: true,

@@ -233,42 +233,18 @@ export async function closeMarketOrderFutures({
       `Closing market order: symbol=${symbol}, side=${side}, positionSide=${positionSide}, quantity=${quantity}`
     );
 
-    let options = {};
+    const options = {
+      reduceOnly: true, // всегда ставим, чтобы закрыть любую позицию
+    };
 
-    if (positionSide && positionSide !== "BOTH") {
-      // Hedge mode - передаем reduceOnly и closePosition, quantity НЕ нужен
-      options = {
-        reduceOnly: true,
-        closePosition: true,
-        positionSide,
-      };
-
-      // quantity можно не передавать, т.к. closePosition=true
-      return await binance.futuresOrder(
-        "MARKET",
-        side,
-        symbol,
-        undefined,
-        undefined,
-        options
-      );
-    } else {
-      // One-way mode - нужно обязательно передать quantity, НЕ передаем reduceOnly и closePosition
-      if (!quantity || quantity <= 0) {
-        throw new Error(
-          "Quantity must be specified and greater than zero for closing order in One-way mode"
-        );
-      }
-
-      return await binance.futuresOrder(
-        "MARKET",
-        side,
-        symbol,
-        quantity,
-        undefined,
-        options
-      );
-    }
+    return await binance.futuresOrder(
+      "MARKET",
+      side,
+      symbol,
+      quantity,
+      undefined,
+      options
+    );
   } catch (error) {
     console.error(`Error closing position for ${symbol}:`, error);
     throw { type: "Close Futures Order", ...error, errorSrcData: error };
