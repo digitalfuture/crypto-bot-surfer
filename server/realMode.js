@@ -335,11 +335,10 @@ async function calculateTradeQuantity(symbol, lastPrice) {
   const price = lastPrice || (await getLastPriceFutures(symbol));
   const balances = await getAccountBalancesFutures();
 
-  // Make sure secondarySymbol is set correctly — for example 'USDT'
   const quoteBalance =
     balances.find((b) => b.symbol === secondarySymbol)?.available || 0;
 
-  let quoteAmount = useFixedTradeValue
+  const quoteAmount = useFixedTradeValue
     ? tradeValue
     : (quoteBalance * tradeValue) / 100;
 
@@ -348,21 +347,29 @@ async function calculateTradeQuantity(symbol, lastPrice) {
   const { stepSize, minQty } = await getSymbolMinTradeFutures(symbol);
   const rawQty = availableForTrade / price;
 
-  // Floor quantity to step size
+  // Округляем к ближайшему кратному stepSize
   const quantity = Math.floor(rawQty / stepSize) * stepSize;
 
-  // Log all relevant data for debugging
-  console.log({
-    symbol,
-    price,
-    quoteBalance,
-    quoteAmount,
-    availableForTrade,
-    rawQty,
-    stepSize,
-    minQty,
-    quantity,
-  });
+  // Подробный лог для диагностики
+  console.log("=== Trade Quantity Calculation ===");
+  console.log("symbol:", symbol);
+  console.log("price:", price);
+  console.log("quoteBalance:", quoteBalance);
+  console.log("tradeValue:", tradeValue);
+  console.log("quoteAmount (before commission):", quoteAmount);
+  console.log("availableForTrade (after commission):", availableForTrade);
+  console.log("rawQty:", rawQty);
+  console.log("stepSize:", stepSize);
+  console.log("minQty:", minQty);
+  console.log("quantity (after rounding):", quantity);
+
+  // Проверка на минимальный размер
+  if (quantity < minQty) {
+    console.warn(
+      `Calculated quantity (${quantity}) is less than minQty (${minQty}) for ${symbol}, skipping trade.`
+    );
+    return 0;
+  }
 
   return parseFloat(quantity.toFixed(8));
 }
