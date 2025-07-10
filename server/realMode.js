@@ -346,7 +346,8 @@ async function calculateTradeQuantity(symbol, lastPrice) {
     ? tradeValue
     : (quoteBalance * tradeValue) / 100;
 
-  const availableForTrade = quoteAmount * (1 - commissionPercent);
+  // Correct commission calculation: commissionPercent is a percentage, so divide by 100
+  const availableForTrade = quoteAmount * (1 - commissionPercent / 100);
 
   const { stepSize, minQty } = await getSymbolMinTradeFutures(symbol);
   const rawQty = availableForTrade / price;
