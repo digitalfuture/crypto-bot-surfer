@@ -117,10 +117,14 @@ export function report({
       "Profit total %": profitTotalPercent.toFixed(8),
     });
   } else {
-    const onePercent = lastTradePrice ? lastTradePrice / 100 : 1;
-    const profit = lastTradePrice - price;
-    const profitPercent = profit / onePercent;
-    profitTotalPercent += primarySymbol ? profitPercent : 0;
+    let profitPercent = 0;
+
+    if (lastTradeType === "SELL" || lastTradeType === "BUY") {
+      const onePercent = lastTradePrice / 100;
+      const profit = lastTradePrice - price;
+      profitPercent = profit / onePercent;
+      profitTotalPercent += primarySymbol ? profitPercent : 0;
+    }
 
     csvStream.write({
       Count: count,
