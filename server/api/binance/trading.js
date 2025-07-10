@@ -233,18 +233,19 @@ export async function closeMarketOrderFutures({
       `Closing full position for symbol=${symbol}, side=${side}, quantity=${quantity}, positionSide=${positionSide}`
     );
 
-    const options = {};
+    const options = {
+      reduceOnly: true, // <-- ключевой параметр для закрытия позиции
+    };
 
-    // Add positionSide if it's LONG or SHORT (hedge mode)
     if (positionSide && positionSide !== "BOTH") {
       options.positionSide = positionSide;
     }
 
     return await binance.futuresOrder(
       "MARKET",
-      side, // required: BUY or SELL
+      side,
       symbol,
-      quantity, // required quantity to close position
+      quantity,
       undefined,
       options
     );
