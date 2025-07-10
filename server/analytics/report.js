@@ -69,9 +69,9 @@ export function report({
   });
 
   csvStream.pipe(stream);
-
   count++;
-  const commission = price ? (price * comissionPercent) / 100 : 0;
+
+  const commission = (price * comissionPercent) / 100;
 
   if (trade === "SELL" || trade === "BUY") {
     let profitPercent = 0;
@@ -101,6 +101,11 @@ export function report({
       "Profit total %": +profitTotalPercent.toFixed(8),
     });
   } else if (trade === "PASS") {
+    // Save the price so future HOLD calculations will not divide by zero
+    if (!lastTradePrice && price) {
+      lastTradePrice = price;
+    }
+
     csvStream.write({
       Count: count,
       Date: date.toISOString(),
@@ -113,7 +118,7 @@ export function report({
       "Profit total %": profitTotalPercent.toFixed(8),
     });
   } else {
-    const onePercent = lastTradePrice / 100;
+    const onePercent = lastTradePrice ? lastTradePrice / 100 : 1;
     const profit = lastTradePrice - price;
     const profitPercent = profit / onePercent;
     profitTotalPercent += primarySymbol ? profitPercent : 0;
