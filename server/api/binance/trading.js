@@ -231,7 +231,6 @@ export async function closeMarketOrderFutures({ symbol, positionSide }) {
     // When closing full short position, do not send side, quantity, or reduceOnly.
     // Use closePosition: true to close entire position.
     const options = {
-      positionSide,
       closePosition: true, // key to close entire position
     };
 
