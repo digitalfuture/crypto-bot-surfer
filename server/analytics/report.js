@@ -6,7 +6,7 @@ import { format } from "@fast-csv/format";
 
 const reportFileDir = process.env.REPORT_FILE_DIR;
 const reportFileName = process.env.REPORT_FILE_NAME;
-const commissionPercent = parseFloat(process.env.TEST_COMISSION_PERCENT);
+const commissionPercent = parseFloat(process.env.COMISSION_PERCENT); // commission percent from env
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = reportFileDir
@@ -15,10 +15,10 @@ const __dirname = reportFileDir
 const filePath = path.join(__dirname, reportFileName);
 const fileOptions = { flags: "a" };
 
-let profitTotalPercent = 0;
-let entryPrice = 0;
-let positionSide = null;
-let count = 0;
+let profitTotalPercent = 0; // accumulated total profit percent
+let entryPrice = 0; // entry price of the position
+let lastTradeType = null; // last trade type (BUY or SELL)
+let count = 0; // row counter
 
 createTable();
 
@@ -35,7 +35,7 @@ function createTable() {
     "Profit total %",
   ];
 
-  execSync(`rm -rf ${filePath}`);
+  execSync(`rm -rf ${filePath}`); // remove old report file
   console.log("Report file erased");
 
   const stream = fs.createWriteStream(filePath, fileOptions);
@@ -71,17 +71,16 @@ export function report({
   csvStream.pipe(stream);
   count++;
 
-  const commission = (price * commissionPercent) / 100;
+  const commission = (price * commissionPercent) / 100; // calculate commission amount
   let profitPercent = 0;
 
-  if (trade === "SELL" || trade === "BUY") {
-    // Open new position
-    entryPrice = price;
-    positionSide = trade; // "SELL" (short) or "BUY" (long)
-
-    // Комиссия на вход считается сразу, профита пока нет
-    profitPercent = -commission / (price / 100);
+  if (trade === "SELL") {
+    // Opening short position: profit is negative commission only
+    profitPercent = -commissionPercent;
     profitTotalPercent += profitPercent;
+
+    entryPrice = price;
+    lastTradeType = trade;
 
     csvStream.write({
       Count: count,
@@ -94,10 +93,53 @@ export function report({
       "Profit %": profitPercent.toFixed(8),
       "Profit total %": profitTotalPercent.toFixed(8),
     });
+  } else if (trade === "BUY") {
+    if (lastTradeType === "SELL") {
+      // Closing short position: calculate net profit accounting commission on open and close
+      const grossProfitPercent = ((entryPrice - price) / entryPrice) * 100;
+      const totalCommissionPercent = commissionPercent * 2;
+
+      profitPercent = grossProfitPercent - totalCommissionPercent;
+      profitTotalPercent += profitPercent;
+
+      entryPrice = price;
+      lastTradeType = trade;
+
+      csvStream.write({
+        Count: count,
+        Date: date.toISOString(),
+        "Token name": primarySymbol,
+        "Price change %": priceChangePercent.toFixed(8),
+        Trade: trade,
+        "Trade price": price.toFixed(8),
+        Comission: (commission * 2).toFixed(8),
+        "Profit %": profitPercent.toFixed(8),
+        "Profit total %": profitTotalPercent.toFixed(8),
+      });
+    } else {
+      // Opening long position (BUY without existing short): commission is a loss
+      profitPercent = -commissionPercent;
+      profitTotalPercent += profitPercent;
+
+      entryPrice = price;
+      lastTradeType = trade;
+
+      csvStream.write({
+        Count: count,
+        Date: date.toISOString(),
+        "Token name": primarySymbol,
+        "Price change %": priceChangePercent.toFixed(8),
+        Trade: trade,
+        "Trade price": price.toFixed(8),
+        Comission: commission.toFixed(8),
+        "Profit %": profitPercent.toFixed(8),
+        "Profit total %": profitTotalPercent.toFixed(8),
+      });
+    }
   } else if (trade === "PASS") {
-    // "PASS" - вне рынка, обновляем только цену входа
+    // Update price for HOLD calculations; profit is zero
     entryPrice = price;
-    positionSide = null;
+    lastTradeType = "PASS";
 
     csvStream.write({
       Count: count,
@@ -111,16 +153,16 @@ export function report({
       "Profit total %": profitTotalPercent.toFixed(8),
     });
   } else {
-    // HOLD - считаем текущую нереализованную прибыль от entryPrice
-    if (positionSide === "SELL") {
-      profitPercent =
-        ((entryPrice - price) / entryPrice) * 100 - commissionPercent * 2;
-    } else if (positionSide === "BUY") {
-      profitPercent =
-        ((price - entryPrice) / entryPrice) * 100 - commissionPercent * 2;
+    // HOLD — calculate current profit without commission
+    if (lastTradeType === "SELL") {
+      profitPercent = ((entryPrice - price) / entryPrice) * 100;
+      profitTotalPercent += primarySymbol ? profitPercent : 0;
+    } else if (lastTradeType === "BUY") {
+      profitPercent = ((price - entryPrice) / entryPrice) * 100;
+      profitTotalPercent += primarySymbol ? profitPercent : 0;
+    } else {
+      profitPercent = 0;
     }
-
-    profitTotalPercent += primarySymbol ? profitPercent : 0;
 
     csvStream.write({
       Count: count,
