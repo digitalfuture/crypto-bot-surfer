@@ -88,6 +88,7 @@ async function startLoop() {
     loopCount++;
   }
 }
+
 async function tradeBySignal() {
   const {
     symbol,
@@ -335,6 +336,9 @@ async function calculateTradeQuantity(symbol, lastPrice) {
   const price = lastPrice || (await getLastPriceFutures(symbol));
   const balances = await getAccountBalancesFutures();
 
+  console.log("Account balances:", balances);
+  console.log("secondarySymbol:", secondarySymbol);
+
   const quoteBalance =
     balances.find((b) => b.symbol === secondarySymbol)?.available || 0;
 
@@ -353,6 +357,7 @@ async function calculateTradeQuantity(symbol, lastPrice) {
   console.log({
     symbol,
     price,
+    secondarySymbol,
     quoteBalance,
     quoteAmount,
     availableForTrade,
