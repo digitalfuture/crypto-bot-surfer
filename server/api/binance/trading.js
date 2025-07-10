@@ -222,7 +222,7 @@ export async function createMarketOrderFutures({ symbol, side, quantity }) {
   }
 }
 
-export async function closeShortPositionFutures({ symbol, positionSide }) {
+export async function closeMarketOrderFutures({ symbol, positionSide }) {
   try {
     console.info(
       `Closing full short position: symbol=${symbol}, positionSide=${positionSide}`
