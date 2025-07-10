@@ -333,42 +333,97 @@ async function closeAllClosablePositions() {
 }
 
 async function calculateTradeQuantity(symbol, lastPrice) {
-  const price = lastPrice || (await getLastPriceFutures(symbol));
-  const balances = await getAccountBalancesFutures();
+  try {
+    const price = lastPrice || (await getLastPriceFutures(symbol));
+    const balances = await getAccountBalancesFutures();
 
-  console.log("Account balances:", balances);
-  console.log("secondarySymbol:", secondarySymbol);
+    // secondarySymbol должен быть определён глобально или передан в функцию
+    console.log("Account balances:", balances);
+    console.log("secondarySymbol:", secondarySymbol);
 
-  const quoteBalance =
-    balances.find((b) => b.symbol === secondarySymbol)?.available || 0;
+    if (!price || price <= 0) {
+      console.warn(`Invalid price for ${symbol}:`, price);
+      return 0;
+    }
 
-  let quoteAmount = useFixedTradeValue
-    ? tradeValue
-    : (quoteBalance * tradeValue) / 100;
+    const quoteBalance =
+      balances.find((b) => b.symbol === secondarySymbol)?.available || 0;
 
-  // Correct commission calculation: commissionPercent is a percentage, so divide by 100
-  const availableForTrade = quoteAmount * (1 - commissionPercent / 100);
+    if (!quoteBalance || quoteBalance <= 0) {
+      console.warn(`No available balance for ${secondarySymbol}`);
+      return 0;
+    }
 
-  const { stepSize, minQty } = await getSymbolMinTradeFutures(symbol);
-  const rawQty = availableForTrade / price;
+    // Определяем quoteAmount в зависимости от useFixedTradeValue и tradeValue
+    let quoteAmount;
+    if (
+      typeof useFixedTradeValue !== "boolean" ||
+      typeof tradeValue !== "number"
+    ) {
+      console.warn("useFixedTradeValue or tradeValue not properly defined");
+      return 0;
+    }
+    quoteAmount = useFixedTradeValue
+      ? tradeValue
+      : (quoteBalance * tradeValue) / 100;
 
-  // Floor quantity to step size
-  const quantity = Math.floor(rawQty / stepSize) * stepSize;
+    // Корректируем комиссию
+    const availableForTrade = quoteAmount * (1 - commissionPercent / 100);
 
-  console.log({
-    symbol,
-    price,
-    secondarySymbol,
-    quoteBalance,
-    quoteAmount,
-    availableForTrade,
-    rawQty,
-    stepSize,
-    minQty,
-    quantity,
-  });
+    if (availableForTrade <= 0) {
+      console.warn(
+        `availableForTrade is zero or negative: ${availableForTrade}`
+      );
+      return 0;
+    }
 
-  return parseFloat(quantity.toFixed(8));
+    const { stepSize, minQty } = await getSymbolMinTradeFutures(symbol);
+
+    if (!stepSize || !minQty) {
+      console.warn(`Invalid stepSize or minQty for ${symbol}`, {
+        stepSize,
+        minQty,
+      });
+      return 0;
+    }
+
+    const rawQty = availableForTrade / price;
+
+    if (isNaN(rawQty) || rawQty <= 0) {
+      console.warn(`Invalid rawQty for ${symbol}:`, rawQty);
+      return 0;
+    }
+
+    // Floor quantity to step size precision
+    const precision = (stepSize.toString().split(".")[1] || []).length;
+    const quantity = Math.floor(rawQty / stepSize) * stepSize;
+
+    // Check minimum quantity limit
+    if (quantity < minQty) {
+      console.warn(
+        `Quantity ${quantity} is less than minQty ${minQty} for ${symbol}, setting quantity=0`
+      );
+      return 0;
+    }
+
+    console.log({
+      symbol,
+      price,
+      secondarySymbol,
+      quoteBalance,
+      quoteAmount,
+      availableForTrade,
+      rawQty,
+      stepSize,
+      minQty,
+      quantity,
+    });
+
+    return parseFloat(quantity.toFixed(precision));
+  } catch (error) {
+    console.error(`Error calculating trade quantity for ${symbol}:`, error);
+    return 0;
+  }
 }
 
 function handleError(error) {
