@@ -221,29 +221,29 @@ export async function createMarketOrderFutures({ symbol, side, quantity }) {
     };
   }
 }
+
 export async function closeMarketOrderFutures({ symbol, positionSide }) {
   try {
     console.info(
-      `Closing full position: symbol=${symbol}, positionSide=${positionSide}`
+      `Closing full short position: symbol=${symbol}, positionSide=${positionSide}`
     );
 
     const options = {
       reduceOnly: true,
-      closePosition: true, // <<< ГЛАВНОЕ!
+      closePosition: true,
       positionSide,
     };
 
     return await binance.futuresOrder(
       "MARKET",
-      // Сторона автоматически определится по текущей позиции, поэтому можно отправить любую, но лучше не передавать side вообще.
-      undefined, // или передайте "SELL" для совместимости, но Binance проигнорирует это при closePosition: true
+      "BUY", // Always closing a short position
       symbol,
-      undefined, // quantity не нужен
+      undefined, // quantity is not required when closePosition is true
       undefined,
       options
     );
   } catch (error) {
-    console.error(`Error closing full position for ${symbol}:`, error);
+    console.error(`Error closing full short position for ${symbol}:`, error);
     throw { type: "Close Futures Order", ...error, errorSrcData: error };
   }
 }
