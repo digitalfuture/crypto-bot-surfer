@@ -24,7 +24,7 @@ const heartbeatInterval = getHeartbeatInterval(interval);
 
 const useFixedTradeValue = process.env.USE_FIXED_TRADE_VALUE === "true";
 const tradeValue = parseFloat(process.env.TRADE_VALUE || "0");
-const commissionReserve = 0.002;
+const commissionPercent = parseFloat(process.env.COMISSION_PERCENT) / 100;
 
 let loopCount = 1;
 
@@ -338,38 +338,29 @@ async function calculateTradeQuantity(symbol, lastPrice) {
   const quoteBalance =
     balances.find((b) => b.symbol === secondarySymbol)?.available || 0;
 
-  const quoteAmount = useFixedTradeValue
+  let quoteAmount = useFixedTradeValue
     ? tradeValue
     : (quoteBalance * tradeValue) / 100;
 
-  const availableForTrade = quoteAmount * (1 - commissionReserve);
+  const availableForTrade = quoteAmount * (1 - commissionPercent);
 
   const { stepSize, minQty } = await getSymbolMinTradeFutures(symbol);
   const rawQty = availableForTrade / price;
 
-  // Округляем к ближайшему кратному stepSize
+  // Floor quantity to step size
   const quantity = Math.floor(rawQty / stepSize) * stepSize;
 
-  // Подробный лог для диагностики
-  console.log("=== Trade Quantity Calculation ===");
-  console.log("symbol:", symbol);
-  console.log("price:", price);
-  console.log("quoteBalance:", quoteBalance);
-  console.log("tradeValue:", tradeValue);
-  console.log("quoteAmount (before commission):", quoteAmount);
-  console.log("availableForTrade (after commission):", availableForTrade);
-  console.log("rawQty:", rawQty);
-  console.log("stepSize:", stepSize);
-  console.log("minQty:", minQty);
-  console.log("quantity (after rounding):", quantity);
-
-  // Проверка на минимальный размер
-  if (quantity < minQty) {
-    console.warn(
-      `Calculated quantity (${quantity}) is less than minQty (${minQty}) for ${symbol}, skipping trade.`
-    );
-    return 0;
-  }
+  console.log({
+    symbol,
+    price,
+    quoteBalance,
+    quoteAmount,
+    availableForTrade,
+    rawQty,
+    stepSize,
+    minQty,
+    quantity,
+  });
 
   return parseFloat(quantity.toFixed(8));
 }
