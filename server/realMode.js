@@ -100,7 +100,7 @@ async function tradeBySignal() {
     shortPrice,
   } = await getSignals(positionState);
 
-  // Update position state
+  // Update position state before making any trade attempts
   if (signal === "SELL") {
     positionState = { symbol, stopLoss, takeProfit, shortPrice };
   } else if (signal === "BUY") {
@@ -114,11 +114,12 @@ async function tradeBySignal() {
     positionState = { symbol, stopLoss, takeProfit, shortPrice };
   }
 
-  if (!symbol && !signal) {
+  // If there is no signal and no open position, report as HOLD
+  if (!signal && !symbol) {
     report({
       date: new Date(),
-      trade: positionState.symbol ? null : null,
-      primarySymbol: positionState.symbol || null,
+      trade: null,
+      primarySymbol: null,
       price: null,
       priceChangePercent: 0,
     });
@@ -126,11 +127,12 @@ async function tradeBySignal() {
     return;
   }
 
+  // If no trade signal but a symbol exists, report HOLD for that symbol
   if (!signal) {
     report({
       date: new Date(),
       trade: null,
-      primarySymbol: symbol || null,
+      primarySymbol: symbol,
       price: price || null,
       priceChangePercent: priceChangePercent || 0,
     });
@@ -142,13 +144,22 @@ async function tradeBySignal() {
   const isSellSignal = signal === "SELL";
   const side = isSellSignal ? "SELL" : "BUY";
 
+  // Calculate the trade quantity
   const quantity = await calculateTradeQuantity(fullSymbol, price);
   const notional = quantity * price;
 
+  // If quantity is too small, report PASS
   if (quantity <= 0) {
     console.info(
       `Calculated quantity is 0 or too small for ${fullSymbol}, skipping trade.`
     );
+    report({
+      date: new Date(),
+      trade: "PASS",
+      primarySymbol: fullSymbol,
+      price: price || null,
+      priceChangePercent: priceChangePercent || 0,
+    });
     return;
   }
 
@@ -156,14 +167,23 @@ async function tradeBySignal() {
     `Signal: ${signal} ${fullSymbol} at price ${price}, suggested quantity ${quantity} (~${notional.toFixed(2)} USDT)`
   );
 
+  // Check available balance
   const usdtBalance = await getFuturesAccountUSDTBalance();
   if (notional > usdtBalance) {
     console.info(
       `Trade skipped for ${signal} on ${fullSymbol}, not enough balance: ${usdtBalance.toFixed(2)} USDT`
     );
+    report({
+      date: new Date(),
+      trade: "PASS",
+      primarySymbol: fullSymbol,
+      price: price || null,
+      priceChangePercent: priceChangePercent || 0,
+    });
     return;
   }
 
+  // Try to place a market order
   let order;
   try {
     order = await createMarketOrderFutures({
@@ -173,6 +193,13 @@ async function tradeBySignal() {
     });
   } catch (err) {
     console.error(`Error creating ${side} order for ${fullSymbol}:`, err);
+    report({
+      date: new Date(),
+      trade: "PASS",
+      primarySymbol: fullSymbol,
+      price: price || null,
+      priceChangePercent: priceChangePercent || 0,
+    });
     return;
   }
 
@@ -181,8 +208,10 @@ async function tradeBySignal() {
     order
   );
 
+  // Get executed price from order response or use original price
   const executedPrice = parseFloat(order.avgPrice || order.price || price);
 
+  // Report the successful trade
   report({
     date: new Date(),
     trade: side,

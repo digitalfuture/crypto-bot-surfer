@@ -1,5 +1,3 @@
-// report.js
-
 import path from "node:path";
 import { execSync } from "child_process";
 import fs from "node:fs";
@@ -64,7 +62,7 @@ export function report({
     priceChangePercent,
   });
 
-  const stream = fs.createWriteStream(filePath, fileOptions); 
+  const stream = fs.createWriteStream(filePath, fileOptions);
   const csvStream = format({
     headers: false,
     includeEndRowDelimiter: true,
@@ -73,7 +71,7 @@ export function report({
   csvStream.pipe(stream);
 
   count++;
-  const commission = (price * comissionPercent) / 100;
+  const commission = price ? (price * comissionPercent) / 100 : 0;
 
   if (trade === "SELL" || trade === "BUY") {
     let profitPercent = 0;
@@ -101,6 +99,18 @@ export function report({
       Comission: commission.toFixed(8),
       "Profit %": profitPercent.toFixed(8),
       "Profit total %": +profitTotalPercent.toFixed(8),
+    });
+  } else if (trade === "PASS") {
+    csvStream.write({
+      Count: count,
+      Date: date.toISOString(),
+      "Token name": primarySymbol || "",
+      "Price change %": priceChangePercent.toFixed(8),
+      Trade: "PASS",
+      "Trade price": price ? price.toFixed(8) : "",
+      Comission: 0,
+      "Profit %": 0,
+      "Profit total %": profitTotalPercent.toFixed(8),
     });
   } else {
     const onePercent = lastTradePrice / 100;
