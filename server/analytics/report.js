@@ -30,7 +30,7 @@ function createTable() {
     "Price change %",
     "Trade",
     "Trade price",
-    "Comission",
+    "Commission",
     "Profit %",
     "Profit total %",
   ];
@@ -89,7 +89,7 @@ export function report({
       "Price change %": priceChangePercent.toFixed(8),
       Trade: trade,
       "Trade price": price.toFixed(8),
-      Comission: commission.toFixed(8),
+      Commission: commission.toFixed(8),
       "Profit %": profitPercent.toFixed(8),
       "Profit total %": profitTotalPercent.toFixed(8),
     });
@@ -112,7 +112,7 @@ export function report({
         "Price change %": priceChangePercent.toFixed(8),
         Trade: trade,
         "Trade price": price.toFixed(8),
-        Comission: (commission * 2).toFixed(8),
+        Commission: (commission * 2).toFixed(8),
         "Profit %": profitPercent.toFixed(8),
         "Profit total %": profitTotalPercent.toFixed(8),
       });
@@ -134,7 +134,7 @@ export function report({
         "Price change %": priceChangePercent.toFixed(8),
         Trade: primarySymbol ? "HOLD" : "",
         "Trade price": primarySymbol ? price.toFixed(8) : "",
-        Comission: 0,
+        Commission: 0,
         "Profit %": primarySymbol ? profitPercent.toFixed(8) : 0,
         "Profit total %": profitTotalPercent.toFixed(8), // total profit unchanged on HOLD
       });
@@ -151,7 +151,7 @@ export function report({
       "Price change %": priceChangePercent.toFixed(8),
       Trade: "PASS",
       "Trade price": price ? price.toFixed(8) : "",
-      Comission: 0,
+      Commission: 0,
       "Profit %": 0,
       "Profit total %": profitTotalPercent.toFixed(8),
     });
@@ -175,7 +175,7 @@ export function report({
       "Price change %": priceChangePercent.toFixed(8),
       Trade: primarySymbol ? "HOLD" : "",
       "Trade price": primarySymbol ? price.toFixed(8) : "",
-      Comission: 0,
+      Commission: 0,
       "Profit %": primarySymbol ? profitPercent.toFixed(8) : 0,
       "Profit total %": profitTotalPercent.toFixed(8), // total profit без изменений
     });
