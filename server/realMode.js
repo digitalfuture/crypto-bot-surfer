@@ -28,7 +28,6 @@ const commissionPercent = parseFloat(process.env.COMMISSION_PERCENT);
 
 let loopCount = 1;
 
-// Store full position state: symbol, stopLoss, takeProfit, shortPrice
 let positionState = {
   symbol: null,
   stopLoss: null,
@@ -90,6 +89,8 @@ async function startLoop() {
 }
 
 async function tradeBySignal() {
+  await closeAllClosablePositions();
+
   const { symbol, price, priceChangePercent, signal, stopLoss, takeProfit } =
     await getSignals(positionState);
 
@@ -97,7 +98,6 @@ async function tradeBySignal() {
   const isSellSignal = signal === "SELL";
   const side = isSellSignal ? "SELL" : "BUY";
 
-  // No signal and no position — report and exit
   if (!signal && !symbol) {
     report({
       date: new Date(),
@@ -116,7 +116,6 @@ async function tradeBySignal() {
     return;
   }
 
-  // No signal but there is a position — report HOLD
   if (!signal) {
     report({
       date: new Date(),
@@ -129,11 +128,9 @@ async function tradeBySignal() {
     return;
   }
 
-  // Calculate trade quantity
   const quantity = await calculateTradeQuantity(fullSymbol, price);
   const notional = quantity * price;
 
-  // If quantity too small — report PASS and clear position
   if (quantity <= 0) {
     console.info(
       `Calculated quantity is 0 or too small for ${fullSymbol}, skipping trade.`
@@ -145,7 +142,6 @@ async function tradeBySignal() {
       price: price || null,
       priceChangePercent: priceChangePercent || 0,
     });
-    // Clear position because trade failed
     positionState = {
       symbol: null,
       stopLoss: null,
@@ -155,7 +151,6 @@ async function tradeBySignal() {
     return;
   }
 
-  // Check balance
   const usdtBalance = await getFuturesAccountUSDTBalance();
   if (notional > usdtBalance) {
     console.info(
@@ -168,7 +163,6 @@ async function tradeBySignal() {
       price: price || null,
       priceChangePercent: priceChangePercent || 0,
     });
-    // Clear position because trade failed
     positionState = {
       symbol: null,
       stopLoss: null,
@@ -178,7 +172,6 @@ async function tradeBySignal() {
     return;
   }
 
-  // Try to place an order
   let order;
   try {
     order = await createMarketOrderFutures({
@@ -195,7 +188,6 @@ async function tradeBySignal() {
       price: price || null,
       priceChangePercent: priceChangePercent || 0,
     });
-    // Clear position because trade failed
     positionState = {
       symbol: null,
       stopLoss: null,
@@ -210,17 +202,10 @@ async function tradeBySignal() {
     order
   );
 
-  // Get executed price
   const executedPrice = parseFloat(order.avgPrice || order.price || price);
 
-  // Update position state after successful trade
   if (side === "SELL") {
-    positionState = {
-      symbol,
-      stopLoss,
-      takeProfit,
-      shortPrice: executedPrice, // Save the short entry price
-    };
+    positionState = { symbol, stopLoss, takeProfit, shortPrice: executedPrice };
   } else if (side === "BUY") {
     positionState = {
       symbol: null,
@@ -230,7 +215,6 @@ async function tradeBySignal() {
     };
   }
 
-  // Report trade
   report({
     date: new Date(),
     trade: side,
@@ -250,23 +234,11 @@ async function closeAllClosablePositions() {
     const openPositions = positions.filter(
       (position) => parseFloat(position.positionAmt) !== 0
     );
-
     console.info(`Filtered to ${openPositions.length} open positions`);
 
     if (openPositions.length === 0) {
       console.info("No open positions");
       return;
-    }
-
-    console.info("Open positions:");
-    for (const pos of openPositions) {
-      const positionAmt = parseFloat(pos.positionAmt);
-      const markPrice = parseFloat(pos.markPrice);
-      const notional = Math.abs(positionAmt) * markPrice;
-
-      console.info(
-        `${pos.symbol}: amount ${pos.positionAmt}, entryPrice ${pos.entryPrice}, markPrice ${pos.markPrice}, unrealized PnL ${pos.unRealizedProfit}, notional ~${notional.toFixed(2)} USDT`
-      );
     }
 
     for (const position of openPositions) {
@@ -275,7 +247,6 @@ async function closeAllClosablePositions() {
       const notional = Math.abs(positionAmt) * markPrice;
 
       let stepSize, minQty, minNotional;
-
       try {
         ({ stepSize, minQty, minNotional } = await getSymbolMinTradeFutures(
           position.symbol
@@ -285,7 +256,6 @@ async function closeAllClosablePositions() {
           `Failed to get min trade info for ${position.symbol}:`,
           err
         );
-
         continue;
       }
 
@@ -296,14 +266,7 @@ async function closeAllClosablePositions() {
 
       if (!closable) {
         console.info(
-          `Position ${position.symbol} not closable: amount ${Math.abs(
-            positionAmt
-          )}, stepSize ${stepSize}, minQty ${minQty}, notional ${notional.toFixed(
-            2
-          )}, minNotional ${minNotional || 0}`
-        );
-        console.info(
-          `Dust position on ${position.symbol}, amount: ${position.positionAmt}`
+          `Position ${position.symbol} not closable: amount ${Math.abs(positionAmt)}, stepSize ${stepSize}, minQty ${minQty}, notional ${notional.toFixed(2)}, minNotional ${minNotional || 0}`
         );
         continue;
       }
@@ -335,74 +298,29 @@ async function calculateTradeQuantity(symbol, lastPrice) {
     const price = lastPrice || (await getLastPriceFutures(symbol));
     const balances = await getAccountBalancesFutures();
 
-    // secondarySymbol должен быть определён глобально или передан в функцию
     console.log("Account balances:", balances);
     console.log("secondarySymbol:", secondarySymbol);
 
-    if (!price || price <= 0) {
-      console.warn(`Invalid price for ${symbol}:`, price);
-      return 0;
-    }
+    if (!price || price <= 0) return 0;
 
     const quoteBalance =
       balances.find((b) => b.symbol === secondarySymbol)?.available || 0;
+    if (!quoteBalance || quoteBalance <= 0) return 0;
 
-    if (!quoteBalance || quoteBalance <= 0) {
-      console.warn(`No available balance for ${secondarySymbol}`);
-      return 0;
-    }
-
-    // Определяем quoteAmount в зависимости от useFixedTradeValue и tradeValue
-    let quoteAmount;
-    if (
-      typeof useFixedTradeValue !== "boolean" ||
-      typeof tradeValue !== "number"
-    ) {
-      console.warn("useFixedTradeValue or tradeValue not properly defined");
-      return 0;
-    }
-    quoteAmount = useFixedTradeValue
+    let quoteAmount = useFixedTradeValue
       ? tradeValue
       : (quoteBalance * tradeValue) / 100;
-
-    // Корректируем комиссию
     const availableForTrade = quoteAmount * (1 - commissionPercent / 100);
 
-    if (availableForTrade <= 0) {
-      console.warn(
-        `availableForTrade is zero or negative: ${availableForTrade}`
-      );
-      return 0;
-    }
+    if (availableForTrade <= 0) return 0;
 
     const { stepSize, minQty } = await getSymbolMinTradeFutures(symbol);
 
-    if (!stepSize || !minQty) {
-      console.warn(`Invalid stepSize or minQty for ${symbol}`, {
-        stepSize,
-        minQty,
-      });
-      return 0;
-    }
-
     const rawQty = availableForTrade / price;
-
-    if (isNaN(rawQty) || rawQty <= 0) {
-      console.warn(`Invalid rawQty for ${symbol}:`, rawQty);
-      return 0;
-    }
-
-    // Floor quantity to step size precision
     const precision = (stepSize.toString().split(".")[1] || []).length;
     const quantity = Math.floor(rawQty / stepSize) * stepSize;
 
-    // Check minimum quantity limit
-    if (quantity < minQty) {
-      console.warn(
-        `Quantity ${quantity} is less than minQty ${minQty} for ${symbol}, setting quantity=0`
-      );
-      return 0;
-    }
+    if (quantity < minQty) return 0;
 
     console.log({
       symbol,
