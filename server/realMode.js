@@ -90,15 +90,8 @@ async function startLoop() {
 }
 
 async function tradeBySignal() {
-  const {
-    symbol,
-    price,
-    priceChangePercent,
-    signal,
-    stopLoss,
-    takeProfit,
-    shortPrice,
-  } = await getSignals(positionState);
+  const { symbol, price, priceChangePercent, signal, stopLoss, takeProfit } =
+    await getSignals(positionState);
 
   const fullSymbol = symbol;
   const isSellSignal = signal === "SELL";
@@ -222,7 +215,12 @@ async function tradeBySignal() {
 
   // Update position state after successful trade
   if (side === "SELL") {
-    positionState = { symbol, stopLoss, takeProfit, shortPrice };
+    positionState = {
+      symbol,
+      stopLoss,
+      takeProfit,
+      shortPrice: executedPrice, // Save the short entry price
+    };
   } else if (side === "BUY") {
     positionState = {
       symbol: null,
