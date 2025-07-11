@@ -95,7 +95,7 @@ async function tradeBySignal() {
 
   const isSellSignal = signal === "SELL";
 
-  // 1. Нет сигнала и нет позиции
+  // 1. Нет сигнала и нет позиции — просто отправляем пустой отчёт
   if (!signal && !positionState.symbol) {
     report({
       date: new Date(),
@@ -108,7 +108,7 @@ async function tradeBySignal() {
     return;
   }
 
-  // 2. Нет сигнала, но есть позиция — HOLD
+  // 2. Нет сигнала, но есть открытая позиция — HOLD
   if (!signal && positionState.symbol) {
     report({
       date: new Date(),
@@ -123,9 +123,8 @@ async function tradeBySignal() {
     return;
   }
 
-  // 3. Сигнал SELL, но позиция уже открыта по этому инструменту — HOLD
+  // 3. Есть сигнал SELL, но позиция по этому символу уже открыта — HOLD
   if (isSellSignal && positionState.symbol === symbol) {
-    console.info(`Already in short on ${symbol}, holding`);
     report({
       date: new Date(),
       trade: "HOLD",
@@ -133,16 +132,24 @@ async function tradeBySignal() {
       price: price || null,
       priceChangePercent: priceChangePercent || 0,
     });
+    console.info(`Already in short on ${symbol}, holding`);
     return;
   }
 
-  // 4. Позиция открыта по другому символу — закрываем её
-  if (positionState.symbol && positionState.symbol !== symbol) {
-    console.info(
-      `Switching from ${positionState.symbol} to ${symbol}, closing current position`
-    );
+  // 4. Есть открытая позиция, но пришёл другой символ или сигнал BUY — закрываем текущую позицию
+  if (positionState.symbol) {
+    console.info(`Closing open position on ${positionState.symbol}`);
     await closeAllClosablePositions();
 
+    report({
+      date: new Date(),
+      trade: "BUY",
+      symbol: positionState.symbol,
+      price: price || null,
+      priceChangePercent: priceChangePercent || 0,
+    });
+
+    // После закрытия сбрасываем состояние
     positionState = {
       symbol: null,
       stopLoss: null,
@@ -151,14 +158,14 @@ async function tradeBySignal() {
     };
   }
 
-  // 5. Если сигнал SELL и позиции нет — открываем шорт
-  if (isSellSignal && !positionState.symbol) {
+  // 5. Если пришёл SELL-сигнал — открываем шорт
+  if (isSellSignal) {
     const quantity = await calculateTradeQuantity(symbol, price);
     const notional = quantity * price;
 
     if (quantity <= 0) {
       console.info(
-        `Calculated quantity is 0 or too small for ${symbol}, skipping trade.`
+        `Calculated quantity is too small for ${symbol}, skipping trade`
       );
       report({
         date: new Date(),
@@ -173,7 +180,7 @@ async function tradeBySignal() {
     const usdtBalance = await getFuturesAccountUSDTBalance();
     if (notional > usdtBalance) {
       console.info(
-        `Trade skipped for SELL on ${symbol}, not enough balance: ${usdtBalance.toFixed(2)} USDT`
+        `Not enough balance for ${symbol}, skipping trade. Balance: ${usdtBalance.toFixed(2)} USDT`
       );
       report({
         date: new Date(),
@@ -191,13 +198,11 @@ async function tradeBySignal() {
         side: "SELL",
         quantity,
       });
-      console.info(
-        `Trade executed for SELL on ${symbol}, order response:`,
-        order
-      );
+      console.info(`Trade executed for SELL on ${symbol}:`, order);
 
       const executedPrice = parseFloat(order.avgPrice || order.price || price);
 
+      // Обновляем состояние позиции
       positionState = {
         symbol,
         stopLoss,
@@ -222,30 +227,6 @@ async function tradeBySignal() {
         priceChangePercent: priceChangePercent || 0,
       });
     }
-    return;
-  }
-
-  // 6. Если сигнал НЕ SELL, а позиция есть — закрываем шорт
-  if (!isSellSignal && positionState.symbol) {
-    console.info(
-      `Signal is not SELL, closing short on ${positionState.symbol}`
-    );
-    await closeAllClosablePositions();
-
-    report({
-      date: new Date(),
-      trade: "BUY",
-      symbol: positionState.symbol,
-      price: price || null,
-      priceChangePercent: priceChangePercent || 0,
-    });
-
-    positionState = {
-      symbol: null,
-      stopLoss: null,
-      takeProfit: null,
-      shortPrice: null,
-    };
   }
 }
 
