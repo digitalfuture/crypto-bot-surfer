@@ -28,6 +28,7 @@ const commissionPercent = parseFloat(process.env.COMMISSION_PERCENT);
 
 let loopCount = 1;
 
+// Store full position state: symbol, stopLoss, takeProfit, shortPrice
 let positionState = {
   symbol: null,
   stopLoss: null,
@@ -89,8 +90,6 @@ async function startLoop() {
 }
 
 async function tradeBySignal() {
-  await closeAllClosablePositions();
-
   const { symbol, price, priceChangePercent, signal, stopLoss, takeProfit } =
     await getSignals(positionState);
 
@@ -98,6 +97,7 @@ async function tradeBySignal() {
   const isSellSignal = signal === "SELL";
   const side = isSellSignal ? "SELL" : "BUY";
 
+  // No signal and no position — report and exit
   if (!signal && !symbol) {
     report({
       date: new Date(),
@@ -116,6 +116,7 @@ async function tradeBySignal() {
     return;
   }
 
+  // No signal but there is a position — report HOLD
   if (!signal) {
     report({
       date: new Date(),
@@ -128,6 +129,10 @@ async function tradeBySignal() {
     return;
   }
 
+  // Before opening new trade: close all open positions
+  await closeAllClosablePositions();
+
+  // Calculate trade quantity
   const quantity = await calculateTradeQuantity(fullSymbol, price);
   const notional = quantity * price;
 
@@ -154,7 +159,7 @@ async function tradeBySignal() {
   const usdtBalance = await getFuturesAccountUSDTBalance();
   if (notional > usdtBalance) {
     console.info(
-      `Trade skipped for ${signal} on ${fullSymbol}, not enough balance: ${usdtBalance.toFixed(2)} USDT`
+      `Trade skipped for ${side} on ${fullSymbol}, not enough balance: ${usdtBalance.toFixed(2)} USDT`
     );
     report({
       date: new Date(),
@@ -172,12 +177,41 @@ async function tradeBySignal() {
     return;
   }
 
-  let order;
   try {
-    order = await createMarketOrderFutures({
+    const order = await createMarketOrderFutures({
       symbol: fullSymbol,
       side,
       quantity,
+    });
+    console.info(
+      `Trade executed for ${side} on ${fullSymbol}, order response:`,
+      order
+    );
+
+    const executedPrice = parseFloat(order.avgPrice || order.price || price);
+
+    if (side === "SELL") {
+      positionState = {
+        symbol,
+        stopLoss,
+        takeProfit,
+        shortPrice: executedPrice,
+      };
+    } else {
+      positionState = {
+        symbol: null,
+        stopLoss: null,
+        takeProfit: null,
+        shortPrice: null,
+      };
+    }
+
+    report({
+      date: new Date(),
+      trade: side,
+      primarySymbol: fullSymbol,
+      price: executedPrice,
+      priceChangePercent,
     });
   } catch (err) {
     console.error(`Error creating ${side} order for ${fullSymbol}:`, err);
@@ -194,34 +228,7 @@ async function tradeBySignal() {
       takeProfit: null,
       shortPrice: null,
     };
-    return;
   }
-
-  console.info(
-    `Trade executed for ${signal} on ${fullSymbol}, order response:`,
-    order
-  );
-
-  const executedPrice = parseFloat(order.avgPrice || order.price || price);
-
-  if (side === "SELL") {
-    positionState = { symbol, stopLoss, takeProfit, shortPrice: executedPrice };
-  } else if (side === "BUY") {
-    positionState = {
-      symbol: null,
-      stopLoss: null,
-      takeProfit: null,
-      shortPrice: null,
-    };
-  }
-
-  report({
-    date: new Date(),
-    trade: side,
-    primarySymbol: fullSymbol,
-    price: executedPrice,
-    priceChangePercent,
-  });
 }
 
 async function closeAllClosablePositions() {
@@ -232,7 +239,7 @@ async function closeAllClosablePositions() {
     console.info(`Got ${positions.length} positions from API`);
 
     const openPositions = positions.filter(
-      (position) => parseFloat(position.positionAmt) !== 0
+      (p) => parseFloat(p.positionAmt) !== 0
     );
     console.info(`Filtered to ${openPositions.length} open positions`);
 
@@ -241,24 +248,14 @@ async function closeAllClosablePositions() {
       return;
     }
 
-    for (const position of openPositions) {
-      const positionAmt = parseFloat(position.positionAmt);
-      const markPrice = parseFloat(position.markPrice);
+    for (const pos of openPositions) {
+      const positionAmt = parseFloat(pos.positionAmt);
+      const markPrice = parseFloat(pos.markPrice);
       const notional = Math.abs(positionAmt) * markPrice;
 
-      let stepSize, minQty, minNotional;
-      try {
-        ({ stepSize, minQty, minNotional } = await getSymbolMinTradeFutures(
-          position.symbol
-        ));
-      } catch (err) {
-        console.error(
-          `Failed to get min trade info for ${position.symbol}:`,
-          err
-        );
-        continue;
-      }
-
+      const { stepSize, minQty, minNotional } = await getSymbolMinTradeFutures(
+        pos.symbol
+      );
       const closable =
         Math.abs(positionAmt) >= stepSize &&
         Math.abs(positionAmt) >= minQty &&
@@ -266,26 +263,26 @@ async function closeAllClosablePositions() {
 
       if (!closable) {
         console.info(
-          `Position ${position.symbol} not closable: amount ${Math.abs(positionAmt)}, stepSize ${stepSize}, minQty ${minQty}, notional ${notional.toFixed(2)}, minNotional ${minNotional || 0}`
+          `Position ${pos.symbol} not closable: dust amount ${positionAmt}`
         );
         continue;
       }
 
       const closeSide = positionAmt > 0 ? "SELL" : "BUY";
       console.info(
-        `Closing ${position.symbol} position, amount: ${Math.abs(positionAmt)}`
+        `Closing ${pos.symbol} position, amount: ${Math.abs(positionAmt)}`
       );
 
       try {
         const result = await closeMarketOrderFutures({
-          symbol: position.symbol,
+          symbol: pos.symbol,
           side: closeSide,
           quantity: Math.abs(positionAmt),
-          positionSide: position.positionSide || "BOTH",
+          positionSide: pos.positionSide || "BOTH",
         });
-        console.info(`${position.symbol} closed, response:`, result);
+        console.info(`${pos.symbol} closed, response:`, result);
       } catch (error) {
-        console.error(`Failed to close ${position.symbol}:`, error);
+        console.error(`Failed to close ${pos.symbol}:`, error);
       }
     }
   } catch (error) {
@@ -298,44 +295,22 @@ async function calculateTradeQuantity(symbol, lastPrice) {
     const price = lastPrice || (await getLastPriceFutures(symbol));
     const balances = await getAccountBalancesFutures();
 
-    console.log("Account balances:", balances);
-    console.log("secondarySymbol:", secondarySymbol);
-
-    if (!price || price <= 0) return 0;
-
     const quoteBalance =
       balances.find((b) => b.symbol === secondarySymbol)?.available || 0;
-    if (!quoteBalance || quoteBalance <= 0) return 0;
+    if (!price || price <= 0 || !quoteBalance || quoteBalance <= 0) return 0;
 
     let quoteAmount = useFixedTradeValue
       ? tradeValue
       : (quoteBalance * tradeValue) / 100;
     const availableForTrade = quoteAmount * (1 - commissionPercent / 100);
-
     if (availableForTrade <= 0) return 0;
 
     const { stepSize, minQty } = await getSymbolMinTradeFutures(symbol);
-
     const rawQty = availableForTrade / price;
     const precision = (stepSize.toString().split(".")[1] || []).length;
     const quantity = Math.floor(rawQty / stepSize) * stepSize;
 
-    if (quantity < minQty) return 0;
-
-    console.log({
-      symbol,
-      price,
-      secondarySymbol,
-      quoteBalance,
-      quoteAmount,
-      availableForTrade,
-      rawQty,
-      stepSize,
-      minQty,
-      quantity,
-    });
-
-    return parseFloat(quantity.toFixed(precision));
+    return quantity < minQty ? 0 : parseFloat(quantity.toFixed(precision));
   } catch (error) {
     console.error(`Error calculating trade quantity for ${symbol}:`, error);
     return 0;
