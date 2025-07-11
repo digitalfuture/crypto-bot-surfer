@@ -111,7 +111,7 @@ export function report({ date, trade, symbol, price, priceChangePercent }) {
     "Token name": symbol || "",
     "Price change %": priceChangePercent?.toFixed(8) || "0",
     Trade: trade || "",
-    "Trade price": price ? price.toFixed(8) : "",
+    Price: price ? price.toFixed(8) : "",
     Commission:
       trade === "SELL"
         ? commission.toFixed(8)
