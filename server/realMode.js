@@ -93,7 +93,6 @@ async function tradeBySignal() {
   const { symbol, price, priceChangePercent, signal, stopLoss, takeProfit } =
     await getSignals(positionState);
 
-  const fullSymbol = symbol;
   const isSellSignal = signal === "SELL";
   const side = isSellSignal ? "SELL" : "BUY";
 
@@ -102,7 +101,7 @@ async function tradeBySignal() {
     report({
       date: new Date(),
       trade: null,
-      primarySymbol: null,
+      symbol: null,
       price: null,
       priceChangePercent: 0,
     });
@@ -121,7 +120,7 @@ async function tradeBySignal() {
     report({
       date: new Date(),
       trade: null,
-      primarySymbol: symbol,
+      symbol: symbol,
       price: price || null,
       priceChangePercent: priceChangePercent || 0,
     });
@@ -133,17 +132,17 @@ async function tradeBySignal() {
   await closeAllClosablePositions();
 
   // Calculate trade quantity
-  const quantity = await calculateTradeQuantity(fullSymbol, price);
+  const quantity = await calculateTradeQuantity(symbol, price);
   const notional = quantity * price;
 
   if (quantity <= 0) {
     console.info(
-      `Calculated quantity is 0 or too small for ${fullSymbol}, skipping trade.`
+      `Calculated quantity is 0 or too small for ${symbol}, skipping trade.`
     );
     report({
       date: new Date(),
       trade: "PASS",
-      primarySymbol: fullSymbol,
+      symbol: symbol,
       price: price || null,
       priceChangePercent: priceChangePercent || 0,
     });
@@ -159,12 +158,12 @@ async function tradeBySignal() {
   const usdtBalance = await getFuturesAccountUSDTBalance();
   if (notional > usdtBalance) {
     console.info(
-      `Trade skipped for ${side} on ${fullSymbol}, not enough balance: ${usdtBalance.toFixed(2)} USDT`
+      `Trade skipped for ${side} on ${symbol}, not enough balance: ${usdtBalance.toFixed(2)} USDT`
     );
     report({
       date: new Date(),
       trade: "PASS",
-      primarySymbol: fullSymbol,
+      symbol: symbol,
       price: price || null,
       priceChangePercent: priceChangePercent || 0,
     });
@@ -179,12 +178,12 @@ async function tradeBySignal() {
 
   try {
     const order = await createMarketOrderFutures({
-      symbol: fullSymbol,
+      symbol: symbol,
       side,
       quantity,
     });
     console.info(
-      `Trade executed for ${side} on ${fullSymbol}, order response:`,
+      `Trade executed for ${side} on ${symbol}, order response:`,
       order
     );
 
@@ -209,16 +208,16 @@ async function tradeBySignal() {
     report({
       date: new Date(),
       trade: side,
-      primarySymbol: fullSymbol,
+      symbol: symbol,
       price: executedPrice,
       priceChangePercent,
     });
   } catch (err) {
-    console.error(`Error creating ${side} order for ${fullSymbol}:`, err);
+    console.error(`Error creating ${side} order for ${symbol}:`, err);
     report({
       date: new Date(),
       trade: "PASS",
-      primarySymbol: fullSymbol,
+      symbol: symbol,
       price: price || null,
       priceChangePercent: priceChangePercent || 0,
     });

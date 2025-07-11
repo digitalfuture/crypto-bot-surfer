@@ -145,7 +145,7 @@ async function heartBeatLoop() {
       report({
         date: new Date(),
         trade: "BUY",
-        primarySymbol,
+        symbol,
         price,
         priceChangePercent,
         exitReason,
@@ -154,7 +154,7 @@ async function heartBeatLoop() {
       report({
         date: new Date(),
         trade: "SELL",
-        primarySymbol,
+        symbol,
         price,
         priceChangePercent,
       });
@@ -162,7 +162,7 @@ async function heartBeatLoop() {
       report({
         date: new Date(),
         trade: primarySymbol ? "HOLD" : null,
-        primarySymbol,
+        symbol,
         price,
         priceChangePercent,
       });

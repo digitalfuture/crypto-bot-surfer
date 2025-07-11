@@ -47,17 +47,11 @@ function createTable() {
   console.log("Report file created:", filePath);
 }
 
-export function report({
-  date,
-  trade,
-  primarySymbol,
-  price,
-  priceChangePercent,
-}) {
+export function report({ date, trade, symbol, price, priceChangePercent }) {
   console.log("Report data:", {
     date,
     trade,
-    primarySymbol,
+    symbol,
     price,
     priceChangePercent,
   });
@@ -85,7 +79,7 @@ export function report({
     csvStream.write({
       Count: count,
       Date: date.toISOString(),
-      "Token name": primarySymbol,
+      "Token name": symbol,
       "Price change %": priceChangePercent.toFixed(8),
       Trade: trade,
       "Trade price": price.toFixed(8),
@@ -108,7 +102,7 @@ export function report({
       csvStream.write({
         Count: count,
         Date: date.toISOString(),
-        "Token name": primarySymbol,
+        "Token name": symbol,
         "Price change %": priceChangePercent.toFixed(8),
         Trade: trade,
         "Trade price": price.toFixed(8),
@@ -130,12 +124,12 @@ export function report({
       csvStream.write({
         Count: count,
         Date: date.toISOString(),
-        "Token name": primarySymbol || "",
+        "Token name": symbol || "",
         "Price change %": priceChangePercent.toFixed(8),
-        Trade: primarySymbol ? "HOLD" : "",
-        "Trade price": primarySymbol ? price.toFixed(8) : "",
+        Trade: symbol ? "HOLD" : "",
+        "Trade price": symbol ? price.toFixed(8) : "",
         Commission: 0,
-        "Profit %": primarySymbol ? profitPercent.toFixed(8) : 0,
+        "Profit %": symbol ? profitPercent.toFixed(8) : 0,
         "Profit total %": profitTotalPercent.toFixed(8), // total profit unchanged on HOLD
       });
     }
@@ -147,7 +141,7 @@ export function report({
     csvStream.write({
       Count: count,
       Date: date.toISOString(),
-      "Token name": primarySymbol || "",
+      "Token name": symbol || "",
       "Price change %": priceChangePercent.toFixed(8),
       Trade: "PASS",
       "Trade price": price ? price.toFixed(8) : "",
@@ -171,12 +165,12 @@ export function report({
     csvStream.write({
       Count: count,
       Date: date.toISOString(),
-      "Token name": primarySymbol || "",
+      "Token name": symbol || "",
       "Price change %": priceChangePercent.toFixed(8),
-      Trade: primarySymbol ? "HOLD" : "",
-      "Trade price": primarySymbol ? price.toFixed(8) : "",
+      Trade: symbol ? "HOLD" : "",
+      "Trade price": symbol ? price.toFixed(8) : "",
       Commission: 0,
-      "Profit %": primarySymbol ? profitPercent.toFixed(8) : 0,
+      "Profit %": symbol ? profitPercent.toFixed(8) : 0,
       "Profit total %": profitTotalPercent.toFixed(8), // total profit без изменений
     });
   }
