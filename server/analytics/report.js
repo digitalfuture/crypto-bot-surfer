@@ -117,23 +117,26 @@ export function report({
         "Profit total %": profitTotalPercent.toFixed(8),
       });
     } else {
-      // Opening long position (BUY without existing short): commission is a loss
-      profitPercent = -commissionPercent;
-      profitTotalPercent += profitPercent;
+      // HOLD — calculate current profit without commission
+      if (lastTradeType === "SELL") {
+        profitPercent = ((entryPrice - price) / entryPrice) * 100;
+      } else if (lastTradeType === "BUY") {
+        profitPercent = ((price - entryPrice) / entryPrice) * 100;
+      } else {
+        profitPercent = 0;
+      }
 
-      entryPrice = price;
-      lastTradeType = trade;
-
+      // Don't add profitPercent to profitTotalPercent on HOLD, just show current profit
       csvStream.write({
         Count: count,
         Date: date.toISOString(),
-        "Token name": primarySymbol,
+        "Token name": primarySymbol || "",
         "Price change %": priceChangePercent.toFixed(8),
-        Trade: trade,
-        "Trade price": price.toFixed(8),
-        Comission: commission.toFixed(8),
-        "Profit %": profitPercent.toFixed(8),
-        "Profit total %": profitTotalPercent.toFixed(8),
+        Trade: primarySymbol ? "HOLD" : "",
+        "Trade price": primarySymbol ? price.toFixed(8) : "",
+        Comission: 0,
+        "Profit %": primarySymbol ? profitPercent.toFixed(8) : 0,
+        "Profit total %": profitTotalPercent.toFixed(8), // total profit unchanged on HOLD
       });
     }
   } else if (trade === "PASS") {
