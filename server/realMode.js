@@ -95,7 +95,7 @@ async function tradeBySignal() {
 
   const isSellSignal = signal === "SELL";
 
-  // 1. First iteration or no signal and no open position: report empty row
+  // 1. No signal and no open position: send empty report
   if (!signal && !positionState.symbol) {
     report({
       date: new Date(),
@@ -108,7 +108,7 @@ async function tradeBySignal() {
     return;
   }
 
-  // 2. No signal but have an open position: report HOLD
+  // 2. No signal but there is an open position: HOLD
   if (!signal && positionState.symbol) {
     report({
       date: new Date(),
@@ -123,7 +123,7 @@ async function tradeBySignal() {
     return;
   }
 
-  // 3. Signal is SELL but the same symbol is already open: HOLD
+  // 3. SELL signal but already have a short on the same symbol: HOLD
   if (isSellSignal && positionState.symbol === symbol) {
     console.info(`Already in short on ${symbol}, holding`);
     report({
@@ -136,23 +136,13 @@ async function tradeBySignal() {
     return;
   }
 
-  // 4. There is an open position on another symbol: close all first
-  if (positionState.symbol && positionState.symbol !== symbol) {
-    console.info(
-      `Switching from ${positionState.symbol} to ${symbol}, closing current position`
-    );
-    await closeAllClosablePositions();
-
-    positionState = {
-      symbol: null,
-      stopLoss: null,
-      takeProfit: null,
-      shortPrice: null,
-    };
-  }
-
-  // 5. Signal is SELL and no open position: open a new short
+  // 4. If SELL signal and no open position: close any old positions, then open short
   if (isSellSignal && !positionState.symbol) {
+    console.info(
+      `Preparing to open short on ${symbol}: clearing all open positions`
+    );
+    await closeAllClosablePositions(); // Always clear old positions before opening new
+
     const quantity = await calculateTradeQuantity(symbol, price);
     const notional = quantity * price;
 
@@ -227,9 +217,11 @@ async function tradeBySignal() {
     return;
   }
 
-  // 6. Any other signal (BUY or undefined) while a position is open: close all positions
+  // 5. If BUY signal and there is an open position: close it, send BUY report, do not open new position
   if (!isSellSignal && positionState.symbol) {
-    console.info(`Signal is not SELL, closing all open positions`);
+    console.info(
+      `Signal is ${signal || "undefined"}, closing open position on ${positionState.symbol}`
+    );
     await closeAllClosablePositions();
 
     report({
@@ -246,6 +238,20 @@ async function tradeBySignal() {
       takeProfit: null,
       shortPrice: null,
     };
+    return;
+  }
+
+  // 6. If BUY signal and no position: nothing to do
+  if (!isSellSignal && !positionState.symbol) {
+    console.info(`Signal is ${signal}, but no position open. Skipping trade.`);
+    report({
+      date: new Date(),
+      trade: "PASS",
+      symbol,
+      price: price ?? null,
+      priceChangePercent: priceChangePercent ?? 0,
+    });
+    return;
   }
 }
 
