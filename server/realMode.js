@@ -94,9 +94,8 @@ async function tradeBySignal() {
     await getSignals(positionState);
 
   const isSellSignal = signal === "SELL";
-  const side = isSellSignal ? "SELL" : "BUY";
 
-  // No signal and no position — report and exit
+  // 1. Нет сигнала и нет позиции
   if (!signal && !positionState.symbol) {
     report({
       date: new Date(),
@@ -109,7 +108,7 @@ async function tradeBySignal() {
     return;
   }
 
-  // No signal but there is a position — report HOLD
+  // 2. Нет сигнала, но есть позиция — HOLD
   if (!signal && positionState.symbol) {
     report({
       date: new Date(),
@@ -124,15 +123,26 @@ async function tradeBySignal() {
     return;
   }
 
-  // There is a signal - check if we need to close current position first
+  // 3. Сигнал SELL, но позиция уже открыта по этому инструменту — HOLD
+  if (isSellSignal && positionState.symbol === symbol) {
+    console.info(`Already in short on ${symbol}, holding`);
+    report({
+      date: new Date(),
+      trade: "HOLD",
+      symbol,
+      price: price || null,
+      priceChangePercent: priceChangePercent || 0,
+    });
+    return;
+  }
+
+  // 4. Позиция открыта по другому символу — закрываем её
   if (positionState.symbol && positionState.symbol !== symbol) {
-    // Close current position if switching to different symbol
     console.info(
       `Switching from ${positionState.symbol} to ${symbol}, closing current position`
     );
     await closeAllClosablePositions();
 
-    // Reset position state
     positionState = {
       symbol: null,
       stopLoss: null,
@@ -141,53 +151,8 @@ async function tradeBySignal() {
     };
   }
 
-  // If we have a position in the same symbol, check if we need to close it
-  if (positionState.symbol === symbol) {
-    const currentPositions = await getFuturesPositionsFutures();
-    const currentPosition = currentPositions.find(
-      (p) => p.symbol === symbol && parseFloat(p.positionAmt) !== 0
-    );
-
-    if (currentPosition) {
-      const positionAmt = parseFloat(currentPosition.positionAmt);
-      const isLongPosition = positionAmt > 0;
-      const isShortPosition = positionAmt < 0;
-
-      // Close position if signal is opposite to current position
-      if (
-        (isLongPosition && isSellSignal) ||
-        (isShortPosition && !isSellSignal)
-      ) {
-        console.info(`Closing ${symbol} position due to opposite signal`);
-        await closeAllClosablePositions();
-
-        // Reset position state
-        positionState = {
-          symbol: null,
-          stopLoss: null,
-          takeProfit: null,
-          shortPrice: null,
-        };
-      } else {
-        // Same direction signal - just hold
-        console.info(
-          `Already have position in ${symbol} in same direction, holding`
-        );
-        report({
-          date: new Date(),
-          trade: "HOLD",
-          symbol: symbol,
-          price: price || null,
-          priceChangePercent: priceChangePercent || 0,
-        });
-        return;
-      }
-    }
-  }
-
-  // Now open new position if we don't have one
-  if (!positionState.symbol) {
-    // Calculate trade quantity
+  // 5. Если сигнал SELL и позиции нет — открываем шорт
+  if (isSellSignal && !positionState.symbol) {
     const quantity = await calculateTradeQuantity(symbol, price);
     const notional = quantity * price;
 
@@ -198,7 +163,7 @@ async function tradeBySignal() {
       report({
         date: new Date(),
         trade: "PASS",
-        symbol: symbol,
+        symbol,
         price: price || null,
         priceChangePercent: priceChangePercent || 0,
       });
@@ -208,12 +173,12 @@ async function tradeBySignal() {
     const usdtBalance = await getFuturesAccountUSDTBalance();
     if (notional > usdtBalance) {
       console.info(
-        `Trade skipped for ${side} on ${symbol}, not enough balance: ${usdtBalance.toFixed(2)} USDT`
+        `Trade skipped for SELL on ${symbol}, not enough balance: ${usdtBalance.toFixed(2)} USDT`
       );
       report({
         date: new Date(),
         trade: "PASS",
-        symbol: symbol,
+        symbol,
         price: price || null,
         priceChangePercent: priceChangePercent || 0,
       });
@@ -222,42 +187,65 @@ async function tradeBySignal() {
 
     try {
       const order = await createMarketOrderFutures({
-        symbol: symbol,
-        side,
+        symbol,
+        side: "SELL",
         quantity,
       });
       console.info(
-        `Trade executed for ${side} on ${symbol}, order response:`,
+        `Trade executed for SELL on ${symbol}, order response:`,
         order
       );
 
       const executedPrice = parseFloat(order.avgPrice || order.price || price);
 
-      // Update position state
       positionState = {
         symbol,
         stopLoss,
         takeProfit,
-        shortPrice: isSellSignal ? executedPrice : null,
+        shortPrice: executedPrice,
       };
 
       report({
         date: new Date(),
-        trade: side,
-        symbol: symbol,
+        trade: "SELL",
+        symbol,
         price: executedPrice,
         priceChangePercent,
       });
     } catch (err) {
-      console.error(`Error creating ${side} order for ${symbol}:`, err);
+      console.error(`Error creating SELL order for ${symbol}:`, err);
       report({
         date: new Date(),
         trade: "PASS",
-        symbol: symbol,
+        symbol,
         price: price || null,
         priceChangePercent: priceChangePercent || 0,
       });
     }
+    return;
+  }
+
+  // 6. Если сигнал НЕ SELL, а позиция есть — закрываем шорт
+  if (!isSellSignal && positionState.symbol) {
+    console.info(
+      `Signal is not SELL, closing short on ${positionState.symbol}`
+    );
+    await closeAllClosablePositions();
+
+    report({
+      date: new Date(),
+      trade: "BUY",
+      symbol: positionState.symbol,
+      price: price || null,
+      priceChangePercent: priceChangePercent || 0,
+    });
+
+    positionState = {
+      symbol: null,
+      stopLoss: null,
+      takeProfit: null,
+      shortPrice: null,
+    };
   }
 }
 
