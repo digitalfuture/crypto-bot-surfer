@@ -95,7 +95,7 @@ async function tradeBySignal() {
 
   const isSellSignal = signal === "SELL";
 
-  // 1. Нет сигнала и нет позиции — просто отправляем пустой отчёт
+  // 1. First iteration or no signal and no open position: report empty row
   if (!signal && !positionState.symbol) {
     report({
       date: new Date(),
@@ -104,18 +104,18 @@ async function tradeBySignal() {
       price: null,
       priceChangePercent: 0,
     });
-    console.info("No signal detected and no position open");
+    console.info("No signal detected and no open position");
     return;
   }
 
-  // 2. Нет сигнала, но есть открытая позиция — HOLD
+  // 2. No signal but have an open position: report HOLD
   if (!signal && positionState.symbol) {
     report({
       date: new Date(),
       trade: "HOLD",
       symbol: positionState.symbol,
-      price: price || null,
-      priceChangePercent: priceChangePercent || 0,
+      price: price ?? null,
+      priceChangePercent: priceChangePercent ?? 0,
     });
     console.info(
       `No trade signal, holding position on ${positionState.symbol}`
@@ -123,33 +123,26 @@ async function tradeBySignal() {
     return;
   }
 
-  // 3. Есть сигнал SELL, но позиция по этому символу уже открыта — HOLD
+  // 3. Signal is SELL but the same symbol is already open: HOLD
   if (isSellSignal && positionState.symbol === symbol) {
+    console.info(`Already in short on ${symbol}, holding`);
     report({
       date: new Date(),
       trade: "HOLD",
       symbol,
-      price: price || null,
-      priceChangePercent: priceChangePercent || 0,
+      price: price ?? null,
+      priceChangePercent: priceChangePercent ?? 0,
     });
-    console.info(`Already in short on ${symbol}, holding`);
     return;
   }
 
-  // 4. Есть открытая позиция, но пришёл другой символ или сигнал BUY — закрываем текущую позицию
-  if (positionState.symbol) {
-    console.info(`Closing open position on ${positionState.symbol}`);
+  // 4. There is an open position on another symbol: close all first
+  if (positionState.symbol && positionState.symbol !== symbol) {
+    console.info(
+      `Switching from ${positionState.symbol} to ${symbol}, closing current position`
+    );
     await closeAllClosablePositions();
 
-    report({
-      date: new Date(),
-      trade: "BUY",
-      symbol: positionState.symbol,
-      price: price || null,
-      priceChangePercent: priceChangePercent || 0,
-    });
-
-    // После закрытия сбрасываем состояние
     positionState = {
       symbol: null,
       stopLoss: null,
@@ -158,8 +151,8 @@ async function tradeBySignal() {
     };
   }
 
-  // 5. Если пришёл SELL-сигнал — открываем шорт
-  if (isSellSignal) {
+  // 5. Signal is SELL and no open position: open a new short
+  if (isSellSignal && !positionState.symbol) {
     const quantity = await calculateTradeQuantity(symbol, price);
     const notional = quantity * price;
 
@@ -171,8 +164,8 @@ async function tradeBySignal() {
         date: new Date(),
         trade: "PASS",
         symbol,
-        price: price || null,
-        priceChangePercent: priceChangePercent || 0,
+        price: price ?? null,
+        priceChangePercent: priceChangePercent ?? 0,
       });
       return;
     }
@@ -180,14 +173,14 @@ async function tradeBySignal() {
     const usdtBalance = await getFuturesAccountUSDTBalance();
     if (notional > usdtBalance) {
       console.info(
-        `Not enough balance for ${symbol}, skipping trade. Balance: ${usdtBalance.toFixed(2)} USDT`
+        `Not enough balance to open trade on ${symbol}: ${usdtBalance.toFixed(2)} USDT`
       );
       report({
         date: new Date(),
         trade: "PASS",
         symbol,
-        price: price || null,
-        priceChangePercent: priceChangePercent || 0,
+        price: price ?? null,
+        priceChangePercent: priceChangePercent ?? 0,
       });
       return;
     }
@@ -198,11 +191,14 @@ async function tradeBySignal() {
         side: "SELL",
         quantity,
       });
-      console.info(`Trade executed for SELL on ${symbol}:`, order);
+
+      console.info(
+        `Trade executed for SELL on ${symbol}, order response:`,
+        order
+      );
 
       const executedPrice = parseFloat(order.avgPrice || order.price || price);
 
-      // Обновляем состояние позиции
       positionState = {
         symbol,
         stopLoss,
@@ -223,10 +219,33 @@ async function tradeBySignal() {
         date: new Date(),
         trade: "PASS",
         symbol,
-        price: price || null,
-        priceChangePercent: priceChangePercent || 0,
+        price: price ?? null,
+        priceChangePercent: priceChangePercent ?? 0,
       });
     }
+
+    return;
+  }
+
+  // 6. Any other signal (BUY or undefined) while a position is open: close all positions
+  if (!isSellSignal && positionState.symbol) {
+    console.info(`Signal is not SELL, closing all open positions`);
+    await closeAllClosablePositions();
+
+    report({
+      date: new Date(),
+      trade: "BUY",
+      symbol: positionState.symbol,
+      price: price ?? null,
+      priceChangePercent: priceChangePercent ?? 0,
+    });
+
+    positionState = {
+      symbol: null,
+      stopLoss: null,
+      takeProfit: null,
+      shortPrice: null,
+    };
   }
 }
 
