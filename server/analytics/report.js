@@ -159,13 +159,14 @@ export function report({
     // HOLD — calculate current profit without commission
     if (lastTradeType === "SELL") {
       profitPercent = ((entryPrice - price) / entryPrice) * 100;
-      profitTotalPercent += primarySymbol ? profitPercent : 0;
     } else if (lastTradeType === "BUY") {
       profitPercent = ((price - entryPrice) / entryPrice) * 100;
-      profitTotalPercent += primarySymbol ? profitPercent : 0;
     } else {
       profitPercent = 0;
     }
+
+    // НЕ добавляем profitPercent к profitTotalPercent при HOLD
+    // Просто показываем текущий нереализованный профит
 
     csvStream.write({
       Count: count,
@@ -176,7 +177,7 @@ export function report({
       "Trade price": primarySymbol ? price.toFixed(8) : "",
       Comission: 0,
       "Profit %": primarySymbol ? profitPercent.toFixed(8) : 0,
-      "Profit total %": profitTotalPercent.toFixed(8),
+      "Profit total %": profitTotalPercent.toFixed(8), // total profit без изменений
     });
   }
 
