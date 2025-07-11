@@ -97,7 +97,7 @@ async function tradeBySignal() {
   const side = isSellSignal ? "SELL" : "BUY";
 
   // No signal and no position — report and exit
-  if (!signal && !symbol) {
+  if (!signal && !positionState.symbol) {
     report({
       date: new Date(),
       trade: null,
@@ -106,127 +106,158 @@ async function tradeBySignal() {
       priceChangePercent: 0,
     });
     console.info("No signal detected and no position open");
-    positionState = {
-      symbol: null,
-      stopLoss: null,
-      takeProfit: null,
-      shortPrice: null,
-    };
     return;
   }
 
   // No signal but there is a position — report HOLD
-  if (!signal) {
+  if (!signal && positionState.symbol) {
     report({
       date: new Date(),
-      trade: null,
-      symbol: symbol,
+      trade: "HOLD",
+      symbol: positionState.symbol,
       price: price || null,
       priceChangePercent: priceChangePercent || 0,
     });
-    console.info(`No trade signal, holding position on ${symbol}`);
+    console.info(
+      `No trade signal, holding position on ${positionState.symbol}`
+    );
     return;
   }
 
-  // Before opening new trade: close all open positions
-  await closeAllClosablePositions();
-
-  // Calculate trade quantity
-  const quantity = await calculateTradeQuantity(symbol, price);
-  const notional = quantity * price;
-
-  if (quantity <= 0) {
+  // There is a signal - check if we need to close current position first
+  if (positionState.symbol && positionState.symbol !== symbol) {
+    // Close current position if switching to different symbol
     console.info(
-      `Calculated quantity is 0 or too small for ${symbol}, skipping trade.`
+      `Switching from ${positionState.symbol} to ${symbol}, closing current position`
     );
-    report({
-      date: new Date(),
-      trade: "PASS",
-      symbol: symbol,
-      price: price || null,
-      priceChangePercent: priceChangePercent || 0,
-    });
+    await closeAllClosablePositions();
+
+    // Reset position state
     positionState = {
       symbol: null,
       stopLoss: null,
       takeProfit: null,
       shortPrice: null,
     };
-    return;
   }
 
-  const usdtBalance = await getFuturesAccountUSDTBalance();
-  if (notional > usdtBalance) {
-    console.info(
-      `Trade skipped for ${side} on ${symbol}, not enough balance: ${usdtBalance.toFixed(2)} USDT`
+  // If we have a position in the same symbol, check if we need to close it
+  if (positionState.symbol === symbol) {
+    const currentPositions = await getFuturesPositionsFutures();
+    const currentPosition = currentPositions.find(
+      (p) => p.symbol === symbol && parseFloat(p.positionAmt) !== 0
     );
-    report({
-      date: new Date(),
-      trade: "PASS",
-      symbol: symbol,
-      price: price || null,
-      priceChangePercent: priceChangePercent || 0,
-    });
-    positionState = {
-      symbol: null,
-      stopLoss: null,
-      takeProfit: null,
-      shortPrice: null,
-    };
-    return;
+
+    if (currentPosition) {
+      const positionAmt = parseFloat(currentPosition.positionAmt);
+      const isLongPosition = positionAmt > 0;
+      const isShortPosition = positionAmt < 0;
+
+      // Close position if signal is opposite to current position
+      if (
+        (isLongPosition && isSellSignal) ||
+        (isShortPosition && !isSellSignal)
+      ) {
+        console.info(`Closing ${symbol} position due to opposite signal`);
+        await closeAllClosablePositions();
+
+        // Reset position state
+        positionState = {
+          symbol: null,
+          stopLoss: null,
+          takeProfit: null,
+          shortPrice: null,
+        };
+      } else {
+        // Same direction signal - just hold
+        console.info(
+          `Already have position in ${symbol} in same direction, holding`
+        );
+        report({
+          date: new Date(),
+          trade: "HOLD",
+          symbol: symbol,
+          price: price || null,
+          priceChangePercent: priceChangePercent || 0,
+        });
+        return;
+      }
+    }
   }
 
-  try {
-    const order = await createMarketOrderFutures({
-      symbol: symbol,
-      side,
-      quantity,
-    });
-    console.info(
-      `Trade executed for ${side} on ${symbol}, order response:`,
-      order
-    );
+  // Now open new position if we don't have one
+  if (!positionState.symbol) {
+    // Calculate trade quantity
+    const quantity = await calculateTradeQuantity(symbol, price);
+    const notional = quantity * price;
 
-    const executedPrice = parseFloat(order.avgPrice || order.price || price);
+    if (quantity <= 0) {
+      console.info(
+        `Calculated quantity is 0 or too small for ${symbol}, skipping trade.`
+      );
+      report({
+        date: new Date(),
+        trade: "PASS",
+        symbol: symbol,
+        price: price || null,
+        priceChangePercent: priceChangePercent || 0,
+      });
+      return;
+    }
 
-    if (side === "SELL") {
+    const usdtBalance = await getFuturesAccountUSDTBalance();
+    if (notional > usdtBalance) {
+      console.info(
+        `Trade skipped for ${side} on ${symbol}, not enough balance: ${usdtBalance.toFixed(2)} USDT`
+      );
+      report({
+        date: new Date(),
+        trade: "PASS",
+        symbol: symbol,
+        price: price || null,
+        priceChangePercent: priceChangePercent || 0,
+      });
+      return;
+    }
+
+    try {
+      const order = await createMarketOrderFutures({
+        symbol: symbol,
+        side,
+        quantity,
+      });
+      console.info(
+        `Trade executed for ${side} on ${symbol}, order response:`,
+        order
+      );
+
+      const executedPrice = parseFloat(order.avgPrice || order.price || price);
+
+      // Update position state
       positionState = {
         symbol,
         stopLoss,
         takeProfit,
-        shortPrice: executedPrice,
+        shortPrice: isSellSignal ? executedPrice : null,
       };
-    } else {
-      positionState = {
-        symbol: null,
-        stopLoss: null,
-        takeProfit: null,
-        shortPrice: null,
-      };
-    }
 
-    report({
-      date: new Date(),
-      trade: side,
-      symbol: symbol,
-      price: executedPrice,
-      priceChangePercent,
-    });
-  } catch (err) {
-    console.error(`Error creating ${side} order for ${symbol}:`, err);
-    report({
-      date: new Date(),
-      trade: "PASS",
-      symbol: symbol,
-      price: price || null,
-      priceChangePercent: priceChangePercent || 0,
-    });
-    positionState = {
-      symbol: null,
-      stopLoss: null,
-      takeProfit: null,
-      shortPrice: null,
-    };
+      report({
+        date: new Date(),
+        trade: side,
+        symbol: symbol,
+        price: executedPrice,
+        priceChangePercent,
+      });
+    } catch (err) {
+      console.error(`Error creating ${side} order for ${symbol}:`, err);
+      report({
+        date: new Date(),
+        trade: "PASS",
+        symbol: symbol,
+        price: price || null,
+        priceChangePercent: priceChangePercent || 0,
+      });
+    }
   }
 }
 
