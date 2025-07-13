@@ -104,7 +104,9 @@ async function tradeBySignal() {
       price: null,
       priceChangePercent: 0,
     });
+
     console.info("No signal detected and no open position");
+
     return;
   }
 
@@ -117,9 +119,11 @@ async function tradeBySignal() {
       price: price ?? null,
       priceChangePercent: priceChangePercent ?? 0,
     });
+
     console.info(
       `No trade signal, holding position on ${positionState.symbol}`
     );
+
     return;
   }
 
@@ -133,6 +137,7 @@ async function tradeBySignal() {
       price: price ?? null,
       priceChangePercent: priceChangePercent ?? 0,
     });
+
     return;
   }
 
@@ -141,6 +146,7 @@ async function tradeBySignal() {
     console.info(
       `Preparing to open short on ${symbol}: clearing all open positions`
     );
+
     await closeAllClosablePositions(); // Always clear old positions before opening new
 
     const quantity = await calculateTradeQuantity(symbol, price);
@@ -150,6 +156,7 @@ async function tradeBySignal() {
       console.info(
         `Calculated quantity is too small for ${symbol}, skipping trade`
       );
+
       report({
         date: new Date(),
         trade: "PASS",
@@ -161,10 +168,12 @@ async function tradeBySignal() {
     }
 
     const usdtBalance = await getFuturesAccountUSDTBalance();
+
     if (notional > usdtBalance) {
       console.info(
         `Not enough balance to open trade on ${symbol}: ${usdtBalance.toFixed(2)} USDT`
       );
+
       report({
         date: new Date(),
         trade: "PASS",
@@ -172,6 +181,7 @@ async function tradeBySignal() {
         price: price ?? null,
         priceChangePercent: priceChangePercent ?? 0,
       });
+
       return;
     }
 
@@ -205,6 +215,7 @@ async function tradeBySignal() {
       });
     } catch (err) {
       console.error(`Error creating SELL order for ${symbol}:`, err);
+
       report({
         date: new Date(),
         trade: "PASS",
@@ -222,6 +233,7 @@ async function tradeBySignal() {
     console.info(
       `Signal is ${signal || "undefined"}, closing open position on ${positionState.symbol}`
     );
+
     await closeAllClosablePositions();
 
     report({
@@ -238,12 +250,14 @@ async function tradeBySignal() {
       takeProfit: null,
       shortPrice: null,
     };
+
     return;
   }
 
   // 6. If BUY signal and no position: nothing to do
   if (!isSellSignal && !positionState.symbol) {
     console.info(`Signal is ${signal}, but no position open. Skipping trade.`);
+
     report({
       date: new Date(),
       trade: "PASS",
@@ -251,6 +265,7 @@ async function tradeBySignal() {
       price: price ?? null,
       priceChangePercent: priceChangePercent ?? 0,
     });
+
     return;
   }
 }

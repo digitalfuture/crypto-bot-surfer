@@ -6,7 +6,7 @@ import { format } from "@fast-csv/format";
 
 const reportFileDir = process.env.REPORT_FILE_DIR;
 const reportFileName = process.env.REPORT_FILE_NAME;
-const commissionPercent = parseFloat(process.env.COMMISSION_PERCENT); // commission percent from env
+const commissionPercent = parseFloat(process.env.COMMISSION_PERCENT);
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = reportFileDir
