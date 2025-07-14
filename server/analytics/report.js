@@ -29,7 +29,7 @@ function createTable() {
     "Token name",
     "Price change %",
     "Trade",
-    "Trade price",
+    "Price",
     "Commission",
     "Profit %",
     "Profit total %",
@@ -82,11 +82,9 @@ export function report({ date, trade, symbol, price, priceChangePercent }) {
     entryPrice = price;
     lastTradeType = "BUY";
   } else if (trade === "PASS") {
-    // Обновляем цену, но не меняем прибыль
     entryPrice = price;
     lastTradeType = "PASS";
   } else if (trade === "HOLD") {
-    // Нереализованный профит (текущая прибыль без изменения накопленного)
     if (lastTradeType === "SELL") {
       profitPercent = ((entryPrice - price) / entryPrice) * 100;
     } else if (lastTradeType === "BUY") {
@@ -95,7 +93,6 @@ export function report({ date, trade, symbol, price, priceChangePercent }) {
       profitPercent = 0;
     }
   } else {
-    // Если пришло что-то неожиданное — просто считаем нереализованный профит
     if (lastTradeType === "SELL") {
       profitPercent = ((entryPrice - price) / entryPrice) * 100;
     } else if (lastTradeType === "BUY") {
