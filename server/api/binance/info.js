@@ -399,7 +399,7 @@ export async function getSymbolMinTradeFutures(symbol) {
     };
   } catch (error) {
     throw {
-      type: "Get Symbol Min Trade Futures",
+      type: "Get Symbol Min Trade Futures Error",
       message: error.message,
       errorSrcData: error,
     };
@@ -444,7 +444,7 @@ export async function getFuturesPositionsFutures() {
     return data;
   } catch (error) {
     throw {
-      type: "Get Futures Positions Futures",
+      type: "Get Positions Futures Error",
       ...error,
       errorSrcData: error,
     };
@@ -480,8 +480,9 @@ export async function getCandlestickDataFutures({
 
     return result;
   } catch (error) {
+    console.info("error:", error);
     throw {
-      type: "Get Candlestick Data Futures",
+      type: "Get Candlestick Data Futures Error",
       ...error,
       errorSrcData: error,
     };
@@ -500,7 +501,12 @@ export async function getTradingTickersFutures() {
 
     return tickerList;
   } catch (error) {
-    throw { type: "Get Exchange Info Futures", ...error, errorSrcData: error };
+    console.info("error:", error);
+    throw {
+      type: "Get Trading Tickers Futures Error",
+      ...error,
+      errorSrcData: error,
+    };
   }
 }
 
@@ -513,7 +519,12 @@ export async function getLastPriceFutures(symbol) {
 
     return tickerPrice;
   } catch (error) {
-    throw { type: "Get Last Price", ...error, errorSrcData: error };
+    console.info("error:", error);
+    throw {
+      type: "Get Last Price Futures Error",
+      ...error,
+      errorSrcData: error,
+    };
   }
 }
 
@@ -533,7 +544,7 @@ export async function getFuturesAccountUSDTBalance() {
     };
   } catch (error) {
     throw {
-      type: "Get Total Futures Balance",
+      type: "Get USDT Futures Balance Error",
       ...error,
       errorSrcData: error,
     };
@@ -562,7 +573,12 @@ export async function getAccountBalancesFutures() {
 
     return result;
   } catch (error) {
-    throw { type: "Get Account Balances Error", ...error, errorSrcData: error };
+    console.info("error:", error);
+    throw {
+      type: "Get Account Balance Futures Error",
+      ...error,
+      errorSrcData: error,
+    };
   }
 }
 
