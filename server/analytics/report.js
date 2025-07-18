@@ -48,13 +48,13 @@ function createTable() {
 }
 
 export function report({ date, trade, symbol, price, priceChangePercent }) {
-  console.log("Report data:", {
-    date,
-    trade,
-    symbol,
-    price,
-    priceChangePercent,
-  });
+  // console.log("Report data:", {
+  //   date,
+  //   trade,
+  //   symbol,
+  //   price,
+  //   priceChangePercent,
+  // });
 
   const stream = fs.createWriteStream(filePath, fileOptions);
   const csvStream = format({ headers: false, includeEndRowDelimiter: true });
@@ -102,22 +102,24 @@ export function report({ date, trade, symbol, price, priceChangePercent }) {
     }
   }
 
-  csvStream.write({
-    Count: count,
-    Date: date.toISOString(),
-    "Token name": symbol || "",
-    "Price change %": priceChangePercent?.toFixed(8) || "0",
-    Trade: trade || "",
-    Price: price ? price.toFixed(8) : "",
-    Commission:
-      trade === "SELL"
-        ? commission.toFixed(8)
-        : trade === "BUY"
-          ? (commission * 2).toFixed(8)
-          : "0",
-    "Profit %": profitPercent.toFixed(8),
-    "Profit total %": profitTotalPercent.toFixed(8),
-  });
+  if (trade === "SELL" || trade === "BUY") {
+    csvStream.write({
+      Count: count,
+      Date: date.toISOString(),
+      "Token name": symbol || "",
+      "Price change %": priceChangePercent?.toFixed(8) || "0",
+      Trade: trade || "",
+      Price: price ? price.toFixed(8) : "",
+      Commission:
+        trade === "SELL"
+          ? commission.toFixed(8)
+          : trade === "BUY"
+            ? (commission * 2).toFixed(8)
+            : "0",
+      "Profit %": profitPercent.toFixed(8),
+      "Profit total %": profitTotalPercent.toFixed(8),
+    });
+  }
 
   csvStream.end();
 }
