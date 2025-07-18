@@ -367,8 +367,15 @@ function handleError(error) {
     );
   }
 
-  console.info(
-    "Error source data:",
-    util.inspect(errorSrcData, { depth: null, colors: true })
-  );
+  if (errorSrcData) {
+    console.info(
+      "Error source data:",
+      util.inspect(errorSrcData, { depth: null, colors: true })
+    );
+  } else {
+    console.info(
+      "Error data:",
+      util.inspect(error, { depth: null, colors: true })
+    );
+  }
 }
