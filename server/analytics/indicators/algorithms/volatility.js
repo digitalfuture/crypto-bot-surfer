@@ -1,3 +1,4 @@
+import util from "node:util";
 import {
   getCandlestickDataFutures,
   getTradingTickersFutures,
@@ -80,44 +81,29 @@ export async function getTradeSignals(state = {}) {
           periods,
         });
 
-        const firstClose = candles[0][4];
-        const lastClose = candles.at(-1)[4];
-        const change = ((lastClose - firstClose) / firstClose) * 100;
+        const volatility =
+          candles.reduce((acc, [, , high, low, close]) => {
+            return acc + Math.abs((high - low) / close);
+          }, 0) / candles.length;
 
-        if (change < 0) {
-          console.log(
-            `  ✅ Falling over recent candles: ${tokenSymbol} (${change.toFixed(
-              2
-            )}%) — initiating short.`
-          );
+        const price = lastPrice;
 
-          const volatility =
-            candles.reduce((acc, [, , high, low, close]) => {
-              return acc + Math.abs((high - low) / close);
-            }, 0) / candles.length;
+        stopLoss = price * (1 + volatility * stopMultiplier);
+        takeProfit = price * (1 - volatility * takeMultiplier);
+        shortPrice = price;
+        symbol = tokenSymbol;
 
-          const price = lastPrice;
-
-          stopLoss = price * (1 + volatility * stopMultiplier);
-          takeProfit = price * (1 - volatility * takeMultiplier);
-          shortPrice = price;
-          symbol = tokenSymbol;
-
-          return {
-            symbol,
-            price,
-            priceChangePercent: token.priceChangePercent,
-            signal: "SELL",
-            stopLoss,
-            takeProfit,
-            shortPrice,
-          };
-        } else {
-          console.log(`  🔼 Rising. Skipping.`);
-        }
+        return {
+          symbol,
+          price,
+          priceChangePercent: token.priceChangePercent,
+          signal: "SELL",
+          stopLoss,
+          takeProfit,
+          shortPrice,
+        };
       }
 
-      // No falling token found
       return {
         symbol: null,
         price: null,
@@ -202,15 +188,21 @@ export async function getTradeSignals(state = {}) {
     }
 
     if (process.env.MODE === "DEVELOPMENT") {
-      console.log("\n===========================");
-      console.log("symbol:", symbol);
-      console.log("price:", price);
-      console.log("stopLoss:", stopLoss);
-      console.log("takeProfit:", takeProfit);
-      console.log("priceChangePercent:", priceChangePercent);
-      console.log("signal:", signal);
-      console.log("exitReason:", exitReason);
-      console.log("===========================\n");
+      console.log(
+        "\n" +
+          util.inspect(
+            {
+              symbol,
+              price,
+              stopLoss,
+              takeProfit,
+              priceChangePercent,
+              signal,
+              exitReason,
+            },
+            { depth: null, colors: true }
+          )
+      );
     }
 
     return {
@@ -223,6 +215,6 @@ export async function getTradeSignals(state = {}) {
       shortPrice,
     };
   } catch (error) {
-    throw { type: "Volatility Strategy Error", ...error };
+    throw { type: "Volatility Strategy Error", ...error, errorSrcData: error };
   }
 }

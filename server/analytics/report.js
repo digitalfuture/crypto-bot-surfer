@@ -48,32 +48,18 @@ function createTable() {
 }
 
 export function report({ date, trade, symbol, price, priceChangePercent }) {
-  // console.log("Report data:", {
-  //   date,
-  //   trade,
-  //   symbol,
-  //   price,
-  //   priceChangePercent,
-  // });
-
-  const stream = fs.createWriteStream(filePath, fileOptions);
-  const csvStream = format({ headers: false, includeEndRowDelimiter: true });
-  csvStream.pipe(stream);
-
   count++;
 
   const commission = (price * commissionPercent) / 100;
   let profitPercent = 0;
 
   if (trade === "SELL") {
-    // Opening short: считаем только комиссию как убыток
     profitPercent = -commissionPercent;
     profitTotalPercent += profitPercent;
 
     entryPrice = price;
     lastTradeType = "SELL";
   } else if (trade === "BUY") {
-    // Closing short: считаем прибыль с учетом комиссий на открытие и закрытие
     const grossProfitPercent = ((entryPrice - price) / entryPrice) * 100;
     const totalCommissionPercent = commissionPercent * 2;
     profitPercent = grossProfitPercent - totalCommissionPercent;
@@ -102,24 +88,29 @@ export function report({ date, trade, symbol, price, priceChangePercent }) {
     }
   }
 
-  if (trade === "SELL" || trade === "BUY") {
-    csvStream.write({
-      Count: count,
-      Date: date.toISOString(),
-      "Token name": symbol || "",
-      "Price change %": priceChangePercent?.toFixed(8) || "0",
-      Trade: trade || "",
-      Price: price ? price.toFixed(8) : "",
-      Commission:
-        trade === "SELL"
-          ? commission.toFixed(8)
-          : trade === "BUY"
-            ? (commission * 2).toFixed(8)
-            : "0",
-      "Profit %": profitPercent.toFixed(8),
-      "Profit total %": profitTotalPercent.toFixed(8),
-    });
-  }
+  // 🛑 Skip writing CSV if there's no actual trade
+  if (trade !== "SELL" && trade !== "BUY") return;
+
+  const stream = fs.createWriteStream(filePath, fileOptions);
+  const csvStream = format({ headers: false, includeEndRowDelimiter: true });
+  csvStream.pipe(stream);
+
+  csvStream.write({
+    Count: count,
+    Date: date.toISOString(),
+    "Token name": symbol || "",
+    "Price change %": priceChangePercent?.toFixed(8) || "0",
+    Trade: trade || "",
+    Price: price ? price.toFixed(8) : "",
+    Commission:
+      trade === "SELL"
+        ? commission.toFixed(8)
+        : trade === "BUY"
+          ? (commission * 2).toFixed(8)
+          : "0",
+    "Profit %": profitPercent.toFixed(8),
+    "Profit total %": profitTotalPercent.toFixed(8),
+  });
 
   csvStream.end();
 }
