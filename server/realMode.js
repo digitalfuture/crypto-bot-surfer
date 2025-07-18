@@ -167,7 +167,7 @@ async function tradeBySignal() {
       return;
     }
 
-    const usdtBalance = await getFuturesAccountUSDTBalance();
+    const { totalBalance: usdtBalance } = await getFuturesAccountUSDTBalance();
 
     if (notional > usdtBalance) {
       console.info(
