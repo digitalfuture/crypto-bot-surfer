@@ -565,3 +565,22 @@ export async function getAccountBalancesFutures() {
     throw { type: "Get Account Balances Error", ...error, errorSrcData: error };
   }
 }
+
+export async function getSymbolBalanceFutures(symbolName) {
+  try {
+    await delay(delayMs);
+
+    const balances = await binance.futuresBalance();
+
+    return parseFloat(
+      balances[symbolName] ? balances[symbolName].available : 0
+    );
+  } catch (error) {
+    console.info("error:", error);
+    throw {
+      type: "Get Symbol Balance Futures Error",
+      ...error,
+      errorSrcData: error,
+    };
+  }
+}

@@ -185,6 +185,8 @@ async function tradeBySignal() {
       return;
     }
 
+    console.info(`Current balance: ${usdtBalance.toFixed(2)} USDT`);
+
     try {
       const order = await createMarketOrderFutures({
         symbol,
