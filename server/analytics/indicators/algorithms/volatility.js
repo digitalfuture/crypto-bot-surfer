@@ -76,14 +76,33 @@ export async function getTradeSignals(state = {}) {
 
     if (!symbol) {
       console.log(`🔍 Resolved tokens: ${resolvedTickerList.length}`);
-
       console.log("🔍 No active position. Searching for a short entry...");
 
-      const sortedList = resolvedTickerList.sort(
+      const filteredList = await filterTickersNearChannelTop(
+        resolvedTickerList,
+        interval,
+        periods,
+        0.9
+      );
+
+      if (filteredList.length === 0) {
+        return {
+          symbol: null,
+          price: null,
+          priceChangePercent: 0,
+          signal: null,
+          stopLoss: null,
+          takeProfit: null,
+          shortPrice: null,
+        };
+      }
+
+      const sortedList = filteredList.sort(
         (a, b) => b.priceChangePercent - a.priceChangePercent
       );
 
       const token = sortedList[0];
+
       const {
         symbol: tokenSymbol,
         lastPrice,
@@ -197,4 +216,79 @@ export async function getTradeSignals(state = {}) {
   } catch (error) {
     throw { type: "Volatility Strategy Error", ...error, errorSrcData: error };
   }
+}
+
+function isNearChannelTop(candles, currentPrice, threshold = 0.9) {
+  const highs = candles.map((c) => c[2]); // high
+  const lows = candles.map((c) => c[3]); // low
+
+  const channelHigh = Math.max(...highs);
+  const channelLow = Math.min(...lows);
+  const range = channelHigh - channelLow;
+
+  if (range === 0) return false; // avoid div/0
+
+  const positionInRange = (currentPrice - channelLow) / range;
+
+  return positionInRange >= threshold;
+}
+
+async function filterTickersNearChannelTop(
+  tickerList,
+  interval,
+  periods,
+  threshold = 0.9
+) {
+  console.log(
+    util.format(
+      "Filtering %d tickers near channel top (threshold=%s)...",
+      tickerList.length,
+      threshold
+    )
+  );
+  const filtered = [];
+
+  for (const token of tickerList) {
+    try {
+      console.log(util.format("Checking %s...", token.symbol));
+
+      const candles = await getCandlestickData({
+        symbol: token.symbol,
+        interval,
+        periods,
+      });
+
+      const nearTop = isNearChannelTop(candles, token.lastPrice, threshold);
+
+      console.log(
+        util.inspect(
+          {
+            symbol: token.symbol,
+            price: token.lastPrice,
+            nearChannelTop: nearTop,
+            candleCount: candles.length,
+          },
+          { colors: true, depth: 2 }
+        )
+      );
+
+      if (nearTop) {
+        filtered.push(token);
+        console.log(util.format("%s added to filtered list.", token.symbol));
+      }
+    } catch (error) {
+      console.error(
+        util.format("Error fetching candles for %s:", token.symbol),
+        error
+      );
+    }
+  }
+
+  console.log(
+    util.format(
+      "Filtering done. %d tickers near channel top found.",
+      filtered.length
+    )
+  );
+  return filtered;
 }

@@ -51,7 +51,7 @@ function createTable() {
 }
 
 export function report({ date, trade, symbol, price, priceChangePercent }) {
-  //console.log({ date, trade, symbol, price, priceChangePercent });
+  console.log({ date, trade, symbol, price, priceChangePercent });
 
   count++;
 
@@ -103,10 +103,10 @@ export function report({ date, trade, symbol, price, priceChangePercent }) {
   csvStream.write({
     Count: count,
     Date: date.toISOString(),
-    "Token name": symbol || "",
-    "Price change %": priceChangePercent?.toFixed(8) || "0",
-    Trade: trade || "",
-    Price: price ? price.toFixed(8) : "",
+    "Token name": symbol,
+    "Price change %": priceChangePercent?.toFixed(8),
+    Trade: trade,
+    Price: price.toFixed(8),
     Commission:
       trade === "SELL"
         ? commission.toFixed(8)
