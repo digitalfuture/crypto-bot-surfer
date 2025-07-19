@@ -80,12 +80,7 @@ export async function getTradeSignals(state = {}) {
       console.log("🔍 No active position. Searching for a short entry...");
 
       const sortedList = resolvedTickerList.sort(
-        (a, b) => a.priceChangePercent - b.priceChangePercent
-      );
-
-      console.log(
-        "Top 100 tokens by price change percent:",
-        sortedList.slice(0, 5)
+        (a, b) => b.priceChangePercent - a.priceChangePercent
       );
 
       const token = sortedList[0];
