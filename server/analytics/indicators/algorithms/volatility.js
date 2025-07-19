@@ -51,6 +51,9 @@ export async function getTradeSignals(state = {}) {
         };
       })
       .filter(({ symbol }) => symbol.endsWith(secondarySymbol))
+      .filter(({ primarySymbol }) => !primarySymbol.endsWith("DOWN"))
+      .filter(({ primarySymbol }) => !primarySymbol.endsWith("UP"))
+      .filter(({ primarySymbol }) => primarySymbol.startsWith("USD"))
       .filter(({ primarySymbol, secondarySymbol }) =>
         tradingTickersFutures.includes(primarySymbol + secondarySymbol)
       )
