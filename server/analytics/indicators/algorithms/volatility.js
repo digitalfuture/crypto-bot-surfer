@@ -3,7 +3,6 @@ import {
   getCandlestickData,
   getTradingTickersFutures,
   getPrevDayData,
-  getPrevDayDataFutures,
 } from "../../../api/binance/info.js";
 
 const secondarySymbol = process.env.SECONDARY_SYMBOL;
@@ -18,7 +17,6 @@ export async function getTradeSignals(state = {}) {
     const now = Date.now();
     const tradingTickersFutures = await getTradingTickersFutures();
     const prevDayData = await getPrevDayData();
-    const prevDayDataFutures = await getPrevDayDataFutures();
 
     let { symbol = null, stopLoss = null, shortPrice = null } = state;
 
@@ -115,7 +113,7 @@ export async function getTradeSignals(state = {}) {
       );
 
       if (!currentTicker) {
-        const raw = prevDayDataFutures.find((t) => t.symbol === symbol);
+        const raw = prevDayData.find((t) => t.symbol === symbol);
         const lastPriceFallback = parseFloat(raw?.lastPrice || "0");
 
         if (lastPriceFallback > 0) {
