@@ -1,14 +1,15 @@
 import util from "node:util";
 import {
-  getCandlestickDataFutures,
+  getCandlestickData,
   getTradingTickersFutures,
+  getPrevDayData,
   getPrevDayDataFutures,
 } from "../../../api/binance/info.js";
 
 const secondarySymbol = process.env.SECONDARY_SYMBOL;
 const interval = process.env.BACKTEST_INTERVAL;
 const periods = parseInt(process.env.BACKTEST_PERIODS, 10);
-let stopMultiplier = parseFloat(process.env.SYSTEM_PARAM_1);
+const stopMultiplier = parseFloat(process.env.SYSTEM_PARAM_1);
 
 let lastPriceSnapshot = {};
 
@@ -16,11 +17,12 @@ export async function getTradeSignals(state = {}) {
   try {
     const now = Date.now();
     const tradingTickersFutures = await getTradingTickersFutures();
+    const prevDayData = await getPrevDayData();
     const prevDayDataFutures = await getPrevDayDataFutures();
 
     let { symbol = null, stopLoss = null, shortPrice = null } = state;
 
-    const resolvedTickerList = prevDayDataFutures
+    const resolvedTickerList = prevDayData
       .map((item) => {
         const { symbol: itemSymbol, lastPrice, volume } = item;
         const price = parseFloat(lastPrice);
@@ -38,7 +40,7 @@ export async function getTradeSignals(state = {}) {
           timestamp: now,
         };
 
-        const primarySymbol = itemSymbol.replace(secondarySymbol, "");
+        const primarySymbol = itemSymbol.slice(0, -secondarySymbol.length);
 
         return {
           primarySymbol,
@@ -89,9 +91,8 @@ export async function getTradeSignals(state = {}) {
         lastPrice,
         priceChangePercent: tokenDelta,
       } = token;
-      console.log(`Checking ${tokenSymbol}...`);
 
-      const candles = await getCandlestickDataFutures({
+      const candles = await getCandlestickData({
         symbol: tokenSymbol,
         interval,
         periods,
@@ -116,12 +117,14 @@ export async function getTradeSignals(state = {}) {
       if (!currentTicker) {
         const raw = prevDayDataFutures.find((t) => t.symbol === symbol);
         const lastPriceFallback = parseFloat(raw?.lastPrice || "0");
+
         if (lastPriceFallback > 0) {
           currentTicker = {
             symbol,
             lastPrice: lastPriceFallback,
             priceChangePercent: 0,
           };
+
           if (process.env.MODE === "DEVELOPMENT") {
             console.log(
               `⚠️ Fallback: ${symbol} restored from prevDayDataFutures`
@@ -138,7 +141,7 @@ export async function getTradeSignals(state = {}) {
         priceChangePercent = currentTicker.priceChangePercent;
 
         if (price < shortPrice || shortPrice === null) {
-          const candles = await getCandlestickDataFutures({
+          const candles = await getCandlestickData({
             symbol,
             interval,
             periods,
@@ -152,6 +155,7 @@ export async function getTradeSignals(state = {}) {
           const dynamicFactor = stopMultiplier * volatility * 1.2;
           const troughPrice = price;
           const newTrailingStop = troughPrice * (1 + dynamicFactor);
+
           stopLoss =
             stopLoss !== null
               ? Math.min(stopLoss, newTrailingStop)
@@ -167,20 +171,20 @@ export async function getTradeSignals(state = {}) {
     }
 
     if (process.env.MODE === "DEVELOPMENT") {
+      console.log("Trade Signal: ");
       console.log(
-        "\n" +
-          util.inspect(
-            {
-              symbol,
-              price,
-              stopLoss,
-              priceChangePercent,
-              signal,
-              exitReason,
-              shortPrice,
-            },
-            { depth: null, colors: true }
-          )
+        util.inspect(
+          {
+            symbol,
+            price,
+            stopLoss,
+            priceChangePercent,
+            signal,
+            exitReason,
+            shortPrice,
+          },
+          { depth: null, colors: true }
+        )
       );
     }
 
