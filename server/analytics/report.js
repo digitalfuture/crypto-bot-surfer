@@ -4,6 +4,7 @@ import fs from "node:fs";
 import { fileURLToPath } from "node:url";
 import { format } from "@fast-csv/format";
 
+const onlyCleanBalance = process.env.ONLY_CLEAN_BALANCE === "true";
 const reportFileDir = process.env.REPORT_FILE_DIR;
 const reportFileName = process.env.REPORT_FILE_NAME;
 const commissionPercent = parseFloat(process.env.COMMISSION_PERCENT);
@@ -35,8 +36,10 @@ function createTable() {
     "Profit total %",
   ];
 
-  execSync(`rm -rf ${filePath}`); // remove old report file
-  console.log("Report file erased");
+  if (!onlyCleanBalance) {
+    execSync(`rm -rf ${filePath}`); // remove old report file
+    console.log("Report file erased");
+  }
 
   const stream = fs.createWriteStream(filePath, fileOptions);
   const csvStream = format({ includeEndRowDelimiter: true });
@@ -48,6 +51,8 @@ function createTable() {
 }
 
 export function report({ date, trade, symbol, price, priceChangePercent }) {
+  console.log({ date, trade, symbol, price, priceChangePercent });
+
   count++;
 
   const commission = (price * commissionPercent) / 100;

@@ -9,7 +9,6 @@ const secondarySymbol = process.env.SECONDARY_SYMBOL;
 const interval = process.env.BACKTEST_INTERVAL;
 const periods = parseInt(process.env.BACKTEST_PERIODS, 10);
 let stopMultiplier = parseFloat(process.env.SYSTEM_PARAM_1);
-let takeMultiplier = parseFloat(process.env.SYSTEM_PARAM_2);
 
 let lastPriceSnapshot = {};
 
@@ -19,12 +18,7 @@ export async function getTradeSignals(state = {}) {
     const tradingTickersFutures = await getTradingTickersFutures();
     const prevDayDataFutures = await getPrevDayDataFutures();
 
-    let {
-      symbol = null,
-      stopLoss = null,
-      takeProfit = null,
-      shortPrice = null,
-    } = state;
+    let { symbol = null, stopLoss = null, shortPrice = null } = state;
 
     const resolvedTickerList = prevDayDataFutures
       .map((item) => {
@@ -63,47 +57,7 @@ export async function getTradeSignals(state = {}) {
       .filter(({ volume }) => volume >= 5_000_000)
       .filter(({ isCalculatedDelta }) => isCalculatedDelta);
 
-    if (!symbol) {
-      console.log(`Resolved tokens: ${resolvedTickerList.length}`);
-      console.log("🔍 No active position. Searching for a short entry...");
-
-      const sortedList = resolvedTickerList
-        .sort((a, b) => b.priceChangePercent - a.priceChangePercent)
-        .slice(0, 100); // limit to top 100 gainers
-
-      for (const token of sortedList) {
-        const { symbol: tokenSymbol, lastPrice } = token;
-        console.log(`Checking ${tokenSymbol}...`);
-
-        const candles = await getCandlestickDataFutures({
-          symbol: tokenSymbol,
-          interval,
-          periods,
-        });
-
-        const volatility =
-          candles.reduce((acc, [, , high, low, close]) => {
-            return acc + Math.abs((high - low) / close);
-          }, 0) / candles.length;
-
-        const price = lastPrice;
-
-        stopLoss = price * (1 + volatility * stopMultiplier);
-        takeProfit = price * (1 - volatility * takeMultiplier);
-        shortPrice = price;
-        symbol = tokenSymbol;
-
-        return {
-          symbol,
-          price,
-          priceChangePercent: token.priceChangePercent,
-          signal: "SELL",
-          stopLoss,
-          takeProfit,
-          shortPrice,
-        };
-      }
-
+    if (!resolvedTickerList.length) {
       return {
         symbol: null,
         price: null,
@@ -115,75 +69,105 @@ export async function getTradeSignals(state = {}) {
       };
     }
 
-    // Active position: manage it
-    let currentTicker = resolvedTickerList.find(
-      (ticker) => ticker.symbol === symbol
-    );
-
-    // 🔁 Fallback if current symbol is missing from the filtered list
-    if (!currentTicker) {
-      const raw = prevDayDataFutures.find((t) => t.symbol === symbol);
-      const lastPrice = parseFloat(raw?.lastPrice || "0");
-
-      if (lastPrice > 0) {
-        currentTicker = {
-          symbol,
-          lastPrice,
-          priceChangePercent: 0,
-        };
-
-        if (process.env.MODE === "DEVELOPMENT") {
-          console.log(
-            `⚠️ Fallback: ${symbol} restored from prevDayDataFutures`
-          );
-        }
-      }
-    }
-
-    let price = null;
-    let priceChangePercent = 0;
     let signal = null;
     let exitReason = null;
+    let price = null;
+    let priceChangePercent = 0;
 
-    if (!currentTicker) {
-      signal = "BUY";
-      exitReason = "POSITION_NOT_FOUND";
+    if (!symbol) {
+      console.log(`🔍 Resolved tokens: ${resolvedTickerList.length}`);
+
+      console.log("🔍 No active position. Searching for a short entry...");
+
+      const sortedList = resolvedTickerList.sort(
+        (a, b) => a.priceChangePercent - b.priceChangePercent
+      );
+
+      console.log(
+        "Top 100 tokens by price change percent:",
+        sortedList.slice(0, 5)
+      );
+
+      const token = sortedList[0];
+      const {
+        symbol: tokenSymbol,
+        lastPrice,
+        priceChangePercent: tokenDelta,
+      } = token;
+      console.log(`Checking ${tokenSymbol}...`);
+
+      const candles = await getCandlestickDataFutures({
+        symbol: tokenSymbol,
+        interval,
+        periods,
+      });
+
+      const volatility =
+        candles.reduce((acc, [, , high, low, close]) => {
+          return acc + Math.abs((high - low) / close);
+        }, 0) / candles.length;
+
+      price = lastPrice;
+      priceChangePercent = tokenDelta;
+      stopLoss = price * (1 + volatility * stopMultiplier);
+      shortPrice = price;
+      symbol = tokenSymbol;
+      signal = "SELL";
     } else {
-      price = currentTicker.lastPrice;
-      priceChangePercent = currentTicker.priceChangePercent;
+      let currentTicker = resolvedTickerList.find(
+        (ticker) => ticker.symbol === symbol
+      );
 
-      if (price < shortPrice || shortPrice === null) {
-        const candles = await getCandlestickDataFutures({
-          symbol,
-          interval,
-          periods,
-        });
-
-        const volatility =
-          candles.reduce((acc, [, , high, low, close]) => {
-            return acc + Math.abs((high - low) / close);
-          }, 0) / candles.length;
-
-        const dynamicFactor = stopMultiplier * volatility * 1.2;
-        const troughPrice = price;
-        const newTrailingStop = troughPrice * (1 + dynamicFactor);
-        stopLoss =
-          stopLoss !== null
-            ? Math.min(stopLoss, newTrailingStop)
-            : newTrailingStop;
-        shortPrice = troughPrice;
+      if (!currentTicker) {
+        const raw = prevDayDataFutures.find((t) => t.symbol === symbol);
+        const lastPriceFallback = parseFloat(raw?.lastPrice || "0");
+        if (lastPriceFallback > 0) {
+          currentTicker = {
+            symbol,
+            lastPrice: lastPriceFallback,
+            priceChangePercent: 0,
+          };
+          if (process.env.MODE === "DEVELOPMENT") {
+            console.log(
+              `⚠️ Fallback: ${symbol} restored from prevDayDataFutures`
+            );
+          }
+        }
       }
 
-      if (price >= stopLoss) {
+      if (!currentTicker) {
         signal = "BUY";
-        exitReason = "SL";
-      } else if (price <= takeProfit) {
-        signal = "BUY";
-        exitReason = "TP";
-      }
+        exitReason = "POSITION_NOT_FOUND";
+      } else {
+        price = currentTicker.lastPrice;
+        priceChangePercent = currentTicker.priceChangePercent;
 
-      if (signal !== "BUY") {
-        signal = null;
+        if (price < shortPrice || shortPrice === null) {
+          const candles = await getCandlestickDataFutures({
+            symbol,
+            interval,
+            periods,
+          });
+
+          const volatility =
+            candles.reduce((acc, [, , high, low, close]) => {
+              return acc + Math.abs((high - low) / close);
+            }, 0) / candles.length;
+
+          const dynamicFactor = stopMultiplier * volatility * 1.2;
+          const troughPrice = price;
+          const newTrailingStop = troughPrice * (1 + dynamicFactor);
+          stopLoss =
+            stopLoss !== null
+              ? Math.min(stopLoss, newTrailingStop)
+              : newTrailingStop;
+          shortPrice = troughPrice;
+        }
+
+        if (price >= stopLoss) {
+          signal = "BUY";
+          exitReason = "SL";
+        }
       }
     }
 
@@ -195,10 +179,10 @@ export async function getTradeSignals(state = {}) {
               symbol,
               price,
               stopLoss,
-              takeProfit,
               priceChangePercent,
               signal,
               exitReason,
+              shortPrice,
             },
             { depth: null, colors: true }
           )
@@ -211,7 +195,6 @@ export async function getTradeSignals(state = {}) {
       priceChangePercent,
       signal,
       stopLoss,
-      takeProfit,
       shortPrice,
     };
   } catch (error) {
