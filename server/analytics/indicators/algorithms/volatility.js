@@ -85,7 +85,8 @@ export async function getTradeSignals(state = {}) {
         resolvedTickerList,
         interval,
         periods,
-        0.9
+        0.9,
+        0.015 // 1.5% минимальный размер канала
       );
 
       if (filteredList.length === 0) {
@@ -221,34 +222,48 @@ export async function getTradeSignals(state = {}) {
   }
 }
 
-function isNearChannelTop(candles, currentPrice, threshold = 0.9) {
-  const highs = candles.map((c) => c[2]); // high
-  const lows = candles.map((c) => c[3]); // low
+function isNearChannelTop(
+  candles,
+  currentPrice,
+  threshold = 0.9,
+  minRange = 0.015
+) {
+  const highs = candles.map((c) => c[2]);
+  const lows = candles.map((c) => c[3]);
 
   const channelHigh = Math.max(...highs);
   const channelLow = Math.min(...lows);
   const range = channelHigh - channelLow;
 
-  if (range === 0) return false; // avoid div/0
+  if (range === 0) return false;
+
+  const rangePercent = range / channelLow;
+  if (rangePercent < minRange) {
+    return false;
+  }
 
   const positionInRange = (currentPrice - channelLow) / range;
+  const hasPulledBack = currentPrice < channelHigh * 0.995; // хотя бы 0.5% откат
 
-  return positionInRange >= threshold;
+  return positionInRange >= threshold && hasPulledBack;
 }
 
 async function filterTickersNearChannelTop(
   tickerList,
   interval,
   periods,
-  threshold = 0.9
+  threshold = 0.9,
+  minRange = 0.015
 ) {
   console.log(
     util.format(
-      "Filtering %d tickers near channel top (threshold=%s)...",
+      "Filtering %d tickers near channel top (threshold=%.2f, minRange=%.2f%%)...",
       tickerList.length,
-      threshold
+      threshold,
+      minRange * 100
     )
   );
+
   const filtered = [];
 
   for (const token of tickerList) {
@@ -261,7 +276,12 @@ async function filterTickersNearChannelTop(
         periods,
       });
 
-      const nearTop = isNearChannelTop(candles, token.lastPrice, threshold);
+      const nearTop = isNearChannelTop(
+        candles,
+        token.lastPrice,
+        threshold,
+        minRange
+      );
 
       console.log(
         util.inspect(
