@@ -124,9 +124,12 @@ async function heartBeatLoop() {
       shortPrice,
     } = await getSignals(positionState);
 
-    if (signal === "SELL") {
+    const isBuySignal = signal === "BUY";
+    const isSellSignal = signal === "SELL";
+
+    if (isSellSignal) {
       positionState = { symbol, stopLoss, takeProfit, shortPrice };
-    } else if (signal === "BUY") {
+    } else if (isBuySignal) {
       positionState = {
         symbol: null,
         stopLoss: null,
@@ -138,8 +141,6 @@ async function heartBeatLoop() {
     }
 
     const primarySymbol = symbol?.replace(secondarySymbol, "") || null;
-    const isBuySignal = signal === "BUY";
-    const isSellSignal = signal === "SELL";
 
     if (isBuySignal) {
       report({
