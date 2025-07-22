@@ -267,8 +267,6 @@ async function filterTickersNearChannelTop(
 
   for (const token of tickerList) {
     try {
-      console.log(util.format("Checking %s...", token.symbol));
-
       const candles = await getCandlestickData({
         symbol: token.symbol,
         interval,
