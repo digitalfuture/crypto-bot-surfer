@@ -50,14 +50,13 @@ export async function getTradeSignals(state = {}) {
           volume: vol,
         };
       })
+      .sort((a, b) => b.volume - a.volume)
+      .slice(0, 250)
       .filter(({ symbol }) => symbol.endsWith(secondarySymbol))
       .filter(({ primarySymbol }) => !primarySymbol.endsWith("DOWN"))
       .filter(({ primarySymbol }) => !primarySymbol.endsWith("UP"))
-      .filter(({ primarySymbol }) => !primarySymbol.startsWith("USD"))
-      .filter(({ primarySymbol, secondarySymbol }) =>
-        tradingTickersFutures.includes(primarySymbol + secondarySymbol)
-      )
-      .filter(({ volume }) => volume >= 5_000_000)
+      .filter(({ primarySymbol }) => !primarySymbol.includes("USD"))
+      .filter(({ symbol }) => tradingTickersFutures.includes(symbol))
       .filter(({ isCalculatedDelta }) => isCalculatedDelta);
 
     if (!resolvedTickerList.length) {
@@ -86,7 +85,7 @@ export async function getTradeSignals(state = {}) {
         interval,
         periods,
         0.9,
-        0.015 // 1.5% минимальный размер канала
+        0.015 // 1.5% minimal channel size
       );
 
       if (filteredList.length === 0) {
@@ -284,15 +283,7 @@ async function filterTickersNearChannelTop(
       );
 
       console.log(
-        util.inspect(
-          {
-            symbol: token.symbol,
-            price: token.lastPrice,
-            nearChannelTop: nearTop,
-            candleCount: candles.length,
-          },
-          { colors: true, depth: 2 }
-        )
+        `${token.symbol}: nearTop=${nearTop}, price=${token.lastPrice}, candles=${candles.length}`
       );
 
       if (nearTop) {

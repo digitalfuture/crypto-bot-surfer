@@ -16,7 +16,7 @@ import {
 import util from "node:util";
 import { report } from "./analytics/report.js";
 
-const onlyCleanBalance = process.env.ONLY_CLEAN_BALANCE === "true";
+const onlyCleanBalance = process.env.CLEAN_BALANCE_ONLY === "true";
 const secondarySymbol = process.env.SECONDARY_SYMBOL;
 const appMode = process.env.MODE;
 const interval = process.env.HEARTBEAT_INTERVAL;
@@ -46,7 +46,7 @@ export default async function start() {
 
     if (onlyCleanBalance) {
       console.info(
-        "ONLY_CLEAN_BALANCE is true. Stopping bot after clearing balance."
+        "CLEAN_BALANCE_ONLY is true. Stopping bot after clearing balance."
       );
       console.info("Bot stopped.");
       return;

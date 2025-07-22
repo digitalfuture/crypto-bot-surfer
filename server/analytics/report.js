@@ -4,7 +4,7 @@ import fs from "node:fs";
 import { fileURLToPath } from "node:url";
 import { format } from "@fast-csv/format";
 
-const onlyCleanBalance = process.env.ONLY_CLEAN_BALANCE === "true";
+const onlyCleanBalance = process.env.CLEAN_BALANCE_ONLY === "true";
 const reportFileDir = process.env.REPORT_FILE_DIR;
 const reportFileName = process.env.REPORT_FILE_NAME;
 const commissionPercent = parseFloat(process.env.COMMISSION_PERCENT);
