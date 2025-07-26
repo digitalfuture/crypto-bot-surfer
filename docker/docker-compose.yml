@@ -12,7 +12,7 @@ x-template: &basic-container
     - -c
     - |
       rm -rf crypto-bot-surfer && \
-      git clone --branch new https://github.com/digitalfuture/crypto-bot-surfer.git && \
+      git clone --branch short-stop-loss-take-profit https://github.com/digitalfuture/crypto-bot-surfer.git && \
       cd crypto-bot-surfer && \
       npm install && \
       if [ "$TEST_MODE" = "false" ]; then \
