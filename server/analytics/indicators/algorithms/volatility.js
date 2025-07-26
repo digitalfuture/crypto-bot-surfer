@@ -309,7 +309,3 @@ export async function getTradeSignals(state = {}) {
     throw { type: "Volatility Strategy Error", ...error, errorSrcData: error };
   }
 }
-
-// <<<--- Removed: function isNearChannelTop and filterTickersNearChannelTop ---
-// As isNearChannelTop was unused, filterTickersNearChannelTop
-// was simplified to sorting in the main logic block.
