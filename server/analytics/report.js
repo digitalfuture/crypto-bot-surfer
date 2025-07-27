@@ -36,10 +36,10 @@ function createTable() {
     "Profit total %",
   ];
 
-  if (!onlyCleanBalance) {
-    execSync(`rm -rf ${filePath}`); // remove old report file
-    console.log("Report file erased");
-  }
+  if (!onlyCleanBalance) return;
+
+  execSync(`rm -rf ${filePath}`); // remove old report file
+  console.log("Report file erased");
 
   const stream = fs.createWriteStream(filePath, fileOptions);
   const csvStream = format({ includeEndRowDelimiter: true });
