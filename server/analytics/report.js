@@ -36,7 +36,7 @@ function createTable() {
     "Profit total %",
   ];
 
-  if (!onlyCleanBalance) return;
+  if (onlyCleanBalance) return;
 
   execSync(`rm -rf ${filePath}`); // remove old report file
   console.log("Report file erased");
