@@ -19,13 +19,12 @@ const minGrowthPercent = parseFloat(process.env.SYSTEM_PARAM_3);
 // Minimum acceptable 24h volume in USDT for a token to be considered
 const MIN_ACCEPTABLE_VOLUME_USDT = 100000; // 100,000 USDT
 
-// --- Added: Parameters for "growth -> short" strategy ---
+// --- Parameters for "growth -> short" strategy ---
 // Number of function "calls" back to compare price for identifying short candidates
-const GROWTH_LOOKBACK_CALLS =
-  parseInt(process.env.GROWTH_LOOKBACK_CALLS, 10) || 12; // Default 12 calls
+const GROWTH_LOOKBACK_CALLS = 12; // Default 12 calls
 // --- End of addition ---
 
-// --- Added: Internal strategy state ---
+// --- Internal strategy state ---
 // Counter for function calls to getTradeSignals
 let callCount = 0;
 // Price history for calculating growth
@@ -37,7 +36,7 @@ let lastPriceSnapshot = {};
 
 export async function getTradeSignals(state = {}) {
   try {
-    // --- Added: Increment call counter ---
+    // --- Increment call counter ---
     callCount++;
     const currentCall = callCount;
     // --- End of addition ---
@@ -71,7 +70,7 @@ export async function getTradeSignals(state = {}) {
         const currentPrice = parseFloat(lastPrice);
         const vol = parseFloat(volume);
 
-        // --- Added: Update price history ---
+        // --- Update price history ---
         if (!priceHistory[itemSymbol]) {
           priceHistory[itemSymbol] = [];
         }
