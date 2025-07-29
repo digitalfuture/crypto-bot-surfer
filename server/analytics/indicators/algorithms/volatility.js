@@ -44,7 +44,9 @@ export async function getTradeSignals(state = {}) {
       takeProfit = null,
     } = state;
 
-    const resolvedTickerList = prevDayDataSpot
+    // --- Изменено: Логика формирования и оценки кандидатов ---
+    // 1. Сначала формируем базовый список кандидатов
+    const rawTickerList = prevDayDataSpot
       .map((item) => {
         const { symbol: itemSymbol, lastPrice, volume } = item;
         const price = parseFloat(lastPrice);
@@ -52,9 +54,11 @@ export async function getTradeSignals(state = {}) {
 
         const prevEntry = lastPriceSnapshot[itemSymbol];
         let delta = null;
+        let deltaTimeMs = null;
 
         if (prevEntry && prevEntry.price !== undefined) {
           delta = ((price - prevEntry.price) / prevEntry.price) * 100;
+          deltaTimeMs = now - prevEntry.timestamp;
         }
 
         lastPriceSnapshot[itemSymbol] = {
@@ -69,21 +73,52 @@ export async function getTradeSignals(state = {}) {
           secondarySymbol,
           symbol: itemSymbol,
           priceChangePercent: delta,
+          deltaTimeMs: deltaTimeMs,
           isCalculatedDelta: delta !== null,
           lastPrice: price, // Spot price
           volume: vol,
         };
       })
-      .sort((a, b) => b.volume - a.volume)
       .filter(({ symbol }) => symbol.endsWith(secondarySymbol))
       .filter(({ primarySymbol }) => !primarySymbol.endsWith("DOWN"))
       .filter(({ primarySymbol }) => !primarySymbol.endsWith("UP"))
       .filter(({ primarySymbol }) => !primarySymbol.includes("USD"))
       .filter(({ symbol }) => tradingTickersFutures.includes(symbol))
       .filter(({ isCalculatedDelta }) => isCalculatedDelta)
-      // Filter by minimum volume to avoid low-liquidity pairs
-      .filter(({ volume }) => volume > MIN_ACCEPTABLE_VOLUME_USDT)
-      .slice(0, 500);
+      .filter(({ volume }) => volume > MIN_ACCEPTABLE_VOLUME_USDT);
+
+    // 2. Рассчитываем "рейтинг" для каждого кандидата
+    const ratedTickerList = rawTickerList.map((item) => {
+      const { priceChangePercent, volume, lastPrice } = item;
+
+      // Базовый скор: отрицательное значение priceChangePercent (падение)
+      // Умножаем на объем для приоритета более ликвидных
+      // Делим на цену, чтобы избежать слишком сильной предвзятости к дорогим токенам
+      // Используем Math.abs для корректной работы с отрицательными значениями
+      let score = 0;
+      if (priceChangePercent !== null && priceChangePercent < 0) {
+        // Основной компонент: скорость падения * объем / цена
+        score = (Math.abs(priceChangePercent) * volume) / lastPrice;
+
+        // Дополнительный компонент: если падение достаточно сильное, увеличиваем скор
+        // Это имитирует идею "падает быстрее всех и значительно"
+        if (Math.abs(priceChangePercent) > minPriceChangePercent) {
+          score *= 1.5; // Бонус за превышение порога
+        }
+      }
+
+      return {
+        ...item,
+        score: score,
+      };
+    });
+
+    // 3. Сортируем по убыванию рейтинга и берем топ
+    const resolvedTickerList = ratedTickerList
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 250); // Ограничиваем для производительности
+
+    // --- Конец изменения ---
 
     if (!resolvedTickerList.length) {
       return {
@@ -106,33 +141,19 @@ export async function getTradeSignals(state = {}) {
       console.log(`🔍 Resolved tokens: ${resolvedTickerList.length}`);
       console.log("🔍 No active position. Searching for a short entry...");
 
-      const filteredList = resolvedTickerList;
+      // --- Изменено: Выбор токена на основе рейтинга ---
+      const tokenToConsider = resolvedTickerList[0]; // Токен с наивысшим рейтингом
 
-      if (filteredList.length === 0) {
-        return {
-          symbol: null,
-          price: null,
-          priceChangePercent: 0,
-          signal: null,
-          stopLoss: null,
-          takeProfit: null,
-          shortPrice: null,
-        };
-      }
-
-      const sortedList = filteredList.sort(
-        (a, b) => b.priceChangePercent - a.priceChangePercent
-      );
-
-      const tokenToConsider = sortedList[0];
-
-      // Check if the price change meets our minimum threshold
+      // Проверяем, достаточно ли высокий рейтинг (падение + объем + цена)
+      // И превышает ли падение наш минимальный порог
       if (
         !tokenToConsider ||
-        tokenToConsider.priceChangePercent < minPriceChangePercent
+        tokenToConsider.score <= 0 ||
+        tokenToConsider.priceChangePercent > 0 || // Убеждаемся, что это падение
+        Math.abs(tokenToConsider.priceChangePercent) < minPriceChangePercent
       ) {
         console.log(
-          `No suitable token found. Best candidate ${tokenToConsider?.symbol || "N/A"} changed by ${tokenToConsider?.priceChangePercent?.toFixed(4) || "N/A"}%, below threshold of ${minPriceChangePercent}%.`
+          `No suitable token found based on rating or threshold. Best candidate ${tokenToConsider?.symbol || "N/A"} changed by ${tokenToConsider?.priceChangePercent?.toFixed(4) || "N/A"}%, score: ${tokenToConsider?.score?.toFixed(2) || "N/A"}`
         );
         return {
           symbol: null,
@@ -146,6 +167,7 @@ export async function getTradeSignals(state = {}) {
       }
 
       const token = tokenToConsider;
+      // --- Конец изменения ---
 
       const { symbol: tokenSymbol, priceChangePercent: tokenDelta } = token;
 
@@ -184,6 +206,7 @@ export async function getTradeSignals(state = {}) {
       symbol = tokenSymbol;
       signal = "SELL";
     } else {
+      // Логика для открытой позиции остается прежней
       let currentTicker = resolvedTickerList.find(
         (ticker) => ticker.symbol === symbol
       );
