@@ -27,6 +27,8 @@ export default async function start() {
 
   try {
     await startServer();
+    // Note: Unlike realMode.js, testMode.js typically doesn't close existing positions on start
+    // unless specifically designed to do so.
     await startLoop();
   } catch (error) {
     const { statusCode, statusMessage, body, type, errorSrcData } = error;
@@ -127,26 +129,36 @@ async function heartBeatLoop() {
     const isBuySignal = signal === "BUY";
     const isSellSignal = signal === "SELL";
 
+    // Update state only on actual entry or exit signals
     if (isSellSignal) {
+      // Open a new position (or confirm existing one)
+      // In test mode, we just update the state as if the order was filled
       positionState = { symbol, stopLoss, takeProfit, shortPrice };
+      console.info(
+        `Test Mode: Simulating SHORT OPEN on ${symbol} at price ${price}`
+      );
     } else if (isBuySignal) {
+      // Close the position
+      console.info(
+        `Test Mode: Simulating SHORT CLOSE on ${positionState.symbol} at price ${price}`
+      );
       positionState = {
         symbol: null,
         stopLoss: null,
         takeProfit: null,
         shortPrice: null,
       };
-    } else {
-      positionState = { symbol, stopLoss, takeProfit, shortPrice };
     }
-
-    const primarySymbol = symbol?.replace(secondarySymbol, "") || null;
+    // If isNoSignal, positionState is NOT changed.
+    // It retains information about the currently open position.
+    // This prevents a new SELL signal for a different pair from overriding
+    // the state of an existing open position.
 
     if (isBuySignal) {
       report({
         date: new Date(),
         trade: "BUY",
-        symbol,
+        symbol: positionState.symbol, // Use symbol from state in case getSignals didn't return it
         price,
         priceChangePercent,
         exitReason,
@@ -160,10 +172,12 @@ async function heartBeatLoop() {
         priceChangePercent,
       });
     } else {
+      // For test mode, HOLD makes sense only if there's an open position
+      const tradeType = positionState.symbol ? "HOLD" : null;
       report({
         date: new Date(),
-        trade: primarySymbol ? "HOLD" : null,
-        symbol,
+        trade: tradeType,
+        symbol: positionState.symbol, // Show the symbol of the held position
         price,
         priceChangePercent,
       });
