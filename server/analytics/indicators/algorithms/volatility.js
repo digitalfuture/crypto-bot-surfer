@@ -12,19 +12,25 @@ const interval = process.env.BACKTEST_INTERVAL;
 const periods = parseInt(process.env.BACKTEST_PERIODS, 10);
 const stopMultiplier = parseFloat(process.env.SYSTEM_PARAM_1);
 const takeProfitMultiplier = parseFloat(process.env.SYSTEM_PARAM_2);
-// Note: SYSTEM_PARAM_3 (minGrowthPercent) is no longer used in this version of the strategy
-// but kept for potential future use or backward compatibility.
+const minGrowthPercent = parseFloat(process.env.SYSTEM_PARAM_3);
 const MIN_ACCEPTABLE_VOLUME_USDT = 100000;
 
-// --- Parameters for modified "pump -> short" strategy ---
+// --- Parameters for "pump -> short" strategy ---
 // Number of function "calls" back to calculate initial growth (pump)
-const PUMP_LOOKBACK_CALLS = 2;
+const GROWTH_LOOKBACK_CALLS =
+  parseInt(process.env.GROWTH_LOOKBACK_CALLS, 10) || 12;
+// Number of recent calls to check for price decline/stall after the pump
+const STALL_LOOKBACK_CALLS =
+  parseInt(process.env.STALL_LOOKBACK_CALLS, 10) || 2;
+// Minimum required relative price decline from the pump high to consider a "stall"
+const MIN_STALL_DECLINE_PERCENT =
+  parseFloat(process.env.MIN_STALL_DECLINE_PERCENT) || -0.1; // E.g., -0.1% decline
 // --- End of additions ---
 
 // --- Internal strategy state ---
 let callCount = 0;
 // priceHistory stores the last few prices for each symbol
-// key: symbol, value: Array of { price: x, call: y }
+// key: symbol, value: Array of { price: x, timestamp: y, call: z }
 let priceHistory = {};
 let lastPriceSnapshot = {};
 // --- End of addition ---
@@ -60,7 +66,7 @@ export async function getTradeSignals(state = {}) {
       takeProfit = null,
     } = state;
 
-    // --- Form and evaluate candidates based on modified "pump and stall" pattern ---
+    // --- Form and evaluate candidates based on "pump and stall" pattern ---
     if (process.env.MODE === "DEVELOPMENT") {
       console.log(`Initial raw data items: ${prevDayDataSpot.length}`);
     }
@@ -75,26 +81,29 @@ export async function getTradeSignals(state = {}) {
         if (!priceHistory[itemSymbol]) {
           priceHistory[itemSymbol] = [];
         }
-        // Add current price with call number
+        // Add current price with call number and timestamp
         priceHistory[itemSymbol].push({
           price: currentPrice,
+          timestamp: now,
           call: currentCall,
         });
 
         // Keep only the last few entries needed for calculations
-        const maxHistoryLength = Math.max(PUMP_LOOKBACK_CALLS + 3, 10); // A buffer
+        const maxHistoryLength =
+          Math.max(GROWTH_LOOKBACK_CALLS, STALL_LOOKBACK_CALLS) + 5; // A buffer
         if (priceHistory[itemSymbol].length > maxHistoryLength) {
           priceHistory[itemSymbol] =
             priceHistory[itemSymbol].slice(-maxHistoryLength);
         }
         // --- End of price history update ---
 
-        // --- Calculate growth and pump high over the pump period ---
+        // --- Calculate growth over the pump period ---
         let growthPercent = null;
         let pumpHighPrice = null; // The highest price observed during the pump period
+        let deltaTimeMs = null;
 
         const pumpStartEntryIndex = priceHistory[itemSymbol].findIndex(
-          (entry) => entry.call === currentCall - PUMP_LOOKBACK_CALLS
+          (entry) => entry.call === currentCall - GROWTH_LOOKBACK_CALLS
         );
 
         if (
@@ -107,6 +116,8 @@ export async function getTradeSignals(state = {}) {
           // Calculate growth from pump start to current price
           growthPercent =
             ((currentPrice - pumpStartPrice) / pumpStartPrice) * 100;
+          deltaTimeMs =
+            now - priceHistory[itemSymbol][pumpStartEntryIndex].timestamp;
 
           // Find the highest price during the pump period [pumpStartCall, currentCall]
           let maxPriceInPeriod = pumpStartPrice;
@@ -122,20 +133,50 @@ export async function getTradeSignals(state = {}) {
           }
           pumpHighPrice = maxPriceInPeriod;
         }
-        // --- End of growth and pump high calculation ---
+        // --- End of growth calculation ---
 
-        // --- Calculate relative recent price change from pump high to check for stall/decline ---
-        let recentPriceChangePercentFromHigh = null;
-        // Calculate relative change from the pump high to the current price
+        // --- Calculate recent price change to check for stall/decline ---
+        let recentPriceChangePercent = null;
+        let stallConditionMet = false; // Flag to indicate if stall condition is met
+
+        const stallStartEntryIndex = priceHistory[itemSymbol].findIndex(
+          (entry) => entry.call === currentCall - STALL_LOOKBACK_CALLS
+        );
+
         if (
-          pumpHighPrice !== null &&
-          pumpHighPrice > 0 &&
-          currentPrice !== undefined
+          stallStartEntryIndex !== -1 &&
+          priceHistory[itemSymbol][stallStartEntryIndex].price > 0
         ) {
-          recentPriceChangePercentFromHigh =
-            ((currentPrice - pumpHighPrice) / pumpHighPrice) * 100;
+          const stallStartPrice =
+            priceHistory[itemSymbol][stallStartEntryIndex].price;
+          // Calculate recent change from stall start to current price
+          recentPriceChangePercent =
+            ((currentPrice - stallStartPrice) / stallStartPrice) * 100;
+
+          // --- Stall condition: Price must have declined or stagnated from pump high ---
+          if (
+            pumpHighPrice !== null &&
+            pumpHighPrice > 0 &&
+            currentPrice !== undefined
+          ) {
+            const relativeDeclineFromHigh =
+              ((currentPrice - pumpHighPrice) / pumpHighPrice) * 100;
+            // Stall condition is met if price declined from pump high
+            stallConditionMet =
+              relativeDeclineFromHigh <= MIN_STALL_DECLINE_PERCENT;
+            if (
+              process.env.MODE === "DEVELOPMENT" &&
+              growthPercent !== null &&
+              growthPercent > minGrowthPercent
+            ) {
+              // Log detailed info for candidates that pass the basic pump filter
+              console.log(
+                `DBG: ${itemSymbol} | Growth: ${growthPercent?.toFixed(4)}% | Recent: ${recentPriceChangePercent?.toFixed(4)}% | Decline from High: ${relativeDeclineFromHigh?.toFixed(4)}% | Stall Met: ${stallConditionMet}`
+              );
+            }
+          }
         }
-        // --- End of relative recent change calculation ---
+        // --- End of recent change calculation ---
 
         const primarySymbol = itemSymbol.slice(0, -secondarySymbol.length);
 
@@ -150,11 +191,13 @@ export async function getTradeSignals(state = {}) {
           secondarySymbol,
           symbol: itemSymbol,
           growthPercent: growthPercent, // Growth from pump start
-          recentPriceChangePercentFromHigh: recentPriceChangePercentFromHigh, // Decline from pump high
+          recentPriceChangePercent: recentPriceChangePercent, // Recent change
           pumpHighPrice: pumpHighPrice, // The highest price during pump
+          stallConditionMet: stallConditionMet, // Whether stall condition is met
+          deltaTimeMs: deltaTimeMs,
           isCalculatedGrowth: growthPercent !== null,
-          isCalculatedRecentChange: recentPriceChangePercentFromHigh !== null,
-          lastPrice: currentPrice,
+          isCalculatedRecentChange: recentPriceChangePercent !== null,
+          lastPrice: currentPrice, // Spot price
           volume: vol,
         };
       })
@@ -165,9 +208,6 @@ export async function getTradeSignals(state = {}) {
       .filter(({ symbol }) => tradingTickersFutures.includes(symbol))
       .filter(({ isCalculatedGrowth, isCalculatedRecentChange }) => {
         const keep = isCalculatedGrowth && isCalculatedRecentChange;
-        if (process.env.MODE === "DEVELOPMENT" && !keep) {
-          // Log why items are filtered out if needed for deep debugging
-        }
         return keep;
       })
       .filter(({ volume }) => volume > MIN_ACCEPTABLE_VOLUME_USDT);
@@ -186,36 +226,26 @@ export async function getTradeSignals(state = {}) {
       );
     }
 
-    // Apply modified "pump and stall" filters
+    // --- Apply "pump and stall" filters ---
+    // 1. Strong pump: growthPercent >= minGrowthPercent
+    // 2. Stall/decline: stallConditionMet is true (price declined from pump high)
     const pumpAndStallFiltered = rawTickerList.filter(
-      ({
-        growthPercent,
-        recentPriceChangePercentFromHigh,
-        symbol: itemSymbol,
-      }) => {
-        // --- Modified condition: Any positive growth is considered a "pump"
-        const pumpCondition = growthPercent > 0; // Instead of growthPercent >= minGrowthPercent (SYSTEM_PARAM_3)
-
-        // --- Modified condition: Price must have declined or stagnated from its pump high
-        // recentPriceChangePercentFromHigh <= 0 means price is at or below the pump high
-        const stallCondition = recentPriceChangePercentFromHigh <= 0;
+      ({ growthPercent, stallConditionMet }) => {
+        const pumpCondition = growthPercent >= minGrowthPercent;
+        const stallCondition = stallConditionMet; // Use the pre-calculated flag
 
         const passes = pumpCondition && stallCondition;
 
         if (process.env.MODE === "DEVELOPMENT") {
-          // Log details for candidates that almost pass or pass
-          if (
-            growthPercent !== null &&
-            recentPriceChangePercentFromHigh !== null
-          ) {
-            console.log(
-              `  Candidate: ${itemSymbol} | Growth: ${growthPercent?.toFixed(4)}% (need >0%) | Relative Decline: ${recentPriceChangePercentFromHigh?.toFixed(4)}% (need <=0%) | Passes: ${passes}`
-            );
-          }
+          // Log details for top candidates that almost pass or pass
+          // if (growthPercent !== null && (growthPercent > (minGrowthPercent - 0.5) || Math.abs(growthPercent) < 2)) {
+          //     console.log(`  Candidate: ${itemSymbol} | Growth: ${growthPercent?.toFixed(4)}% (need >=${minGrowthPercent}%) | Stall Met: ${stallConditionMet} | Passes: ${passes}`);
+          // }
         }
         return passes;
       }
     );
+    // --- End of "pump and stall" filters ---
 
     if (process.env.MODE === "DEVELOPMENT") {
       console.log(
@@ -225,7 +255,7 @@ export async function getTradeSignals(state = {}) {
         console.log("Top candidates after pump&stall filter:");
         pumpAndStallFiltered.slice(0, 3).forEach((t, i) => {
           console.log(
-            `  ${i + 1}. ${t.symbol}: Growth=${t.growthPercent?.toFixed(4)}%, Relative Decline=${t.recentPriceChangePercentFromHigh?.toFixed(4)}%`
+            `  ${i + 1}. ${t.symbol}: Growth=${t.growthPercent?.toFixed(4)}%, Stall Met=${t.stallConditionMet}`
           );
         });
       }
@@ -238,7 +268,7 @@ export async function getTradeSignals(state = {}) {
 
     if (!resolvedTickerList.length) {
       if (process.env.MODE === "DEVELOPMENT") {
-        console.log("No tokens passed all filters.");
+        console.log("🔍 No tokens passed all filters (pump + stall).");
       }
       return {
         symbol: null,
@@ -255,7 +285,7 @@ export async function getTradeSignals(state = {}) {
       console.log(`Final resolved list (top 10 sorted by growth):`);
       resolvedTickerList.forEach((t, i) => {
         console.log(
-          `  ${i + 1}. ${t.symbol}: Growth=${t.growthPercent?.toFixed(4)}%, Relative Decline=${t.recentPriceChangePercentFromHigh?.toFixed(4)}%`
+          `  ${i + 1}. ${t.symbol}: Growth=${t.growthPercent?.toFixed(4)}%, Stall Met=${t.stallConditionMet}`
         );
       });
     }
@@ -291,16 +321,16 @@ export async function getTradeSignals(state = {}) {
           `🎯 Selected token for SELL signal: ${tokenToConsider.symbol}`
         );
         console.log(
-          `   Growth: ${tokenToConsider.growthPercent?.toFixed(4)}% (need >0%)`
+          `   Growth: ${tokenToConsider.growthPercent?.toFixed(4)}% (need >=${minGrowthPercent}%)`
         );
         console.log(
-          `   Relative Decline from High: ${tokenToConsider.recentPriceChangePercentFromHigh?.toFixed(4)}% (need <=0%)`
+          `   Stall Condition Met: ${tokenToConsider.stallConditionMet}`
         );
       }
 
       const token = tokenToConsider;
-      // For reporting, use the relative decline
-      priceChangePercent = token.recentPriceChangePercentFromHigh ?? 0;
+      // For reporting, use the recent change or growth for context
+      priceChangePercent = token.growthPercent ?? 0;
 
       const futuresPriceForToken = futuresPriceMap.get(token.symbol);
       if (futuresPriceForToken === undefined || futuresPriceForToken <= 0) {
@@ -391,6 +421,7 @@ export async function getTradeSignals(state = {}) {
           console.log(
             `❌ Generated BUY signal (POSITION_NOT_FOUND) for ${symbol}`
           );
+          console.log(`DBG: Returning BUY signal with symbol: '${symbol}'`);
         }
       } else {
         // --- Use futures price to check TP/SL ---
@@ -442,6 +473,7 @@ export async function getTradeSignals(state = {}) {
             console.log(
               `✅ Generated BUY signal (TP) for ${symbol} at price ${price.toFixed(8)}. TP was ${takeProfit.toFixed(8)}`
             );
+            console.log(`DBG: Returning BUY signal with symbol: '${symbol}'`);
           }
         } else if (stopLoss !== null && price >= stopLoss) {
           signal = "BUY";
@@ -450,6 +482,7 @@ export async function getTradeSignals(state = {}) {
             console.log(
               `❌ Generated BUY signal (SL) for ${symbol} at price ${price.toFixed(8)}. SL was ${stopLoss.toFixed(8)}`
             );
+            console.log(`DBG: Returning BUY signal with symbol: '${symbol}'`);
           }
         } else if (process.env.MODE === "DEVELOPMENT") {
           // Log price check status periodically or if close to levels
@@ -485,6 +518,11 @@ export async function getTradeSignals(state = {}) {
         )
       );
       console.log("--- End of getTradeSignals Call ---\n");
+    }
+
+    // Add debug log before returning BUY signal
+    if (signal === "BUY" && process.env.MODE === "DEVELOPMENT") {
+      console.log(`DBG: Final Returning BUY signal with symbol: '${symbol}'`);
     }
 
     return {

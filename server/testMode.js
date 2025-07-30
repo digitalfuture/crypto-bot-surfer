@@ -128,7 +128,9 @@ async function heartBeatLoop() {
 
     const isBuySignal = signal === "BUY";
     const isSellSignal = signal === "SELL";
+    const isNoSignal = signal === null;
 
+    // --- FIXED POSITION STATE LOGIC ---
     // Update state only on actual entry or exit signals
     if (isSellSignal) {
       // Open a new position (or confirm existing one)
@@ -137,7 +139,30 @@ async function heartBeatLoop() {
       console.info(
         `Test Mode: Simulating SHORT OPEN on ${symbol} at price ${price}`
       );
+
+      // --- Generate SELL report AFTER updating state ---
+      report({
+        date: new Date(),
+        trade: "SELL",
+        symbol,
+        price,
+        priceChangePercent,
+      });
+      // --- End of change ---
     } else if (isBuySignal) {
+      // --- Generate BUY report BEFORE resetting state ---
+      // Use symbol from the signal or fallback to state if signal didn't provide it
+      const closedSymbol = symbol || positionState.symbol;
+      report({
+        date: new Date(),
+        trade: "BUY",
+        symbol: closedSymbol, // Use potentially corrected symbol
+        price,
+        priceChangePercent,
+        exitReason,
+      });
+      // --- End of change ---
+
       // Close the position
       console.info(
         `Test Mode: Simulating SHORT CLOSE on ${positionState.symbol} at price ${price}`
@@ -153,25 +178,10 @@ async function heartBeatLoop() {
     // It retains information about the currently open position.
     // This prevents a new SELL signal for a different pair from overriding
     // the state of an existing open position.
+    // --- END OF FIXES ---
 
-    if (isBuySignal) {
-      report({
-        date: new Date(),
-        trade: "BUY",
-        symbol: positionState.symbol, // Use symbol from state in case getSignals didn't return it
-        price,
-        priceChangePercent,
-        exitReason,
-      });
-    } else if (isSellSignal) {
-      report({
-        date: new Date(),
-        trade: "SELL",
-        symbol,
-        price,
-        priceChangePercent,
-      });
-    } else {
+    // Handle HOLD and PASS cases when there's no specific buy/sell signal
+    if (isNoSignal) {
       // For test mode, HOLD makes sense only if there's an open position
       const tradeType = positionState.symbol ? "HOLD" : null;
       report({
@@ -182,6 +192,7 @@ async function heartBeatLoop() {
         priceChangePercent,
       });
     }
+    // Note: SELL and BUY reports are handled above in their respective blocks
   } catch (error) {
     throw { type: "Heartbeat Loop Error", ...error, errorSrcData: error };
   }
