@@ -1,4 +1,4 @@
-// strategies/volatility/getTradeSignals.js
+// svolatility.js
 import util from "node:util";
 import {
   getCandlestickData,
@@ -7,24 +7,19 @@ import {
   getPrevDayDataFutures,
 } from "../../../api/binance/info.js";
 
+// --- Environment Variables (Only these can be changed) ---
 const secondarySymbol = process.env.SECONDARY_SYMBOL;
-const interval = process.env.BACKTEST_INTERVAL;
-const periods = parseInt(process.env.BACKTEST_PERIODS, 10);
-const stopMultiplier = parseFloat(process.env.SYSTEM_PARAM_1);
-const takeProfitMultiplier = parseFloat(process.env.SYSTEM_PARAM_2);
-// minGrowthPercent больше не используется напрямую в фильтре пампа, но оставлен для совместимости
-const MIN_ACCEPTABLE_VOLUME_USDT = 100000;
+const interval = process.env.BACKTEST_INTERVAL; // e.g., '5m'
+const periods = parseInt(process.env.BACKTEST_PERIODS, 10); // e.g., 24
+const stopMultiplier = parseFloat(process.env.SYSTEM_PARAM_1); // e.g., 1.0
+const takeProfitMultiplier = parseFloat(process.env.SYSTEM_PARAM_2); // e.g., 3.0
+const minGrowthPercent = parseFloat(process.env.SYSTEM_PARAM_3); // e.g., 1.5
+// --- End of Environment Variables ---
 
-// --- Parameters for modified "pump -> short" strategy ---
-const GROWTH_LOOKBACK_CALLS =
-  parseInt(process.env.GROWTH_LOOKBACK_CALLS, 10) || 12;
-// --- Добавлено: Порог "отскока" ---
-// Минимальное относительное падение от пиковой цены пампа (в процентах)
-// Отрицательное значение означает падение.
-// Например, -0.1 означает, что цена должна упасть минимум на 0.1% от пиковой цены пампа.
-const MIN_RELATIVE_STALL_DECLINE_PERCENT =
-  parseFloat(process.env.MIN_RELATIVE_STALL_DECLINE_PERCENT) || -0.1;
-// --- Конец добавления ---
+// --- Hardcoded Strategy Constants (Defined directly in the file) ---
+const GROWTH_LOOKBACK_CALLS = 12; // 12 calls * 5s = 1 minute lookback for pump
+const MIN_ACCEPTABLE_VOLUME_USDT = 100000; // 100,000 USDT
+// --- End of Hardcoded Constants ---
 
 // --- Internal strategy state ---
 let callCount = 0;
@@ -58,7 +53,7 @@ export async function getTradeSignals(state = {}) {
       takeProfit = null,
     } = state;
 
-    // --- Form and evaluate candidates based on modified "pump and stall" pattern ---
+    // --- Form and evaluate candidates based on "pump and stall" pattern ---
     const rawTickerList = prevDayDataSpot
       .map((item) => {
         const { symbol: itemSymbol, lastPrice, volume } = item;
@@ -75,7 +70,7 @@ export async function getTradeSignals(state = {}) {
           call: currentCall,
         });
 
-        const maxHistoryLength = Math.max(GROWTH_LOOKBACK_CALLS, 5); // A little buffer
+        const maxHistoryLength = Math.max(GROWTH_LOOKBACK_CALLS, 5) + 10; // A buffer
         if (priceHistory[itemSymbol].length > maxHistoryLength) {
           priceHistory[itemSymbol] =
             priceHistory[itemSymbol].slice(-maxHistoryLength);
@@ -84,7 +79,7 @@ export async function getTradeSignals(state = {}) {
 
         // --- Calculate growth over the pump period ---
         let growthPercent = null;
-        let pumpHighPrice = null; // The highest price observed during the pump period
+        let pumpHighPrice = null;
 
         const pumpStartEntryIndex = priceHistory[itemSymbol].findIndex(
           (entry) => entry.call === currentCall - GROWTH_LOOKBACK_CALLS
@@ -97,11 +92,9 @@ export async function getTradeSignals(state = {}) {
           const pumpStartPrice =
             priceHistory[itemSymbol][pumpStartEntryIndex].price;
 
-          // Calculate growth from pump start to current price
           growthPercent =
             ((currentPrice - pumpStartPrice) / pumpStartPrice) * 100;
 
-          // Find the highest price during the pump period [pumpStartCall, currentCall]
           let maxPriceInPeriod = pumpStartPrice;
           for (
             let i = pumpStartEntryIndex;
@@ -119,7 +112,6 @@ export async function getTradeSignals(state = {}) {
 
         // --- Calculate relative recent price change from pump high to check for stall/decline ---
         let recentPriceChangePercentFromHigh = null;
-        // Calculate relative change from the pump high to the current price
         if (
           pumpHighPrice !== null &&
           pumpHighPrice > 0 &&
@@ -142,9 +134,9 @@ export async function getTradeSignals(state = {}) {
           primarySymbol,
           secondarySymbol,
           symbol: itemSymbol,
-          growthPercent: growthPercent, // Growth from pump start
-          recentPriceChangePercentFromHigh: recentPriceChangePercentFromHigh, // Decline from pump high
-          pumpHighPrice: pumpHighPrice, // The highest price during pump
+          growthPercent: growthPercent,
+          recentPriceChangePercentFromHigh: recentPriceChangePercentFromHigh,
+          pumpHighPrice: pumpHighPrice,
           isCalculatedGrowth: growthPercent !== null,
           isCalculatedRecentChange: recentPriceChangePercentFromHigh !== null,
           lastPrice: currentPrice, // Spot price
@@ -162,27 +154,12 @@ export async function getTradeSignals(state = {}) {
       })
       .filter(({ volume }) => volume > MIN_ACCEPTABLE_VOLUME_USDT);
 
-    // Apply modified "pump and stall" filters
+    // Apply "pump and stall" filters
     const pumpAndStallFiltered = rawTickerList.filter(
       ({ growthPercent, recentPriceChangePercentFromHigh }) => {
-        // --- Modified condition: Any positive growth is considered a "pump"
-        const pumpCondition = growthPercent > 0; // Instead of growthPercent >= minGrowthPercent (SYSTEM_PARAM_3)
-
-        // --- Modified condition: Price must have declined from its pump high
-        // recentPriceChangePercentFromHigh <= MIN_RELATIVE_STALL_DECLINE_PERCENT means price declined enough from peak
-        const stallCondition =
-          recentPriceChangePercentFromHigh <=
-          MIN_RELATIVE_STALL_DECLINE_PERCENT;
-
+        const pumpCondition = growthPercent >= minGrowthPercent;
+        const stallCondition = recentPriceChangePercentFromHigh <= 0;
         const passes = pumpCondition && stallCondition;
-
-        if (process.env.MODE === "DEVELOPMENT") {
-          // Log details for top candidates that almost pass or pass
-          // if (growthPercent !== null && recentPriceChangePercentFromHigh !== null &&
-          //     (growthPercent > 0 || Math.abs(recentPriceChangePercentFromHigh) < 1)) {
-          //     console.log(`  Candidate: ${itemSymbol} | Growth: ${growthPercent?.toFixed(4)}% (need >0%) | Relative Decline: ${recentPriceChangePercentFromHigh?.toFixed(4)}% (need <=${MIN_RELATIVE_STALL_DECLINE_PERCENT}%) | Passes: ${passes}`);
-          // }
-        }
         return passes;
       }
     );
@@ -190,12 +167,9 @@ export async function getTradeSignals(state = {}) {
     // Sort by descending growth (highest growers first)
     const resolvedTickerList = pumpAndStallFiltered
       .sort((a, b) => b.growthPercent - a.growthPercent)
-      .slice(0, 5); // Show top 5 in logs
+      .slice(0, 5);
 
     if (!resolvedTickerList.length) {
-      if (process.env.MODE === "DEVELOPMENT") {
-        console.log("🔍 No suitable token found for short entry.");
-      }
       return {
         symbol: null,
         price: null,
@@ -209,23 +183,13 @@ export async function getTradeSignals(state = {}) {
 
     let signal = null;
     let exitReason = null;
-    let price = null;
-    let priceChangePercent = 0;
+    let price = null; // This will be the futures price for orders
+    let priceChangePercent = 0; // For reporting
 
     if (!symbol) {
-      if (process.env.MODE === "DEVELOPMENT") {
-        console.log(
-          `🔍 Resolved tokens (after pump&stall filter): ${resolvedTickerList.length}`
-        );
-        console.log("🔍 No active position. Searching for a short entry...");
-      }
-
       const tokenToConsider = resolvedTickerList[0];
 
       if (!tokenToConsider) {
-        if (process.env.MODE === "DEVELOPMENT") {
-          console.log(`No suitable token found after pump&stall filter.`);
-        }
         return {
           symbol: null,
           price: null,
@@ -238,8 +202,16 @@ export async function getTradeSignals(state = {}) {
       }
 
       const token = tokenToConsider;
-      // For reporting, use the relative decline
-      priceChangePercent = token.recentPriceChangePercentFromHigh ?? 0;
+
+      // --- Изменено: Для отчета используем изменение спот-цены за последний шаг ---
+      const prevEntry = lastPriceSnapshot[token.symbol];
+      let sellSignalPriceChangePercent = 0;
+      if (prevEntry && prevEntry.price !== undefined && token.lastPrice > 0) {
+        sellSignalPriceChangePercent =
+          ((token.lastPrice - prevEntry.price) / prevEntry.price) * 100;
+      }
+      priceChangePercent = sellSignalPriceChangePercent; // Для отчета
+      // --- Конец изменения ---
 
       const futuresPriceForToken = futuresPriceMap.get(token.symbol);
       if (futuresPriceForToken === undefined || futuresPriceForToken <= 0) {
@@ -249,7 +221,7 @@ export async function getTradeSignals(state = {}) {
         return {
           symbol: null,
           price: null,
-          priceChangePercent: priceChangePercent,
+          priceChangePercent: priceChangePercent, // Передаем рассчитанное изменение
           signal: null,
           stopLoss: null,
           takeProfit: null,
@@ -268,20 +240,14 @@ export async function getTradeSignals(state = {}) {
           return acc + Math.abs((high - low) / close);
         }, 0) / candles.length;
 
-      price = futuresPriceForToken;
+      price = futuresPriceForToken; // Futures price for the order
       stopLoss = price * (1 + volatility * stopMultiplier);
       takeProfit = price * (1 - volatility * takeProfitMultiplier);
-      shortPrice = price;
+      shortPrice = price; // Short price is the entry price
       symbol = token.symbol;
       signal = "SELL";
-
-      if (process.env.MODE === "DEVELOPMENT") {
-        console.log(
-          `✅ SELL: ${symbol} | Growth: ${token.growthPercent?.toFixed(2)}% | Stall: ${token.recentPriceChangePercentFromHigh?.toFixed(2)}%`
-        );
-      }
     } else {
-      // Logic for open position remains the same, but uses futures data
+      // Logic for open position
       let currentTicker = resolvedTickerList.find(
         (ticker) => ticker.symbol === symbol
       );
@@ -299,47 +265,30 @@ export async function getTradeSignals(state = {}) {
         const lastPriceFallback = parseFloat(raw?.lastPrice || "0");
 
         if (lastPriceFallback > 0) {
-          // For reporting on fallback
-          const prevEntry = lastPriceSnapshot[symbol];
-          let fallbackDelta = 0;
-          if (prevEntry && prevEntry.price !== undefined) {
-            fallbackDelta =
-              ((lastPriceFallback - prevEntry.price) / prevEntry.price) * 100;
-          }
-
           currentTicker = {
             symbol,
             lastPrice: lastPriceFallback,
-            priceChangePercent: fallbackDelta,
+            priceChangePercent: 0, // Initialize fallback price change
           };
-
-          if (process.env.MODE === "DEVELOPMENT") {
-            console.log(`⚠️ Fallback: ${symbol} restored from prevDayDataSpot`);
-          }
-          priceChangePercent = fallbackDelta;
+          priceChangePercent = 0; // Use 0 for fallback report
         }
       }
 
       if (!currentTicker) {
         signal = "BUY";
         exitReason = "POSITION_NOT_FOUND";
-        if (process.env.MODE === "DEVELOPMENT") {
-          console.log(`❌ BUY (POSITION_NOT_FOUND) for ${symbol}`);
-        }
       } else {
         // --- Use futures price to check TP/SL ---
         price =
           currentFuturesPrice !== undefined && currentFuturesPrice > 0
             ? currentFuturesPrice
             : currentTicker.lastPrice;
-        // priceChangePercent for reporting on open position (use spot delta for consistency)
+        // priceChangePercent for reporting on open position
         priceChangePercent = currentTicker.priceChangePercent ?? 0;
         // --- End of change ---
 
         // Trailing stop logic (update stopLoss and shortPrice)
-        // Use futures price for calculations
         if (price < shortPrice || shortPrice === null) {
-          // Recalculate volatility based on spot (signal logic)
           const candles = await getCandlestickData({
             symbol,
             interval,
@@ -360,39 +309,46 @@ export async function getTradeSignals(state = {}) {
               ? Math.min(stopLoss, newTrailingStop)
               : newTrailingStop;
           shortPrice = troughPrice;
-
-          if (process.env.MODE === "DEVELOPMENT") {
-            console.log(
-              `📉 Trailing Stop updated for ${symbol}: ${stopLoss.toFixed(8)}`
-            );
-          }
         }
 
         // Check for take-profit and stop-loss
         if (takeProfit !== null && price <= takeProfit) {
           signal = "BUY";
           exitReason = "TP";
-          if (process.env.MODE === "DEVELOPMENT") {
-            console.log(
-              `✅ BUY (TP) for ${symbol} at price ${price.toFixed(8)}. TP was ${takeProfit.toFixed(8)}`
-            );
-          }
         } else if (stopLoss !== null && price >= stopLoss) {
           signal = "BUY";
           exitReason = "SL";
-          if (process.env.MODE === "DEVELOPMENT") {
-            console.log(
-              `❌ BUY (SL) for ${symbol} at price ${price.toFixed(8)}. SL was ${stopLoss.toFixed(8)}`
-            );
-          }
-        } else if (process.env.MODE === "DEVELOPMENT") {
-          // Minimal log for holding
-          console.log(`📈 Holding position on ${symbol}.`);
         }
+        // If none of the above, signal remains null, implying HOLD
       }
     }
 
+    // --- Centralized logging block ---
     if (process.env.MODE === "DEVELOPMENT") {
+      if (signal === "SELL") {
+        console.log(
+          `✅ SELL: ${symbol} | Growth: ${resolvedTickerList[0]?.growthPercent?.toFixed(2) || "N/A"}% | Stall: ${resolvedTickerList[0]?.recentPriceChangePercentFromHigh?.toFixed(2) || "N/A"}%`
+        );
+      } else if (signal === "BUY") {
+        if (exitReason === "TP") {
+          console.log(
+            `✅ BUY (TP) for ${symbol} at price ${price?.toFixed(8) || "N/A"}. TP was ${takeProfit?.toFixed(8) || "N/A"}`
+          );
+        } else if (exitReason === "SL") {
+          console.log(
+            `❌ BUY (SL) for ${symbol} at price ${price?.toFixed(8) || "N/A"}. SL was ${stopLoss?.toFixed(8) || "N/A"}`
+          );
+        } else if (exitReason === "POSITION_NOT_FOUND") {
+          console.log(`❌ BUY (POSITION_NOT_FOUND) for ${symbol}`);
+        }
+      } else if (!symbol) {
+        console.log("🔍 No suitable token found for short entry.");
+      } else {
+        // This implies HOLD (signal is null, but symbol state exists)
+        console.log(`📈 Holding position on ${symbol}.`);
+      }
+
+      // Final detailed signal log
       console.log("Final Trade Signal: ");
       console.log(
         util.inspect(
@@ -412,15 +368,16 @@ export async function getTradeSignals(state = {}) {
       );
       console.log("--- End of getTradeSignals Call ---\n");
     }
+    // --- End of centralized logging block ---
 
     return {
       symbol,
-      price,
-      priceChangePercent,
+      price, // Futures price for order execution
+      priceChangePercent, // Change used for reporting
       signal,
-      stopLoss,
-      takeProfit,
-      shortPrice,
+      stopLoss, // Stop Loss level
+      takeProfit, // Take Profit level
+      shortPrice, // Entry price (same as 'price' for shorts)
     };
   } catch (error) {
     console.error("Error in getTradeSignals:", error);
