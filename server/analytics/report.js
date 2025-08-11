@@ -1,3 +1,5 @@
+// report.js
+
 import path from "node:path";
 import { execSync } from "child_process";
 import fs from "node:fs";
@@ -52,6 +54,7 @@ function createTable() {
 
 export function report({ date, trade, symbol, price, priceChangePercent }) {
   console.log({ date, trade, symbol, price, priceChangePercent });
+  console.log("Type of price", typeof priceChangePercent);
 
   count++;
 
