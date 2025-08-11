@@ -53,8 +53,7 @@ function createTable() {
 }
 
 export function report({ date, trade, symbol, price, priceChangePercent }) {
-  console.log({ date, trade, symbol, price, priceChangePercent });
-  console.log("Type of price", typeof priceChangePercent);
+  // console.log({ date, trade, symbol, price, priceChangePercent });
 
   count++;
 
