@@ -15,17 +15,15 @@ const takeProfitMultiplier = parseFloat(process.env.SYSTEM_PARAM_2);
 const minGrowthPercent = parseFloat(process.env.SYSTEM_PARAM_3);
 const MIN_ACCEPTABLE_VOLUME_USDT = 100000;
 
-// --- Parameters for "pump -> short" strategy (hardcoded in the file) ---
-// Number of function "calls" back to calculate initial growth (pump)
-// With 5s heartbeat, this defines the lookback period for the pump
+// --- Hardcoded Strategy Constants (Defined directly in the file) ---
 const GROWTH_LOOKBACK_CALLS = 12; // 12 calls * 5s = 1 minute lookback for pump
-// --- End of hardcoded parameters ---
+// --- End of Hardcoded Constants ---
 
 // --- Internal strategy state ---
 let callCount = 0;
 let priceHistory = {};
 let lastPriceSnapshot = {};
-// --- End of internal state ---
+// --- End of addition ---
 
 export async function getTradeSignals(state = {}) {
   try {
@@ -173,13 +171,11 @@ export async function getTradeSignals(state = {}) {
           // Log details for promising candidates for deep analysis
           if (
             growthPercent !== null &&
-            recentPriceChangePercentFromHigh !== null &&
-            (growthPercent > minGrowthPercent * 0.8 ||
-              Math.abs(recentPriceChangePercentFromHigh) < 1)
+            growthPercent >= minGrowthPercent * 0.8
           ) {
-            // If close to pump threshold or small stall
+            // If close to pump threshold
             console.log(
-              `  Candidate near threshold: ${arguments[0].symbol} | Growth: ${growthPercent?.toFixed(4)}% (need >=${minGrowthPercent}%) | Decline from High: ${recentPriceChangePercentFromHigh?.toFixed(4)}% (need <=0%) | Passes Pump: ${pumpCondition} | Passes Decline: ${stallCondition} | Passes: ${passes}`
+              `DBG: Near Threshold Candidate: ${arguments[0].symbol} | Growth: ${growthPercent?.toFixed(4)}% (need >=${minGrowthPercent}%) | Decline from High: ${recentPriceChangePercentFromHigh?.toFixed(4)}% (need <=0%) | Passes Pump: ${pumpCondition} | Passes Decline: ${stallCondition} | Overall Passes: ${passes}`
             );
           }
         }
