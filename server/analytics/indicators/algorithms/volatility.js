@@ -21,8 +21,6 @@ const GROWTH_LOOKBACK_CALLS = 12; // 12 calls * 5s = 1 minute lookback for pump
 
 // --- Internal strategy state ---
 let callCount = 0;
-// priceHistory stores the last few prices for each symbol
-// key: symbol, value: Array of { price: x, timestamp: y, call: z }
 let priceHistory = {};
 let lastPriceSnapshot = {};
 // --- End of addition ---
@@ -60,24 +58,22 @@ export async function getTradeSignals(state = {}) {
         const currentPrice = parseFloat(lastPrice);
         const vol = parseFloat(volume);
 
-        // --- Update price history with rotation to prevent overflow ---
+        // --- Update price history ---
         if (!priceHistory[itemSymbol]) {
           priceHistory[itemSymbol] = [];
         }
-        // Add current price with call number and timestamp
         priceHistory[itemSymbol].push({
           price: currentPrice,
           timestamp: now,
           call: currentCall,
         });
 
-        // Rotate history to prevent overflow: keep only necessary data plus a buffer
-        const maxHistoryLength = Math.max(GROWTH_LOOKBACK_CALLS, 5) + 20; // A generous buffer
+        const maxHistoryLength = Math.max(GROWTH_LOOKBACK_CALLS, 5) + 10; // A buffer
         if (priceHistory[itemSymbol].length > maxHistoryLength) {
           priceHistory[itemSymbol] =
             priceHistory[itemSymbol].slice(-maxHistoryLength);
         }
-        // --- End of price history update with rotation ---
+        // --- End of price history update ---
 
         // --- Calculate growth over the pump period ---
         let growthPercent = null;
@@ -171,20 +167,6 @@ export async function getTradeSignals(state = {}) {
 
         const passes = pumpCondition && stallCondition;
 
-        if (process.env.MODE === "DEVELOPMENT") {
-          // Log details for promising candidates for deep analysis
-          if (
-            growthPercent !== null &&
-            recentPriceChangePercentFromHigh !== null &&
-            (growthPercent > minGrowthPercent * 0.8 ||
-              Math.abs(recentPriceChangePercentFromHigh) < 1)
-          ) {
-            // If close to pump threshold or small stall
-            console.log(
-              `DBG: Near Threshold Candidate: ${arguments[0].symbol} | Growth: ${growthPercent?.toFixed(4)}% (need >=${minGrowthPercent}%) | Decline from High: ${recentPriceChangePercentFromHigh?.toFixed(4)}% (need <=0%) | Passes Pump: ${pumpCondition} | Passes Decline: ${stallCondition} | Passes: ${passes}`
-            );
-          }
-        }
         return passes;
       }
     );
