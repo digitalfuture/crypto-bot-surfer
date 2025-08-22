@@ -26,6 +26,11 @@ x-template: &basic-container
         echo "Starting in TEST mode with nodemon..." && \
         npm run nodemon; \
       fi
+  logging:
+    driver: "json-file"
+    options:
+      max-size: "10m"
+      max-file: "3"
 
 services:
   crypto-bot-surfer-1:
