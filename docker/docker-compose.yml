@@ -16,8 +16,14 @@ x-template: &basic-container
       cd crypto-bot-surfer && \
       npm install && \
       if [ "$TEST_MODE" = "false" ]; then \
-        echo "Installing pm2..." && \
+        echo "Installing pm2 and pm2-logrotate..." && \
         npm install -g pm2 pm2-logrotate && \
+        echo "Configuring pm2-logrotate..." && \
+        pm2 install pm2-logrotate && \
+        pm2 set pm2-logrotate:max_size 10M && \
+        pm2 set pm2-logrotate:retain 3 && \
+        pm2 set pm2-logrotate:compress true && \
+        pm2 set pm2-logrotate:dateFormat YYYY-MM-DD_HH-mm-ss && \
         echo "Starting in PRODUCTION mode with pm2..." && \
         npm run build && \
         pm2 start dist/index.js --name crypto-bot && \
