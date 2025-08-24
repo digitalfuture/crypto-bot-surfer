@@ -17,17 +17,19 @@ const MIN_ACCEPTABLE_VOLUME_USDT = 100000;
 
 // --- Hardcoded Strategy Constants (Defined directly in the file) ---
 const GROWTH_LOOKBACK_CALLS = 12; // 12 calls * 5s = 1 minute lookback for pump
+// --- Добавлено: Cooldown period in cycles ---
+const COOLDOWN_PERIOD = 50; // 50 cycles cooldown
+// --- Конец добавления ---
 // --- End of Hardcoded Constants ---
 
 // --- Internal strategy state ---
 let callCount = 0;
 let priceHistory = {};
 let lastPriceSnapshot = {};
-// --- Cooldown tracker ---
+// --- Добавлено: Cooldown tracker ---
 // key: symbol, value: { untilCall: number, reason: string }
 let cooldownTracker = {};
-const COOLDOWN_PERIOD = 50; // 50 cycles cooldown
-// --- End of cooldown tracker ---
+// --- Конец добавления ---
 // --- End of addition ---
 
 export async function getTradeSignals(state = {}) {
@@ -36,7 +38,7 @@ export async function getTradeSignals(state = {}) {
     const currentCall = callCount;
     const now = Date.now();
 
-    // --- Cleanup expired cooldowns ---
+    // --- Добавлено: Cleanup expired cooldowns ---
     for (const [symbol, entry] of Object.entries(cooldownTracker)) {
       if (currentCall > entry.untilCall) {
         delete cooldownTracker[symbol];
@@ -45,7 +47,7 @@ export async function getTradeSignals(state = {}) {
         }
       }
     }
-    // --- End of cleanup ---
+    // --- Конец добавления ---
 
     const tradingTickersFutures = await getTradingTickersFutures();
     const prevDayDataSpot = await getPrevDayData();
@@ -178,7 +180,7 @@ export async function getTradeSignals(state = {}) {
         recentPriceChangePercentFromHigh,
         symbol: itemSymbol,
       }) => {
-        // --- Check cooldown ---
+        // --- Добавлено: Check cooldown ---
         const isOnCooldown =
           cooldownTracker[itemSymbol] !== undefined &&
           currentCall <= cooldownTracker[itemSymbol].untilCall;
@@ -188,9 +190,9 @@ export async function getTradeSignals(state = {}) {
               `🚫 ${itemSymbol} is on cooldown until call ${cooldownTracker[itemSymbol].untilCall}. Skipping.`
             );
           }
-          return false;
+          return false; // On cooldown, skip
         }
-        // --- End of cooldown check ---
+        // --- Конец добавления ---
 
         // --- Standard condition: Growth must meet the minimum threshold ---
         const pumpCondition = growthPercent >= minGrowthPercent; // e.g., >= 1.5%
@@ -252,8 +254,10 @@ export async function getTradeSignals(state = {}) {
       }
 
       const token = tokenToConsider;
-      // For reporting, use the relative decline from high
-      priceChangePercent = token.recentPriceChangePercentFromHigh ?? 0;
+      // --- Изменено: For reporting, use the growth percent ---
+      // priceChangePercent = token.recentPriceChangePercentFromHigh ?? 0; // OLD
+      priceChangePercent = token.growthPercent ?? 0; // NEW: Use growth percent for reporting
+      // --- Конец изменения ---
 
       const futuresPriceForToken = futuresPriceMap.get(token.symbol);
       if (futuresPriceForToken === undefined || futuresPriceForToken <= 0) {
@@ -288,6 +292,18 @@ export async function getTradeSignals(state = {}) {
       shortPrice = price;
       symbol = token.symbol;
       signal = "SELL";
+
+      // --- Добавлено: Set cooldown on SELL ---
+      cooldownTracker[symbol] = {
+        untilCall: currentCall + COOLDOWN_PERIOD,
+        reason: "SELL",
+      };
+      if (process.env.MODE === "DEVELOPMENT") {
+        console.log(
+          `🔒 Cooldown set for ${symbol} until call ${currentCall + COOLDOWN_PERIOD} (reason: SELL)`
+        );
+      }
+      // --- Конец добавления ---
 
       if (process.env.MODE === "DEVELOPMENT") {
         console.log(
@@ -384,7 +400,7 @@ export async function getTradeSignals(state = {}) {
             );
           }
 
-          // --- Add to cooldown on TP ---
+          // --- Добавлено: Set cooldown on TP ---
           cooldownTracker[symbol] = {
             untilCall: currentCall + COOLDOWN_PERIOD,
             reason: "TP",
@@ -394,7 +410,7 @@ export async function getTradeSignals(state = {}) {
               `🔒 Cooldown set for ${symbol} until call ${currentCall + COOLDOWN_PERIOD} (reason: TP)`
             );
           }
-          // --- End of addition ---
+          // --- Конец добавления ---
         } else if (stopLoss !== null && price >= stopLoss) {
           signal = "BUY";
           exitReason = "SL";
@@ -404,7 +420,7 @@ export async function getTradeSignals(state = {}) {
             );
           }
 
-          // --- Add to cooldown on SL ---
+          // --- Добавлено: Set cooldown on SL ---
           cooldownTracker[symbol] = {
             untilCall: currentCall + COOLDOWN_PERIOD,
             reason: "SL",
@@ -414,7 +430,7 @@ export async function getTradeSignals(state = {}) {
               `🔒 Cooldown set for ${symbol} until call ${currentCall + COOLDOWN_PERIOD} (reason: SL)`
             );
           }
-          // --- End of addition ---
+          // --- Конец добавления ---
         } else if (process.env.MODE === "DEVELOPMENT") {
           // Log price check status periodically or if close to levels
           const tpDistance = takeProfit
