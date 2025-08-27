@@ -184,7 +184,7 @@ export async function getTradeSignals(state = {}) {
               `🚫 ${itemSymbol} is on cooldown until call ${cooldownTracker[itemSymbol].untilCall}. Skipping.`
             );
           }
-          return false;
+          return false; // On cooldown, skip
         }
         // --- End of cooldown check ---
 
@@ -208,7 +208,7 @@ export async function getTradeSignals(state = {}) {
           ) {
             // If close to pump threshold or small stall
             console.log(
-              `DBG: Near Threshold Candidate: ${itemSymbol} | Growth: ${growthPercent?.toFixed(4)}% (need >=${minGrowthPercent}%) | Decline from High: ${recentPriceChangePercentFromHigh?.toFixed(4)}% (need <=0%) | Passes Pump: ${pumpCondition} | Passes Decline: ${stallCondition} | Passes: ${passes}`
+              `DBG: Near Threshold Candidate: ${itemSymbol} | Growth: ${growthPercent?.toFixed(4)}% (need >=${minGrowthPercent}%) | Decline from High: ${recentPriceChangePercentFromHigh?.toFixed(4)}% (need <=0%) | Passes Pump: ${pumpCondition} | Passes Decline: ${stallCondition} | Overall Passes: ${passes}`
             );
           }
         }
@@ -221,7 +221,7 @@ export async function getTradeSignals(state = {}) {
     // Sort by descending growth (highest growers first)
     const resolvedTickerList = pumpFiltered
       .sort((a, b) => b.growthPercent - a.growthPercent)
-      .slice(0, 5);
+      .slice(0, 5); // Show top 5 in logs
 
     // --- Добавлено: Отладочный вывод количества токенов на каждом этапе ---
     if (process.env.MODE === "DEVELOPMENT") {
@@ -284,8 +284,10 @@ export async function getTradeSignals(state = {}) {
       }
 
       const token = tokenToConsider;
-      // For reporting, use the relative decline from high
-      priceChangePercent = token.recentPriceChangePercentFromHigh ?? 0;
+      // --- Исправлено: Для отчета используем рост за период пампа ---
+      // Вместо: priceChangePercent = token.recentPriceChangePercentFromHigh ?? 0;
+      priceChangePercent = token.growthPercent ?? 0; // <<<--- Используем growthPercent для отчета
+      // --- Конец исправления ---
 
       const futuresPriceForToken = futuresPriceMap.get(token.symbol);
       if (futuresPriceForToken === undefined || futuresPriceForToken <= 0) {
@@ -424,7 +426,16 @@ export async function getTradeSignals(state = {}) {
             );
           }
         } else if (process.env.MODE === "DEVELOPMENT") {
-          console.log(`📈 Holding position on ${symbol}.`);
+          // Log price check status periodically or if close to levels
+          const tpDistance = takeProfit
+            ? ((takeProfit - price) / price) * 100
+            : null;
+          const slDistance = stopLoss
+            ? ((price - stopLoss) / price) * 100
+            : null;
+          console.log(
+            `📊 Price check for ${symbol}: Current=${price.toFixed(8)}, TP=${takeProfit?.toFixed(8)} (${tpDistance?.toFixed(2)}% away), SL=${stopLoss?.toFixed(8)} (${slDistance?.toFixed(2)}% away)`
+          );
         }
       }
     }
