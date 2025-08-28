@@ -64,7 +64,145 @@ export async function getTradeSignals(state = {}) {
       takeProfit = null,
     } = state;
 
-    // --- Form and evaluate candidates based on "pump" pattern ---
+    // --- If there's an open position, don't search for new candidates ---
+    if (symbol) {
+      // Logic for open position remains the same, but uses futures data
+      let currentTicker = prevDayDataSpot.find(
+        (ticker) => ticker.symbol === symbol
+      );
+
+      const currentFuturesPrice = futuresPriceMap.get(symbol);
+      if (currentFuturesPrice === undefined || currentFuturesPrice <= 0) {
+        console.warn(
+          `Could not get futures price for open position ${symbol}.`
+        );
+      }
+
+      if (!currentTicker) {
+        // Fallback to spot data if main list doesn't contain position
+        const raw = prevDayDataSpot.find((t) => t.symbol === symbol);
+        const lastPriceFallback = parseFloat(raw?.lastPrice || "0");
+
+        if (lastPriceFallback > 0) {
+          currentTicker = {
+            symbol,
+            lastPrice: lastPriceFallback,
+            priceChangePercent: 0,
+          };
+
+          if (process.env.MODE === "DEVELOPMENT") {
+            console.log(`⚠️ Fallback: ${symbol} restored from prevDayDataSpot`);
+          }
+        }
+      }
+
+      if (!currentTicker) {
+        signal = "BUY";
+        exitReason = "POSITION_NOT_FOUND";
+        if (process.env.MODE === "DEVELOPMENT") {
+          console.log(`❌ BUY (POSITION_NOT_FOUND) for ${symbol}`);
+        }
+      } else {
+        // --- Use futures price to check TP/SL ---
+        price =
+          currentFuturesPrice !== undefined && currentFuturesPrice > 0
+            ? currentFuturesPrice
+            : currentTicker.lastPrice;
+        // priceChangePercent for reporting on open position (use spot delta for consistency)
+        priceChangePercent = currentTicker.priceChangePercent ?? 0;
+        // --- End of change ---
+
+        // Trailing stop logic (update stopLoss and shortPrice)
+        // Use futures price for calculations
+        if (price < shortPrice || shortPrice === null) {
+          // Recalculate volatility based on spot (signal logic)
+          const candles = await getCandlestickData({
+            symbol,
+            interval,
+            periods,
+          });
+
+          const volatility =
+            candles.reduce((acc, [, , high, low, close]) => {
+              return acc + Math.abs((high - low) / close);
+            }, 0) / candles.length;
+
+          const dynamicFactor = stopMultiplier * volatility * 1.2;
+          const troughPrice = price;
+          const newTrailingStop = troughPrice * (1 + dynamicFactor);
+
+          stopLoss =
+            stopLoss !== null
+              ? Math.min(stopLoss, newTrailingStop)
+              : newTrailingStop;
+          shortPrice = troughPrice;
+
+          if (process.env.MODE === "DEVELOPMENT") {
+            console.log(
+              `📉 Trailing Stop updated for ${symbol}: ${stopLoss.toFixed(8)}`
+            );
+          }
+        }
+
+        // Check for take-profit and stop-loss
+        if (takeProfit !== null && price <= takeProfit) {
+          signal = "BUY";
+          exitReason = "TP";
+          if (process.env.MODE === "DEVELOPMENT") {
+            console.log(
+              `✅ BUY (TP) for ${symbol} at price ${price.toFixed(8)}. TP was ${takeProfit.toFixed(8)}`
+            );
+          }
+
+          // --- Add to cooldown on TP ---
+          cooldownTracker[symbol] = {
+            untilCall: currentCall + COOLDOWN_PERIOD,
+            reason: "TP",
+          };
+          if (process.env.MODE === "DEVELOPMENT") {
+            console.log(
+              `🔒 Cooldown set for ${symbol} until call ${currentCall + COOLDOWN_PERIOD} (reason: TP)`
+            );
+          }
+          // --- End of addition ---
+        } else if (stopLoss !== null && price >= stopLoss) {
+          signal = "BUY";
+          exitReason = "SL";
+          if (process.env.MODE === "DEVELOPMENT") {
+            console.log(
+              `❌ BUY (SL) for ${symbol} at price ${price.toFixed(8)}. SL was ${stopLoss.toFixed(8)}`
+            );
+          }
+
+          // --- Add to cooldown on SL ---
+          cooldownTracker[symbol] = {
+            untilCall: currentCall + COOLDOWN_PERIOD,
+            reason: "SL",
+          };
+          if (process.env.MODE === "DEVELOPMENT") {
+            console.log(
+              `🔒 Cooldown set for ${symbol} until call ${currentCall + COOLDOWN_PERIOD} (reason: SL)`
+            );
+          }
+          // --- End of addition ---
+        } else if (process.env.MODE === "DEVELOPMENT") {
+          console.log(`📈 Holding position on ${symbol}.`);
+        }
+      }
+
+      return {
+        symbol,
+        price,
+        priceChangePercent,
+        signal,
+        stopLoss,
+        takeProfit,
+        shortPrice,
+      };
+    }
+    // --- End of open position logic ---
+
+    // --- Form and evaluate candidates based on "pump" pattern (only if no open position) ---
     const rawTickerList = prevDayDataSpot
       .map((item) => {
         const { symbol: itemSymbol, lastPrice, volume } = item;
@@ -168,7 +306,7 @@ export async function getTradeSignals(state = {}) {
       })
       .filter(({ volume }) => volume > MIN_ACCEPTABLE_VOLUME_USDT);
 
-    // Apply "pump" filters
+    // Apply "pump" filters (only if no open position)
     const pumpFiltered = rawTickerList.filter(
       ({
         growthPercent,
@@ -197,23 +335,6 @@ export async function getTradeSignals(state = {}) {
         const stallCondition = recentPriceChangePercentFromHigh <= 0;
 
         const passes = pumpCondition && stallCondition;
-
-        // --- Добавлено: Отладочный вывод для токенов, которые почти прошли фильтр ---
-        if (process.env.MODE === "DEVELOPMENT") {
-          // Log details for promising candidates for deep analysis
-          if (
-            growthPercent !== null &&
-            recentPriceChangePercentFromHigh !== null &&
-            (growthPercent > minGrowthPercent * 0.8 ||
-              Math.abs(recentPriceChangePercentFromHigh) < 1)
-          ) {
-            // If close to pump threshold or small stall
-            console.log(
-              `DBG: Near Threshold Candidate: ${itemSymbol} | Growth: ${growthPercent?.toFixed(4)}% (need >=${minGrowthPercent}%) | Decline from High: ${recentPriceChangePercentFromHigh?.toFixed(4)}% (need <=0%) | Passes Pump: ${pumpCondition} | Passes Decline: ${stallCondition} | Passes: ${passes}`
-            );
-          }
-        }
-        // --- Конец добавления ---
 
         return passes;
       }
@@ -303,169 +424,18 @@ export async function getTradeSignals(state = {}) {
       symbol = token.symbol;
       signal = "SELL";
 
-      // --- Добавлено: Установка cooldown при открытии позиции ---
-      // Предотвращает повторный вход в тот же актив сразу после открытия
-      cooldownTracker[symbol] = {
-        untilCall: currentCall + COOLDOWN_PERIOD, // 50 циклов cooldown
-        reason: "SELL_OPENED",
-      };
-      if (process.env.MODE === "DEVELOPMENT") {
-        console.log(
-          `🔒 Cooldown set for ${symbol} until call ${currentCall + COOLDOWN_PERIOD} (reason: SELL_OPENED)`
-        );
-      }
-      // --- Конец добавления ---
-
       if (process.env.MODE === "DEVELOPMENT") {
         console.log(
           `✅ SELL: ${symbol} | Growth: ${token.growthPercent?.toFixed(2)}% | Stall: ${token.recentPriceChangePercentFromHigh?.toFixed(2)}%`
         );
       }
     } else {
-      // Logic for open position remains the same, but uses futures data
-      let currentTicker = resolvedTickerList.find(
-        (ticker) => ticker.symbol === symbol
-      );
-
-      const currentFuturesPrice = futuresPriceMap.get(symbol);
-      if (currentFuturesPrice === undefined || currentFuturesPrice <= 0) {
-        console.warn(
-          `Could not get futures price for open position ${symbol}.`
-        );
-      }
-
-      if (!currentTicker) {
-        // Fallback to spot data if main list doesn't contain position
-        const raw = prevDayDataSpot.find((t) => t.symbol === symbol);
-        const lastPriceFallback = parseFloat(raw?.lastPrice || "0");
-
-        if (lastPriceFallback > 0) {
-          currentTicker = {
-            symbol,
-            lastPrice: lastPriceFallback,
-            priceChangePercent: 0,
-          };
-
-          if (process.env.MODE === "DEVELOPMENT") {
-            console.log(`⚠️ Fallback: ${symbol} restored from prevDayDataSpot`);
-          }
-          priceChangePercent = 0;
-        }
-      }
-
-      if (!currentTicker) {
-        signal = "BUY";
-        exitReason = "POSITION_NOT_FOUND";
-        if (process.env.MODE === "DEVELOPMENT") {
-          console.log(`❌ BUY (POSITION_NOT_FOUND) for ${symbol}`);
-        }
-
-        // --- Добавлено: Установка cooldown при закрытии по POSITION_NOT_FOUND ---
-        cooldownTracker[symbol] = {
-          untilCall: currentCall + COOLDOWN_PERIOD, // 50 циклов cooldown
-          reason: "POSITION_NOT_FOUND",
-        };
-        if (process.env.MODE === "DEVELOPMENT") {
-          console.log(
-            `🔒 Cooldown set for ${symbol} until call ${currentCall + COOLDOWN_PERIOD} (reason: POSITION_NOT_FOUND)`
-          );
-        }
-        // --- Конец добавления ---
-      } else {
-        // --- Use futures price to check TP/SL ---
-        price =
-          currentFuturesPrice !== undefined && currentFuturesPrice > 0
-            ? currentFuturesPrice
-            : currentTicker.lastPrice;
-        // priceChangePercent for reporting on open position (use spot delta for consistency)
-        priceChangePercent = currentTicker.priceChangePercent ?? 0;
-        // --- End of change ---
-
-        // Trailing stop logic (update stopLoss and shortPrice)
-        // Use futures price for calculations
-        if (price < shortPrice || shortPrice === null) {
-          // Recalculate volatility based on spot (signal logic)
-          const candles = await getCandlestickData({
-            symbol,
-            interval,
-            periods,
-          });
-
-          const volatility =
-            candles.reduce((acc, [, , high, low, close]) => {
-              return acc + Math.abs((high - low) / close);
-            }, 0) / candles.length;
-
-          const dynamicFactor = stopMultiplier * volatility * 1.2;
-          const troughPrice = price;
-          const newTrailingStop = troughPrice * (1 + dynamicFactor);
-
-          stopLoss =
-            stopLoss !== null
-              ? Math.min(stopLoss, newTrailingStop)
-              : newTrailingStop;
-          shortPrice = troughPrice;
-
-          if (process.env.MODE === "DEVELOPMENT") {
-            console.log(
-              `📉 Trailing Stop updated for ${symbol}: ${stopLoss.toFixed(8)}`
-            );
-          }
-        }
-
-        // Check for take-profit and stop-loss
-        if (takeProfit !== null && price <= takeProfit) {
-          signal = "BUY";
-          exitReason = "TP";
-          if (process.env.MODE === "DEVELOPMENT") {
-            console.log(
-              `✅ BUY (TP) for ${symbol} at price ${price.toFixed(8)}. TP was ${takeProfit.toFixed(8)}`
-            );
-          }
-
-          // --- Добавлено: Установка cooldown при закрытии по TP ---
-          cooldownTracker[symbol] = {
-            untilCall: currentCall + COOLDOWN_PERIOD, // 50 циклов cooldown
-            reason: "TP",
-          };
-          if (process.env.MODE === "DEVELOPMENT") {
-            console.log(
-              `🔒 Cooldown set for ${symbol} until call ${currentCall + COOLDOWN_PERIOD} (reason: TP)`
-            );
-          }
-          // --- Конец добавления ---
-        } else if (stopLoss !== null && price >= stopLoss) {
-          signal = "BUY";
-          exitReason = "SL";
-          if (process.env.MODE === "DEVELOPMENT") {
-            console.log(
-              `❌ BUY (SL) for ${symbol} at price ${price.toFixed(8)}. SL was ${stopLoss.toFixed(8)}`
-            );
-          }
-
-          // --- Добавлено: Установка cooldown при закрытии по SL ---
-          cooldownTracker[symbol] = {
-            untilCall: currentCall + COOLDOWN_PERIOD, // 50 циклов cooldown
-            reason: "SL",
-          };
-          if (process.env.MODE === "DEVELOPMENT") {
-            console.log(
-              `🔒 Cooldown set for ${symbol} until call ${currentCall + COOLDOWN_PERIOD} (reason: SL)`
-            );
-          }
-          // --- Конец добавления ---
-        } else if (process.env.MODE === "DEVELOPMENT") {
-          // Log price check status periodically or if close to levels
-          const tpDistance = takeProfit
-            ? ((takeProfit - price) / price) * 100
-            : null;
-          const slDistance = stopLoss
-            ? ((price - stopLoss) / price) * 100
-            : null;
-          console.log(
-            `📊 Price check for ${symbol}: Current=${price.toFixed(8)}, TP=${takeProfit?.toFixed(8)} (${tpDistance?.toFixed(2)}% away), SL=${stopLoss?.toFixed(8)} (${slDistance?.toFixed(2)}% away)`
-          );
-        }
+      // This branch should never be reached due to the early return for open positions
+      // But kept for completeness
+      signal = "BUY";
+      exitReason = "LOGIC_ERROR";
+      if (process.env.MODE === "DEVELOPMENT") {
+        console.log(`❌ BUY (LOGIC_ERROR) for ${symbol}`);
       }
     }
 
