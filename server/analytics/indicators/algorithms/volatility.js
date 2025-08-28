@@ -1,4 +1,4 @@
-// volatility.js
+// svolatility.js
 import util from "node:util";
 import {
   getCandlestickData,
@@ -17,6 +17,7 @@ const MIN_ACCEPTABLE_VOLUME_USDT = 100000;
 
 // --- Hardcoded Strategy Constants (Defined directly in the file) ---
 const GROWTH_LOOKBACK_CALLS = 12; // 12 calls * 5s = 1 minute lookback for pump
+const COOLDOWN_PERIOD = 50; // 50 cycles cooldown
 // --- End of Hardcoded Constants ---
 
 // --- Internal strategy state ---
@@ -208,7 +209,7 @@ export async function getTradeSignals(state = {}) {
           ) {
             // If close to pump threshold or small stall
             console.log(
-              `DBG: Near Threshold Candidate: ${itemSymbol} | Growth: ${growthPercent?.toFixed(4)}% (need >=${minGrowthPercent}%) | Decline from High: ${recentPriceChangePercentFromHigh?.toFixed(4)}% (need <=0%) | Passes Pump: ${pumpCondition} | Passes Decline: ${stallCondition} | Overall Passes: ${passes}`
+              `DBG: Near Threshold Candidate: ${itemSymbol} | Growth: ${growthPercent?.toFixed(4)}% (need >=${minGrowthPercent}%) | Decline from High: ${recentPriceChangePercentFromHigh?.toFixed(4)}% (need <=0%) | Passes Pump: ${pumpCondition} | Passes Decline: ${stallCondition} | Passes: ${passes}`
             );
           }
         }
@@ -222,25 +223,6 @@ export async function getTradeSignals(state = {}) {
     const resolvedTickerList = pumpFiltered
       .sort((a, b) => b.growthPercent - a.growthPercent)
       .slice(0, 5); // Show top 5 in logs
-
-    // --- Добавлено: Отладочный вывод количества токенов на каждом этапе ---
-    if (process.env.MODE === "DEVELOPMENT") {
-      console.log(`DBG: Initial raw data items: ${prevDayDataSpot.length}`);
-      console.log(`DBG: After initial filters: ${rawTickerList.length} items`);
-      console.log(`DBG: After pump filter: ${pumpFiltered.length} items`);
-      console.log(
-        `DBG: Final resolved list (top 5 sorted by growth): ${resolvedTickerList.length} items`
-      );
-      if (resolvedTickerList.length > 0) {
-        console.log("DBG: Top 5 candidates:");
-        resolvedTickerList.slice(0, 5).forEach((t, i) => {
-          console.log(
-            `  ${i + 1}. ${t.symbol}: Growth=${t.growthPercent?.toFixed(4)}%, Decline_from_High=${t.recentPriceChangePercentFromHigh?.toFixed(4)}%`
-          );
-        });
-      }
-    }
-    // --- Конец добавления ---
 
     if (!resolvedTickerList.length) {
       if (process.env.MODE === "DEVELOPMENT") {
@@ -284,10 +266,8 @@ export async function getTradeSignals(state = {}) {
       }
 
       const token = tokenToConsider;
-      // --- Исправлено: Для отчета используем рост за период пампа ---
-      // Вместо: priceChangePercent = token.recentPriceChangePercentFromHigh ?? 0;
-      priceChangePercent = token.growthPercent ?? 0; // <<<--- Используем growthPercent для отчета
-      // --- Конец исправления ---
+      // For reporting, use the relative decline from high
+      priceChangePercent = token.recentPriceChangePercentFromHigh ?? 0;
 
       const futuresPriceForToken = futuresPriceMap.get(token.symbol);
       if (futuresPriceForToken === undefined || futuresPriceForToken <= 0) {
@@ -322,6 +302,19 @@ export async function getTradeSignals(state = {}) {
       shortPrice = price;
       symbol = token.symbol;
       signal = "SELL";
+
+      // --- Добавлено: Установка cooldown при открытии позиции ---
+      // Предотвращает повторный вход в тот же актив сразу после открытия
+      cooldownTracker[symbol] = {
+        untilCall: currentCall + COOLDOWN_PERIOD, // 50 циклов cooldown
+        reason: "SELL_OPENED",
+      };
+      if (process.env.MODE === "DEVELOPMENT") {
+        console.log(
+          `🔒 Cooldown set for ${symbol} until call ${currentCall + COOLDOWN_PERIOD} (reason: SELL_OPENED)`
+        );
+      }
+      // --- Конец добавления ---
 
       if (process.env.MODE === "DEVELOPMENT") {
         console.log(
@@ -366,6 +359,18 @@ export async function getTradeSignals(state = {}) {
         if (process.env.MODE === "DEVELOPMENT") {
           console.log(`❌ BUY (POSITION_NOT_FOUND) for ${symbol}`);
         }
+
+        // --- Добавлено: Установка cooldown при закрытии по POSITION_NOT_FOUND ---
+        cooldownTracker[symbol] = {
+          untilCall: currentCall + COOLDOWN_PERIOD, // 50 циклов cooldown
+          reason: "POSITION_NOT_FOUND",
+        };
+        if (process.env.MODE === "DEVELOPMENT") {
+          console.log(
+            `🔒 Cooldown set for ${symbol} until call ${currentCall + COOLDOWN_PERIOD} (reason: POSITION_NOT_FOUND)`
+          );
+        }
+        // --- Конец добавления ---
       } else {
         // --- Use futures price to check TP/SL ---
         price =
@@ -417,6 +422,18 @@ export async function getTradeSignals(state = {}) {
               `✅ BUY (TP) for ${symbol} at price ${price.toFixed(8)}. TP was ${takeProfit.toFixed(8)}`
             );
           }
+
+          // --- Добавлено: Установка cooldown при закрытии по TP ---
+          cooldownTracker[symbol] = {
+            untilCall: currentCall + COOLDOWN_PERIOD, // 50 циклов cooldown
+            reason: "TP",
+          };
+          if (process.env.MODE === "DEVELOPMENT") {
+            console.log(
+              `🔒 Cooldown set for ${symbol} until call ${currentCall + COOLDOWN_PERIOD} (reason: TP)`
+            );
+          }
+          // --- Конец добавления ---
         } else if (stopLoss !== null && price >= stopLoss) {
           signal = "BUY";
           exitReason = "SL";
@@ -425,6 +442,18 @@ export async function getTradeSignals(state = {}) {
               `❌ BUY (SL) for ${symbol} at price ${price.toFixed(8)}. SL was ${stopLoss.toFixed(8)}`
             );
           }
+
+          // --- Добавлено: Установка cooldown при закрытии по SL ---
+          cooldownTracker[symbol] = {
+            untilCall: currentCall + COOLDOWN_PERIOD, // 50 циклов cooldown
+            reason: "SL",
+          };
+          if (process.env.MODE === "DEVELOPMENT") {
+            console.log(
+              `🔒 Cooldown set for ${symbol} until call ${currentCall + COOLDOWN_PERIOD} (reason: SL)`
+            );
+          }
+          // --- Конец добавления ---
         } else if (process.env.MODE === "DEVELOPMENT") {
           // Log price check status periodically or if close to levels
           const tpDistance = takeProfit
