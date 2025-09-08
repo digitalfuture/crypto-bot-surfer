@@ -63,7 +63,7 @@ export async function getTradeSignals(state = {}) {
       takeProfit = null,
     } = state;
 
-    // --- Form and evaluate candidates based on "pump" pattern ---
+    // --- Form and evaluate candidates based on "pump and stall" pattern ---
     const rawTickerList = prevDayDataSpot
       .map((item) => {
         const { symbol: itemSymbol, lastPrice, volume } = item;
@@ -167,8 +167,8 @@ export async function getTradeSignals(state = {}) {
       })
       .filter(({ volume }) => volume > MIN_ACCEPTABLE_VOLUME_USDT);
 
-    // Apply "pump" filters
-    const pumpFiltered = rawTickerList.filter(
+    // Apply "pump and stall" filters
+    const pumpAndStallFiltered = rawTickerList.filter(
       ({
         growthPercent,
         recentPriceChangePercentFromHigh,
@@ -202,7 +202,7 @@ export async function getTradeSignals(state = {}) {
     );
 
     // Sort by descending growth (highest growers first)
-    const resolvedTickerList = pumpFiltered
+    const resolvedTickerList = pumpAndStallFiltered
       .sort((a, b) => b.growthPercent - a.growthPercent)
       .slice(0, 5); // Show top 5 in logs
 
@@ -228,14 +228,14 @@ export async function getTradeSignals(state = {}) {
 
     if (!symbol) {
       console.log(
-        `🔍 Resolved tokens (after pump filter): ${resolvedTickerList.length}`
+        `🔍 Resolved tokens (after pump&stall filter): ${resolvedTickerList.length}`
       );
       console.log("🔍 No active position. Searching for a short entry...");
 
       const tokenToConsider = resolvedTickerList[0];
 
       if (!tokenToConsider) {
-        console.log(`No suitable token found after pump filter.`);
+        console.log(`No suitable token found after pump&stall filter.`);
         return {
           symbol: null,
           price: null,
@@ -248,10 +248,8 @@ export async function getTradeSignals(state = {}) {
       }
 
       const token = tokenToConsider;
-      // --- Исправлено: Для отчета используем рост за период пампа ---
-      // Вместо: priceChangePercent = token.recentPriceChangePercentFromHigh ?? 0;
-      priceChangePercent = token.growthPercent ?? 0; // <<<--- Используем growthPercent для отчета
-      // --- Конец исправления ---
+      // For reporting, use the growth percent (change from pump start)
+      priceChangePercent = token.growthPercent ?? 0;
 
       const futuresPriceForToken = futuresPriceMap.get(token.symbol);
       if (futuresPriceForToken === undefined || futuresPriceForToken <= 0) {
@@ -382,9 +380,9 @@ export async function getTradeSignals(state = {}) {
             );
           }
 
-          // --- Добавлено: Установка cooldown при закрытии по TP ---
+          // --- Add to cooldown on TP ---
           cooldownTracker[symbol] = {
-            untilCall: currentCall + 50, // 50 циклов cooldown
+            untilCall: currentCall + 50, // 50 cycles cooldown
             reason: "TP",
           };
           if (process.env.MODE === "DEVELOPMENT") {
@@ -392,7 +390,7 @@ export async function getTradeSignals(state = {}) {
               `🔒 Cooldown set for ${symbol} until call ${currentCall + 50} (reason: TP)`
             );
           }
-          // --- Конец добавления ---
+          // --- End of addition ---
         } else if (stopLoss !== null && price >= stopLoss) {
           signal = "BUY";
           exitReason = "SL";
@@ -402,9 +400,9 @@ export async function getTradeSignals(state = {}) {
             );
           }
 
-          // --- Добавлено: Установка cooldown при закрытии по SL ---
+          // --- Add to cooldown on SL ---
           cooldownTracker[symbol] = {
-            untilCall: currentCall + 50, // 50 циклов cooldown
+            untilCall: currentCall + 50, // 50 cycles cooldown
             reason: "SL",
           };
           if (process.env.MODE === "DEVELOPMENT") {
@@ -412,7 +410,7 @@ export async function getTradeSignals(state = {}) {
               `🔒 Cooldown set for ${symbol} until call ${currentCall + 50} (reason: SL)`
             );
           }
-          // --- Конец добавления ---
+          // --- End of addition ---
         } else if (process.env.MODE === "DEVELOPMENT") {
           // Log price check status periodically or if close to levels
           const tpDistance = takeProfit
