@@ -2,7 +2,7 @@
 
 import { delay, getHeartbeatInterval } from "./helpers/functions.js";
 import { getSignals } from "./analytics/indicators/index.js";
-import { report } from "./analytics/report.js";
+import { report, crashReport } from "./analytics/report.js"; // ✅ Добавили crashReport
 import util from "node:util";
 
 const secondarySymbol = process.env.SECONDARY_SYMBOL;
@@ -14,7 +14,6 @@ const heartbeatInterval = getHeartbeatInterval(interval);
 
 let loopCount = 1;
 
-// Store current position state: symbol, stopLoss, takeProfit, shortPrice
 let positionState = {
   symbol: null,
   stopLoss: null,
@@ -27,45 +26,43 @@ export default async function start() {
 
   try {
     await startServer();
-    // Note: Unlike realMode.js, testMode.js typically doesn't close existing positions on start
-    // unless specifically designed to do so.
     await startLoop();
   } catch (error) {
-    const { statusCode, statusMessage, body, type, errorSrcData } = error;
+    crashReport(error, {
+      mode: "TEST",
+      loopCount,
+      positionState: { ...positionState },
+      secondarySymbol,
+      indicator,
+      timestamp: new Date().toISOString(),
+      errorSrcData: error.errorSrcData,
+    });
 
-    if (statusCode) {
+    if (error.statusCode) {
       console.error(
-        `\nType: ${type || ""}\nStatus message: ${statusMessage || ""}\nBody: ${
-          JSON.parse(body).msg
+        `\nType: ${error.type || ""}\nStatus message: ${error.statusMessage || ""}\nBody: ${
+          error.body ? JSON.parse(error.body).msg : "No body"
         }`
-      );
-
-      console.info(
-        `Error source data:`,
-        util.inspect(errorSrcData, {
-          showHidden: false,
-          depth: null,
-          colors: true,
-        })
       );
     } else {
       console.info(
         `\nUnexpected Error:`,
-        util.inspect(error, {
-          showHidden: false,
-          depth: null,
-          colors: true,
-        })
+        util.inspect(error, { showHidden: false, depth: null, colors: true })
       );
+    }
+
+    if (error.errorSrcData) {
       console.info(
-        `Error source data:`,
-        util.inspect(errorSrcData, {
+        "Error source data:",
+        util.inspect(error.errorSrcData, {
           showHidden: false,
           depth: null,
           colors: true,
         })
       );
     }
+
+    process.exit(1);
   }
 }
 

@@ -1,7 +1,6 @@
 // report.js
 
 import path from "node:path";
-import { execSync } from "child_process";
 import fs from "node:fs";
 import { fileURLToPath } from "node:url";
 import { format } from "@fast-csv/format";
@@ -16,12 +15,13 @@ const __dirname = reportFileDir
   ? path.resolve(reportFileDir)
   : path.resolve(path.dirname(__filename), "../../report");
 const filePath = path.join(__dirname, reportFileName);
+const crashReportPath = path.join(__dirname, "crash-report.log"); // 🆕 путь к краш-логу
 const fileOptions = { flags: "a" };
 
-let profitTotalPercent = 0; // accumulated total profit percent
-let entryPrice = 0; // entry price of the position
-let lastTradeType = null; // last trade type (BUY or SELL)
-let count = 0; // row counter
+let profitTotalPercent = 0;
+let entryPrice = 0;
+let lastTradeType = null;
+let count = 0;
 
 createTable();
 
@@ -40,8 +40,12 @@ function createTable() {
 
   if (onlyCleanBalance) return;
 
-  execSync(`rm -rf ${filePath}`); // remove old report file
-  console.log("Report file erased");
+  try {
+    fs.rmSync(filePath, { force: true });
+    console.log("Report file erased");
+  } catch (err) {
+    console.warn("Could not remove old report file:", err.message);
+  }
 
   const stream = fs.createWriteStream(filePath, fileOptions);
   const csvStream = format({ includeEndRowDelimiter: true });
@@ -53,8 +57,6 @@ function createTable() {
 }
 
 export function report({ date, trade, symbol, price, priceChangePercent }) {
-  // console.log({ date, trade, symbol, price, priceChangePercent });
-
   count++;
 
   const commission = (price * commissionPercent) / 100;
@@ -63,7 +65,6 @@ export function report({ date, trade, symbol, price, priceChangePercent }) {
   if (trade === "SELL") {
     profitPercent = -commissionPercent;
     profitTotalPercent += profitPercent;
-
     entryPrice = price;
     lastTradeType = "SELL";
   } else if (trade === "BUY") {
@@ -71,7 +72,6 @@ export function report({ date, trade, symbol, price, priceChangePercent }) {
     const totalCommissionPercent = commissionPercent * 2;
     profitPercent = grossProfitPercent - totalCommissionPercent;
     profitTotalPercent += profitPercent;
-
     entryPrice = price;
     lastTradeType = "BUY";
   } else if (trade === "PASS") {
@@ -95,7 +95,6 @@ export function report({ date, trade, symbol, price, priceChangePercent }) {
     }
   }
 
-  // 🛑 Skip writing CSV if there's no actual trade
   if (trade !== "SELL" && trade !== "BUY") return;
 
   const stream = fs.createWriteStream(filePath, fileOptions);
@@ -110,14 +109,38 @@ export function report({ date, trade, symbol, price, priceChangePercent }) {
     Trade: trade,
     Price: price.toFixed(8),
     Commission:
-      trade === "SELL"
-        ? commission.toFixed(8)
-        : trade === "BUY"
-          ? (commission * 2).toFixed(8)
-          : "0",
+      trade === "SELL" ? commission.toFixed(8) : (commission * 2).toFixed(8),
     "Profit %": profitPercent.toFixed(8),
     "Profit total %": profitTotalPercent.toFixed(8),
   });
 
   csvStream.end();
+}
+
+export function crashReport(error, context = {}) {
+  const timestamp = new Date().toISOString();
+  const message = error?.message || "Unknown error";
+  const stack = error?.stack || "No stack trace";
+
+  const report = {
+    timestamp,
+    message,
+    stack,
+    context,
+  };
+
+  const logEntry =
+    `[${report.timestamp}] CRASH REPORT\n` +
+    `Message: ${report.message}\n` +
+    `Context: ${JSON.stringify(report.context, null, 2)}\n` +
+    `Stack:\n${report.stack}\n\n` +
+    "=".repeat(80) +
+    "\n\n";
+
+  try {
+    fs.appendFileSync(crashReportPath, logEntry, "utf8");
+    console.error("Crash report saved to:", crashReportPath);
+  } catch (writeErr) {
+    console.error("Failed to write crash report:", writeErr);
+  }
 }
