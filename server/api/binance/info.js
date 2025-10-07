@@ -5,19 +5,26 @@ import { delay } from "../../helpers/functions.js";
 
 const delayMs = JSON.parse(process.env.DELAY);
 
+function wrapError(type, originalError) {
+  const message = originalError?.message || String(originalError) || 'Unknown error';
+  const error = new Error(`${type}: ${message}`);
+  error.type = type;
+  error.originalError = originalError; // сохраняем оригинал для отладки
+  return error;
+}
+
+// Теперь все функции используют wrapError
+
 export async function getExchangeInfo(symbol) {
   try {
     await delay(delayMs);
-
     const data = await binance.exchangeInfo();
-    // console.info("\nExchangeInfo:", data);
-
+    
     const tickerInfo = data.symbols.find((ticker) => ticker.symbol === symbol);
     const limits = {};
 
     for (let obj of data.symbols) {
       let filters = { status: obj.status };
-
       for (let filter of obj.filters) {
         if (filter.filterType == "MIN_NOTIONAL") {
           filters.minNotional = filter.minNotional;
@@ -31,9 +38,6 @@ export async function getExchangeInfo(symbol) {
           filters.maxQty = filter.maxQty;
         }
       }
-
-      //filters.baseAssetPrecision = obj.baseAssetPrecision;
-      //filters.quoteAssetPrecision = obj.quoteAssetPrecision;
       filters.orderTypes = obj.orderTypes;
       filters.icebergAllowed = obj.icebergAllowed;
       limits[obj.symbol] = filters;
@@ -44,8 +48,7 @@ export async function getExchangeInfo(symbol) {
     const minOrderValue = parseFloat(tickerLimits.minNotional);
     const stepSize = tickerLimits.stepSize;
 
-    console.info("\n");
-    console.info("tickerLimits:", tickerLimits);
+    console.info("\ntickerLimits:", tickerLimits);
 
     return {
       minOrderQuantity,
@@ -54,76 +57,38 @@ export async function getExchangeInfo(symbol) {
       tickerInfo,
     };
   } catch (error) {
-    throw { type: "Get Exchange Info", ...error, errorSrcData: error };
+    throw wrapError("Get Exchange Info", error);
   }
 }
 
 export async function getTradingTickers() {
   try {
     await delay(delayMs);
-
     const data = await binance.exchangeInfo();
-    // console.info("\n");
-    // console.info("Exchange info:", data);
-
     const tickerList = data.symbols
       .filter((ticker) => ticker.status === "TRADING")
       .filter((ticker) => ticker.isSpotTradingAllowed)
       .map((ticker) => ticker.symbol);
-
-    // console.log("tickerList.", tickerList);
-
     return tickerList;
   } catch (error) {
-    throw { type: "Get Exchange Info", ...error, errorSrcData: error };
+    throw wrapError("Get Trading Tickers", error);
   }
 }
 
 export async function getLastPrice(symbol) {
   try {
     await delay(delayMs);
-
     const priceList = await binance.prices();
     const tickerPrice = parseFloat(priceList[symbol]);
-
     return tickerPrice;
   } catch (error) {
-    throw { type: "Get Last Price", ...error, errorSrcData: error };
+    throw wrapError("Get Last Price", error);
   }
 }
 
 export async function getPrevDayData(symbol) {
-  // prevDayData
-  //
-  // [{
-  //   "symbol": "ETHBTC",
-  //   "priceChange": "0.00018800",
-  //   "priceChangePercent": "0.295",
-  //   "weightedAvgPrice": "0.06373885",
-  //   "prevClosePrice": "0.06371900",
-  //   "lastPrice": "0.06390700",
-  //   "lastQty": "0.03950000",
-  //   "bidPrice": "0.06390200",
-  //   "bidQty": "1.92630000",
-  //   "askPrice": "0.06390300",
-  //   "askQty": "7.50000000",
-  //   "openPrice": "0.06371900",
-  //   "highPrice": "0.06452400",
-  //   "lowPrice": "0.06262600",
-  //   "volume": "99264.72340000",
-  //   "quoteVolume": "6327.01966104",
-  //   "openTime": 1634376118872,
-  //   "closeTime": 1634462518872,
-  //   "firstId": 302652048,
-  //   "lastId": 302837936,
-  //   "count": 185889
-  // },
-  // ...
-  // ],
-
   try {
     await delay(delayMs);
-
     if (symbol) {
       const data = await binance.prevDay(symbol);
       return [data];
@@ -132,177 +97,99 @@ export async function getPrevDayData(symbol) {
       return data;
     }
   } catch (error) {
-    throw { type: "Get Prev Day Data", ...error, errorSrcData: error };
+    throw wrapError("Get Prev Day Data", error);
   }
 }
 
 export async function getSymbolBalance(symbolName) {
   try {
     await delay(delayMs);
-
     const balances = await binance.balance();
-
-    return parseFloat(
-      balances[symbolName] ? balances[symbolName].available : 0
-    );
+    return parseFloat(balances[symbolName] ? balances[symbolName].available : 0);
   } catch (error) {
     console.info("error:", error);
-    throw { type: "Get Symbol Balance Error", ...error, errorSrcData: error };
+    throw wrapError("Get Symbol Balance Error", error);
   }
 }
 
 export async function getTradingHistory(symbol) {
   try {
     await delay(delayMs);
-
     return await binance.trades(symbol);
   } catch (error) {
-    throw { type: "Get Trading History Error", ...error, errorSrcData: error };
+    throw wrapError("Get Trading History Error", error);
   }
 }
 
-export async function getCandlestickData({
-  symbol,
-  interval,
-  periods,
-  endTime = Date.now(),
-}) {
+export async function getCandlestickData({ symbol, interval, periods, endTime = Date.now() }) {
   try {
     await delay(delayMs);
-
     const candlesticks = await binance.candlesticks(symbol, interval, {
       limit: periods,
       endTime,
     });
-
-    const result = candlesticks.map(
-      ({ openTime, open, high, low, close, volume }) => {
-        return [
-          openTime,
-          parseFloat(open),
-          parseFloat(high),
-          parseFloat(low),
-          parseFloat(close),
-          parseFloat(volume),
-        ];
-      }
-    );
-
-    // const lastTick = candlesticks[candlesticks.length - 1]
-    // const [time, open, high, low, close, volume] = lastTick
-
-    // console.info(
-    //   `${symbol} OHLCV data loaded for last ${periods} ${interval} intervals`
-    // )
-    // console.info(`Time: ${new Date(time).toString()}`)
-    // console.info(`Open: ${open}`)
-    // console.info(`High: ${high}`)
-    // console.info(`Low: ${low}`)
-    // console.info(`Close: ${close}`)
-    // console.info(`Volume: ${volume}`)
-
-    return result;
+    return candlesticks.map(({ openTime, open, high, low, close, volume }) => [
+      openTime,
+      parseFloat(open),
+      parseFloat(high),
+      parseFloat(low),
+      parseFloat(close),
+      parseFloat(volume),
+    ]);
   } catch (error) {
-    throw { type: "Get Candlestick Data Error", ...error, errorSrcData: error };
+    throw wrapError("Get Candlestick Data Error", error);
   }
 }
 
 export async function getAccountBalances() {
   try {
     await delay(delayMs);
-
     const balances = await binance.balance();
-
-    // console.info(balances);
-
-    const result = [];
-
-    for (const symbol in balances) {
-      result.push({
-        symbol,
-        available: parseFloat(balances[symbol].available),
-      });
-    }
-
-    return result;
+    return Object.entries(balances).map(([symbol, data]) => ({
+      symbol,
+      available: parseFloat(data.available),
+    }));
   } catch (error) {
-    throw { type: "Get Account Balances Error", ...error, errorSrcData: error };
+    throw wrapError("Get Account Balances Error", error);
   }
 }
 
-// Futures
+// === FUTURES ===
+
 export async function getFuturesList() {
   try {
     const exchangeInfo = await binance.futuresExchangeInfo();
-    const futures = exchangeInfo.symbols
+    return exchangeInfo.symbols
       .filter(({ contractType }) => contractType === "PERPETUAL")
       .filter(({ status }) => status === "TRADING");
-
-    return futures;
   } catch (error) {
-    throw { type: "Get Futures List Data", ...error, errorSrcData: error };
+    throw wrapError("Get Futures List Data", error);
   }
 }
 
 export async function getPrevDayDataFutures(symbol) {
-  // [
-  //   {
-  //     symbol: "BTCUSDT",
-  //     priceChange: "-94.99999800",
-  //     priceChangePercent: "-95.960",
-  //     weightedAvgPrice: "0.29628482",
-  //     lastPrice: "4.00000200",
-  //     lastQty: "200.00000000",
-  //     openPrice: "99.00000000",
-  //     highPrice: "100.00000000",
-  //     lowPrice: "0.10000000",
-  //     volume: "8913.30000000",
-  //     quoteVolume: "15.30000000",
-  //     openTime: 1499783499040,
-  //     closeTime: 1499869899040,
-  //     firstId: 28385, // First tradeId
-  //     lastId: 28460, // Last tradeId
-  //     count: 76, // Trade count
-  //   }
-  // ];
-
   try {
     await delay(delayMs);
-
     if (symbol) {
-      const data = await binance.prevDay(symbol);
+      const data = await binance.futuresPrevDay(symbol);
       return [data];
     } else {
-      const data = await binance.prevDay(false);
+      const data = await binance.futuresPrevDay(false);
       return data;
     }
   } catch (error) {
-    throw { type: "Get Prev Day Data", ...error, errorSrcData: error };
+    throw wrapError("Get Prev Day Data Futures", error);
   }
 }
 
 export async function getExchangeInfoFutures(symbol) {
-  // [
-  //   {
-  //       "symbol": "BTCUSDT",
-  //       "price": "6000.01",
-  //       "time": 1589437530011
-  //   }
-  // ]
-
   try {
-    // Delay to avoid hitting API rate limits
     await delay(delayMs);
-
-    // Fetch futures exchange info from Binance API
     const data = await binance.futuresExchangeInfo();
-
     const limits = {};
 
-    // Parse filters for each symbol in the exchange info
     for (const obj of data.symbols) {
       let filters = { status: obj.status };
-
       for (const filter of obj.filters) {
         if (filter.filterType === "MIN_NOTIONAL") {
           filters.minNotional = filter.minNotional;
@@ -316,35 +203,24 @@ export async function getExchangeInfoFutures(symbol) {
           filters.maxQty = filter.maxQty;
         }
       }
-
       filters.orderTypes = obj.orderTypes;
       filters.icebergAllowed = obj.icebergAllowed;
-
       limits[obj.symbol] = filters;
     }
 
     const tickerLimits = limits[symbol];
-
     if (!tickerLimits) {
       throw new Error(`Symbol limits not found for ${symbol}`);
     }
 
-    // Parse necessary parameters as floats
-    const minOrderQuantity = parseFloat(tickerLimits.minQty);
-    const minOrderValue = parseFloat(tickerLimits.minNotional);
-    const stepSize = parseFloat(tickerLimits.stepSize);
-
-    // Find ticker info for additional metadata
-    const tickerInfo = data.symbols.find((ticker) => ticker.symbol === symbol);
-
     return {
-      minOrderQuantity,
-      minOrderValue,
-      stepSize,
-      tickerInfo,
+      minOrderQuantity: parseFloat(tickerLimits.minQty),
+      minOrderValue: parseFloat(tickerLimits.minNotional),
+      stepSize: parseFloat(tickerLimits.stepSize),
+      tickerInfo: data.symbols.find((ticker) => ticker.symbol === symbol),
     };
   } catch (error) {
-    throw { type: "Get Exchange Info", ...error, errorSrcData: error };
+    throw wrapError("Get Exchange Info Futures", error);
   }
 }
 
@@ -360,243 +236,120 @@ async function getExchangeInfoCached() {
 export async function getSymbolMinTradeFutures(symbol) {
   try {
     const exchangeInfo = await getExchangeInfoCached();
-
     const symbolInfo = exchangeInfo.symbols.find((s) => s.symbol === symbol);
     if (!symbolInfo) {
       throw new Error(`Symbol ${symbol} not found in exchange info`);
     }
 
-    const lotSizeFilter = symbolInfo.filters.find(
-      (f) => f.filterType === "LOT_SIZE"
-    );
-    const marketLotSizeFilter = symbolInfo.filters.find(
-      (f) => f.filterType === "MARKET_LOT_SIZE"
-    );
-    const notionalFilter = symbolInfo.filters.find(
-      (f) => f.filterType === "NOTIONAL"
-    );
+    const lotSizeFilter = symbolInfo.filters.find(f => f.filterType === "LOT_SIZE");
+    const marketLotSizeFilter = symbolInfo.filters.find(f => f.filterType === "MARKET_LOT_SIZE");
+    const notionalFilter = symbolInfo.filters.find(f => f.filterType === "NOTIONAL");
 
     if (!lotSizeFilter && !marketLotSizeFilter) {
-      throw new Error(
-        `No LOT_SIZE or MARKET_LOT_SIZE filter found for ${symbol}`
-      );
+      throw new Error(`No LOT_SIZE or MARKET_LOT_SIZE filter found for ${symbol}`);
     }
 
-    const stepSize = parseFloat(
-      marketLotSizeFilter?.stepSize || lotSizeFilter.stepSize
-    );
-    const minQty = parseFloat(
-      marketLotSizeFilter?.minQty || lotSizeFilter.minQty
-    );
-    const minNotional = notionalFilter
-      ? parseFloat(notionalFilter.minNotional ?? notionalFilter.notional)
-      : 0; // <-- если NOTIONAL нет, ставим 0
-
     return {
-      stepSize,
-      minQty,
-      minNotional,
+      stepSize: parseFloat(marketLotSizeFilter?.stepSize || lotSizeFilter.stepSize),
+      minQty: parseFloat(marketLotSizeFilter?.minQty || lotSizeFilter.minQty),
+      minNotional: notionalFilter ? parseFloat(notionalFilter.minNotional ?? notionalFilter.notional) : 0,
     };
   } catch (error) {
-    throw {
-      type: "Get Symbol Min Trade Futures Error",
-      message: error.message,
-      errorSrcData: error,
-    };
+    throw wrapError("Get Symbol Min Trade Futures Error", error);
   }
 }
 
 export async function getFuturesPositionsFutures() {
-  //  [
-  //    {
-  //      "symbol": "BTCUSDT",
-  //      "positionAmt": "0.001",
-  //      "entryPrice": "25000.00",
-  //      "markPrice": "26000.00",
-  //      "unRealizedProfit": "1.00",
-  //      "liquidationPrice": "20000.00",
-  //      "leverage": "10",
-  //      "marginType": "isolated",
-  //      "isolatedMargin": "5.00",
-  //      "positionSide": "BOTH",
-  //      "updateTime": 1234567890123
-  //    },
-  //    {
-  //      "symbol": "ETHUSDT",
-  //      "positionAmt": "-0.5",
-  //      "entryPrice": "1800.00",
-  //      "markPrice": "1700.00",
-  //      "unRealizedProfit": "-50.00",
-  //      "liquidationPrice": "2000.00",
-  //      "leverage": "5",
-  //      "marginType": "cross",
-  //      "isolatedMargin": "0.00",
-  //      "positionSide": "BOTH",
-  //      "updateTime": 1234567890123
-  //    }
-  //  ]
-
   try {
-    // Request open futures positions for the account
-    const data = await binance.futuresPositionRisk();
-
-    // Return the raw data directly
-    return data;
+    return await binance.futuresPositionRisk();
   } catch (error) {
-    throw {
-      type: "Get Positions Futures Error",
-      ...error,
-      errorSrcData: error,
-    };
+    throw wrapError("Get Positions Futures Error", error);
   }
 }
 
-export async function getCandlestickDataFutures({
-  symbol,
-  interval,
-  periods,
-  endTime = Date.now(),
-}) {
+export async function getCandlestickDataFutures({ symbol, interval, periods, endTime = Date.now() }) {
   try {
     await delay(delayMs);
-
     const candlesticks = await binance.futuresCandlesticks(symbol, interval, {
       limit: periods,
       endTime,
     });
-
-    const result = candlesticks.map(
-      ({ openTime, open, high, low, close, volume }) => {
-        return [
-          openTime,
-          parseFloat(open),
-          parseFloat(high),
-          parseFloat(low),
-          parseFloat(close),
-          parseFloat(volume),
-        ];
-      }
-    );
-
-    return result;
+    return candlesticks.map(({ openTime, open, high, low, close, volume }) => [
+      openTime,
+      parseFloat(open),
+      parseFloat(high),
+      parseFloat(low),
+      parseFloat(close),
+      parseFloat(volume),
+    ]);
   } catch (error) {
     console.info("error:", error);
-    throw {
-      type: "Get Candlestick Data Futures Error",
-      ...error,
-      errorSrcData: error,
-    };
+    throw wrapError("Get Candlestick Data Futures Error", error);
   }
 }
 
 export async function getTradingTickersFutures() {
   try {
     await delay(delayMs);
-
     const data = await binance.futuresExchangeInfo();
-
-    const tickerList = data.symbols
-      .filter((ticker) => ticker.status === "TRADING")
-      .map((ticker) => ticker.symbol);
-
-    return tickerList;
+    return data.symbols
+      .filter(ticker => ticker.status === "TRADING")
+      .map(ticker => ticker.symbol);
   } catch (error) {
     console.info("error:", error);
-    throw {
-      type: "Get Trading Tickers Futures Error",
-      ...error,
-      errorSrcData: error,
-    };
+    throw wrapError("Get Trading Tickers Futures Error", error);
   }
 }
 
 export async function getLastPriceFutures(symbol) {
   try {
     await delay(delayMs);
-
     const priceList = await binance.futuresPrices();
-    const tickerPrice = parseFloat(priceList[symbol]);
-
-    return tickerPrice;
+    return parseFloat(priceList[symbol]);
   } catch (error) {
     console.info("error:", error);
-    throw {
-      type: "Get Last Price Futures Error",
-      ...error,
-      errorSrcData: error,
-    };
+    throw wrapError("Get Last Price Futures Error", error);
   }
 }
 
 export async function getFuturesAccountUSDTBalance() {
   try {
     const accountInfo = await binance.futuresAccount();
-
     const walletBalance = parseFloat(accountInfo.totalWalletBalance || 0);
     const unrealizedProfit = parseFloat(accountInfo.totalUnrealizedProfit || 0);
-
-    const totalBalance = walletBalance + unrealizedProfit;
-
     return {
       walletBalance,
       unrealizedProfit,
-      totalBalance,
+      totalBalance: walletBalance + unrealizedProfit,
     };
   } catch (error) {
-    throw {
-      type: "Get USDT Futures Balance Error",
-      ...error,
-      errorSrcData: error,
-    };
+    throw wrapError("Get USDT Futures Balance Error", error);
   }
 }
 
 export async function getAccountBalancesFutures() {
-  // Example response:
-  // [
-  //   { symbol: 'USDT', available: 99.3547 },
-  //   { symbol: 'BTC', available: 0.0001 },
-  // ]
-
   try {
     await delay(delayMs);
-
     const accountInfo = await binance.futuresAccount();
-
-    // Extract only assets with a positive available balance
-    const result = accountInfo.assets
+    return accountInfo.assets
       .map(({ asset, availableBalance }) => ({
         symbol: asset,
         available: parseFloat(availableBalance),
       }))
-      .filter(({ available }) => available > 0); // Filter out zero balances
-
-    return result;
+      .filter(({ available }) => available > 0);
   } catch (error) {
     console.info("error:", error);
-    throw {
-      type: "Get Account Balance Futures Error",
-      ...error,
-      errorSrcData: error,
-    };
+    throw wrapError("Get Account Balance Futures Error", error);
   }
 }
 
 export async function getSymbolBalanceFutures(symbolName) {
   try {
     await delay(delayMs);
-
     const balances = await binance.futuresBalance();
-
-    return parseFloat(
-      balances[symbolName] ? balances[symbolName].available : 0
-    );
+    return parseFloat(balances[symbolName] ? balances[symbolName].available : 0);
   } catch (error) {
     console.info("error:", error);
-    throw {
-      type: "Get Symbol Balance Futures Error",
-      ...error,
-      errorSrcData: error,
-    };
+    throw wrapError("Get Symbol Balance Futures Error", error);
   }
 }
