@@ -2,13 +2,21 @@
 
 import binance from "./connection.js";
 import { delay } from "../../helpers/functions.js";
-
 import { getExchangeInfo, getLastPrice, getSymbolBalance } from "./info.js";
 
 const delayMs = JSON.parse(process.env.DELAY);
 const isfixedValue = process.env.USE_FIXED_TRADE_VALUE;
 const fixedValue = parseFloat(process.env.FIXED_TRADE_VALUE);
 const fixedPercent = parseFloat(process.env.FIXED_TRADE_PERCENT);
+
+// ✅ Вспомогательная функция для создания настоящих ошибок
+function wrapError(type, originalError) {
+  const message = originalError?.message || String(originalError) || 'Unknown error';
+  const error = new Error(`${type}: ${message}`);
+  error.type = type;
+  error.originalError = originalError;
+  return error;
+}
 
 export async function marketBuy({
   primarySymbol,
@@ -22,11 +30,9 @@ export async function marketBuy({
     if (isfixedValue && secondarySymbolBalance < fixedValue) {
       console.info("\n\nInsufficient balance");
       console.info(secondarySymbol, "balance must be >", fixedValue);
-
       return { result: false };
     } else if (
-      secondarySymbolBalance <
-      (secondarySymbolBalance / 100) * fixedPercent
+      secondarySymbolBalance < (secondarySymbolBalance / 100) * fixedPercent
     ) {
       console.info("\n\nInsufficient balance");
       console.info(
@@ -34,6 +40,7 @@ export async function marketBuy({
         "balance must be >",
         (secondarySymbolBalance / 100) * fixedPercent
       );
+      // ⚠️ Возможно, здесь тоже нужно return { result: false }?
     }
 
     const { buyQuantity } = await getOrderQuantity({
@@ -42,16 +49,12 @@ export async function marketBuy({
       tickerName,
     });
 
-    // console.info("buyQuantity:", buyQuantity);
-
     if (buyQuantity === 0) {
       return { result: false };
     }
 
     await delay(delayMs);
     const response = await binance.marketBuy(tickerName, buyQuantity);
-
-    // console.info(response);
 
     return {
       quantity: parseFloat(response.executedQty),
@@ -60,7 +63,7 @@ export async function marketBuy({
       result: true,
     };
   } catch (error) {
-    throw { type: "Market Buy Error", ...error, errorSrcData: error };
+    throw wrapError("Market Buy Error", error);
   }
 }
 
@@ -83,16 +86,14 @@ export async function marketSell({
     await delay(delayMs);
     const response = await binance.marketSell(tickerName, sellQuantity);
 
-    // console.info(response);
-
     return {
-      quantity: response.executedQty,
+      quantity: parseFloat(response.executedQty),
       status: response.status,
       srcData: response,
       result: true,
     };
   } catch (error) {
-    throw { type: "Market Sell Error", ...error, errorSrcData: error };
+    throw wrapError("Market Sell Error", error);
   }
 }
 
@@ -112,19 +113,15 @@ export async function getOrderQuantity({
     const price = await getLastPrice(tickerName);
     console.info("price:", price);
 
-    // Buy quantity
     let buyQuantity;
-
     if (isfixedValue) {
       console.info("\nFixed Volume:", fixedValue);
-
       buyQuantity = await binance.roundStep(
         fixedValue / price - parseFloat(stepSize),
         stepSize
       );
     } else {
       console.info("\nFixed Percent:", fixedPercent);
-
       buyQuantity = await binance.roundStep(
         (secondarySymbolBalance / price / 100) * fixedPercent,
         stepSize
@@ -136,27 +133,18 @@ export async function getOrderQuantity({
     const insufficientBalanceToBuy =
       buyQuantity < minOrderQuantity || buyQuantity * price < minOrderValue;
 
-    console.info("insufficientBalanceToBuy:", insufficientBalanceToBuy);
-
     if (insufficientBalanceToBuy) {
       buyQuantity = 0;
     }
 
-    // Sell quantity
     let sellQuantity = await binance.roundStep(primarySymbolBalance, stepSize);
-
-    // console.info("sellQuantity berore check", sellQuantity);
-
     const insufficientBalanceToSell =
       sellQuantity < minOrderQuantity || sellQuantity * price < minOrderValue;
-
-    console.info("insufficientBalanceToSell:", insufficientBalanceToSell);
 
     if (insufficientBalanceToSell) {
       sellQuantity = 0;
     }
 
-    // console.info('\n')
     console.info("primarySymbolBalance:", primarySymbolBalance);
     console.info("secondarySymbolBalance:", secondarySymbolBalance);
     console.info("minOrderQuantity:", minOrderQuantity);
@@ -165,18 +153,19 @@ export async function getOrderQuantity({
     console.info("buyQuantity:", buyQuantity);
     console.info("stepSize:", stepSize);
 
-    return { sellQuantity, buyQuantity: buyQuantity };
+    return { sellQuantity, buyQuantity };
   } catch (error) {
-    throw { type: "Get Order Quantity Error", ...error, errorSrcData: error };
+    throw wrapError("Get Order Quantity Error", error);
   }
 }
 
-// Futures
+// === FUTURES ===
+
 export async function createMarketOrderFutures({ symbol, side, quantity }) {
   try {
     await delay(delayMs);
 
-    // Set leverage = 1 for this symbol before placing order
+    // Set leverage = 1
     try {
       await binance.futuresLeverage(symbol, 1);
       console.log(`Leverage set to 1 for ${symbol}`);
@@ -185,18 +174,15 @@ export async function createMarketOrderFutures({ symbol, side, quantity }) {
         `Failed to set leverage for ${symbol}:`,
         error.body || error.message
       );
-      // Не прерываем выполнение, просто логируем
     }
 
     const orderResponse = await binance.futuresOrder(
-      "MARKET", // type
-      side, // side ("BUY" или "SELL")
-      symbol, // symbol
-      quantity, // quantity
-      undefined, // price
-      {
-        newOrderRespType: "RESULT",
-      }
+      "MARKET",
+      side,
+      symbol,
+      quantity,
+      undefined,
+      { newOrderRespType: "RESULT" }
     );
 
     const fill = orderResponse?.avgFillPrice || orderResponse?.price || 0;
@@ -214,11 +200,7 @@ export async function createMarketOrderFutures({ symbol, side, quantity }) {
       rawResponse: orderResponse,
     };
   } catch (error) {
-    throw {
-      type: "Create Futures Market Order Error",
-      ...error,
-      errorSrcData: error,
-    };
+    throw wrapError("Create Futures Market Order Error", error);
   }
 }
 
@@ -233,15 +215,12 @@ export async function closeMarketOrderFutures({
       `Closing full position for symbol=${symbol}, side=${side}, quantity=${quantity}, positionSide=${positionSide}`
     );
 
-    const options = {
-      reduceOnly: true, // <-- ключевой параметр для закрытия позиции
-    };
-
+    const options = { reduceOnly: true };
     if (positionSide && positionSide !== "BOTH") {
       options.positionSide = positionSide;
     }
 
-    return await binance.futuresOrder(
+    const response = await binance.futuresOrder(
       "MARKET",
       side,
       symbol,
@@ -249,8 +228,10 @@ export async function closeMarketOrderFutures({
       undefined,
       options
     );
+
+    return response;
   } catch (error) {
     console.error(`Error closing position for ${symbol}:`, error);
-    throw { type: "Close Futures Order", ...error, errorSrcData: error };
+    throw wrapError("Close Futures Order", error);
   }
 }
