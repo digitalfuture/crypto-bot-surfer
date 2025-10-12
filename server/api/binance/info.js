@@ -5,15 +5,14 @@ import { delay } from "../../helpers/functions.js";
 
 const delayMs = JSON.parse(process.env.DELAY);
 
+// ✅ Вспомогательная функция — только для оборачивания ошибок
 function wrapError(type, originalError) {
   const message = originalError?.message || String(originalError) || 'Unknown error';
   const error = new Error(`${type}: ${message}`);
   error.type = type;
-  error.originalError = originalError; // сохраняем оригинал для отладки
+  error.originalError = originalError;
   return error;
 }
-
-// Теперь все функции используют wrapError
 
 export async function getExchangeInfo(symbol) {
   try {
@@ -167,14 +166,15 @@ export async function getFuturesList() {
   }
 }
 
+// 🔸 ВАЖНО: оставляем ТОЧНО КАК БЫЛО — binance.prevDay, а не futuresPrevDay!
 export async function getPrevDayDataFutures(symbol) {
   try {
     await delay(delayMs);
     if (symbol) {
-      const data = await binance.futuresPrevDay(symbol);
+      const data = await binance.prevDay(symbol); // ← как в оригинале
       return [data];
     } else {
-      const data = await binance.futuresPrevDay(false);
+      const data = await binance.prevDay(false); // ← как в оригинале
       return data;
     }
   } catch (error) {
