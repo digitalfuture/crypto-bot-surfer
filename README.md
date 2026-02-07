@@ -103,3 +103,8 @@ The others scripts that possible to run (like a logs, upgrade ets.) you can find
 in the `package.json` file.
 
 Lucky trading =)
+
+<p align="left">
+  <img src="images/telegram-1.png" width="48%" />
+  <img src="images/telegram-2.png" width="48%" />
+</p>
