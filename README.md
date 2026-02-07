@@ -20,34 +20,31 @@ example config:
 ```env
 TEST_MODE=true
 
-REPORT_FILE_DIR=/home/report
-REPORT_FILE_NAME=trades
-
-INDICATOR=dump
-INDICATOR_CHANGE_PERCENT=10
+MODE=DEVELOPMENT
+CLEAN_BALANCE_ONLY=true
 
 DELAY=1000
-HEARTBEAT_INTERVAL=5m
-NEXT_TRADE_DELAY=30s
+HEARTBEAT_INTERVAL=01m
+BACKTEST_PERIODS=500
+BACKTEST_INTERVAL=15m
+SYSTEM_PARAM_1=1
+INDICATOR_PARAM_2=1
+INDICATOR_PARAM_3=1
 
 PRIMARY_SYMBOL=BTC
 SECONDARY_SYMBOL=USDT
 
-TEST_COMISSION_PERCENT=0.01
+INDICATOR=volatility
+
+REPORT_FILE_DIR=
+REPORT_FILE_NAME=trades.csv
+
+OMISSION_PERCENT=0.1
 USE_FIXED_TRADE_VALUE=true
-FIXED_TRADE_VALUE=20
-FIXED_TRADE_PERCENT=10
+TRADE_VALUE=20
 MIN_TRADE_USD_VALUE=10
-MIN_CHANGE_PERCENT=20
 
-BINANCE_APIKEY=
-BINANCE_APISECRET=
-
-USE_TELEGRAM=true
-TELEGRAM_ACCESS_TOKEN=
-TELEGRAM_CHANNEL_ID=
-
-MODE=DEVELOPMENT
+USE_TELEGRAM=false
 ```
 
 Trading interval can be any amound of seconds or minutes, for example, 30s, 100s, 1m, 5m, 20m and so on
@@ -106,3 +103,8 @@ The others scripts that possible to run (like a logs, upgrade ets.) you can find
 in the `package.json` file.
 
 Lucky trading =)
+
+<p align="left">
+  <img src="images/telegram-1.png" width="48%" />
+  <img src="images/telegram-2.png" width="48%" />
+</p>
